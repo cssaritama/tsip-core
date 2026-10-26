@@ -89,7 +89,7 @@ A scheduled GitHub Actions workflow fetches new data, rebuilds the report and de
 
 ## Roadmap
 
-See [docs/ROADMAP.md](docs/ROADMAP.md): a drift-and-volatility control for long-horizon levels, rolling windows, futures sessions, Bitcoin on-chain cohorts, insider and institutional filings, a statistics API, and a predictive modelling track that is held to the same standard of evidence.
+See [docs/ROADMAP.md](docs/ROADMAP.md): a drift-and-volatility control for long-horizon levels, volatility regimes, rolling windows, a predictive modelling track held to the same standard of evidence, end-to-end automation, a statistics API and MCP server for AI agents, Bitcoin on-chain cohorts, insider and institutional filings, and futures sessions.
 
 ## Disclaimer
 

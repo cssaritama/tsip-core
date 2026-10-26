@@ -10,6 +10,7 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Changed
 - On small screens the navigation scrolls inside the header instead of widening the page.
+- Roadmap: 1.0 brings end-to-end automation and the statistics API with an MCP server for AI agents follows in 1.1, ahead of on-chain cohorts, filings and futures; volatility regimes (VIX) join 0.2.x and the predictive track. The contributing guide asks for documentation in the same pull request as the change.
 
 ## [0.2.0] – 2026-10-26
 
