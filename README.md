@@ -7,11 +7,11 @@
 
 **Everyone shows you the odds. We show you which odds are real.**
 
-**▶ Live report: [cssaritama.github.io/tsip-core](https://cssaritama.github.io/tsip-core/)**, rebuilt every day from public market data.
+**▶ Live report: [cssaritama.github.io/tsip-core](https://cssaritama.github.io/tsip-core/)**, rebuilt every day from market data up to the previous session.
 
 Traders are surrounded by statistics: *"the prior-day high gets taken 60% of the time"*, *"Mondays set the weekly low"*, *"buy the dip at last month's low"*. Most of these numbers are real frequencies and most of them are misleading, because they are never compared with what chance alone would produce.
 
-TSIP measures how the **S&P 500** and **Bitcoin** move through **time** (sessions, hours, days, weeks, months) and **price levels** (the prior period's high, low, open and close), and it grades every statistic against a control:
+TSIP measures how the **S&P 500**, the **Nasdaq-100** and **Bitcoin** move through **time** (sessions, hours, days, weeks, months, quarters, half-years, years) and **price levels** (the prior period's high, low, open and close), and it grades every statistic against a control:
 
 | Every figure ships with | Why it matters |
 |---|---|
@@ -30,7 +30,8 @@ On SPY from 2006 to 2025, when price closes back inside the prior week's range, 
 
 | Section | Questions |
 |---|---|
-| Level memory | How often the day, week and month trade through the prior high or low; whether the break holds at the close; Monday high and low. |
+| Where we are now | Where the current week, month, quarter, half-year and year stand against the prior period's range, and what happened by the end of past periods in the same position. |
+| Level memory | How often the day, week, month, quarter, half-year and year trade through the prior high or low; whether the break holds at the close; Monday high and low. |
 | Sessions and intraday | Hour-of-day (Bitcoin) and half-hour (US cash session) returns; Asia, London and New York session returns; where the daily high and low form versus a random walk; overnight versus intraday returns. |
 | Weekly structure | Which weekday sets the weekly high and low versus a random walk. |
 | Paths and entries | Which side of the prior-week range breaks first, after geometry; whether a limit order at the prior month's low beats plain dollar-cost averaging. |
@@ -46,9 +47,14 @@ pytest
 tsip fetch btc --source coinbase --start 2016-01-01
 tsip fetch btc --source binance  --start 2018-01-01   # independent cross-check feed
 
-# S&P 500: SPY 30-minute bars with a free Alpaca account, or daily index data without one
+# S&P 500 and Nasdaq-100: SPY and QQQ 30-minute bars with a free Alpaca account
 export ALPACA_API_KEY_ID=...  ALPACA_API_SECRET_KEY=...
-tsip fetch spx --source alpaca --start 2016-01-01     # or: --source stooq | --source fred
+tsip fetch sp500     --source alpaca --start 2016-01-01
+tsip fetch nasdaq100 --source alpaca --start 2016-01-01
+
+# Long daily index histories (SPX, NDX) for quarter, half-year and year levels, no key required
+tsip fetch sp500     --source stooq --start 1950-01-01  # or: --source fred (close only)
+tsip fetch nasdaq100 --source stooq --start 1985-01-01
 
 tsip report            # writes site/data/report.json
 tsip site              # assembles the static site in dist/
@@ -62,9 +68,9 @@ Downloads are incremental and cached under `data/` (excluded from version contro
 ```
 src/tsip/
   data/        canonical bar schema, local store, connectors (Coinbase, Binance archive, Alpaca, FRED, Stooq), quality checks
-  frames.py    daily/weekly/monthly aggregation, crypto sessions with daylight-saving handling, intraday path matrices
+  frames.py    calendar periods from week to year, crypto sessions with daylight-saving handling, intraday path matrices
   evidence/    circular block bootstrap, bootstrap p-values, Benjamini–Hochberg, grading rules, evidence cards
-  studies/     level memory, sessions and intraday, first passage with geometry control, entry timing, calendar
+  studies/     where we are now, level memory, sessions and intraday, first passage with geometry control, entry timing, calendar
   report/      report assembly, headlines, publication guard (no raw prices leave the pipeline)
   research/    exploratory research toolkit (temporal levels, session analytics, cross-market studies)
 web/           static front end (no framework, no tracking)
@@ -83,7 +89,7 @@ A scheduled GitHub Actions workflow fetches new data, rebuilds the report and de
 
 ## Roadmap
 
-See [docs/ROADMAP.md](docs/ROADMAP.md): longer intraday history, Nasdaq-100, futures sessions, Bitcoin on-chain cohorts, insider and institutional filings, a statistics API, and a predictive modelling track that is held to the same standard of evidence.
+See [docs/ROADMAP.md](docs/ROADMAP.md): a drift-and-volatility control for long-horizon levels, rolling windows, futures sessions, Bitcoin on-chain cohorts, insider and institutional filings, a statistics API, and a predictive modelling track that is held to the same standard of evidence.
 
 ## Disclaimer
 

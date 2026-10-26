@@ -6,7 +6,11 @@
 |---|---|---|---|
 | Bitcoin (BTC-USD) | Coinbase Exchange public candles, hourly, from 2015 | Binance public data archive (BTC-USDT), hourly, from 2017, SHA-256 verified | No key |
 | S&P 500 (SPY) | Alpaca Market Data, 30-minute bars from 2016, adjusted for splits and distributions | — | Free account (bring your own key) |
-| S&P 500 (SPX) | Stooq daily index history | FRED `SP500` daily close (close-only) | No key |
+| S&P 500 (SPX) | Stooq daily index history (long history, checked for genuine ranges and opens) | FRED `SP500` daily close (close-only) | No key |
+| Nasdaq-100 (QQQ) | Alpaca Market Data, 30-minute bars from 2016, adjusted for splits and distributions | — | Free account (bring your own key) |
+| Nasdaq-100 (NDX) | Stooq daily index history | — | No key |
+
+ETF and index series are separate instruments and are never combined: sessions and intraday questions use the ETFs; prior-period levels over long horizons and calendar questions also use the index histories.
 
 The connectors never fill, interpolate or invent observations. FRED is a close-only series: studies that need opens, highs or lows are skipped rather than approximated.
 
@@ -21,7 +25,8 @@ Every cached dataset has a JSON sidecar recording source, instrument, timeframe,
 ## Quality checks published with each report
 
 * Bitcoin: hourly completeness (expected versus present bars) and an independent-feed cross-check: correlation of hourly returns and median close difference between Coinbase BTC-USD and Binance BTC-USDT.
-* S&P 500: observed sessions versus the New York Stock Exchange calendar.
+* S&P 500 and Nasdaq-100: observed sessions versus the New York Stock Exchange calendar.
+* Long index histories: the first dates with genuine daily ranges and genuine opens (see the methodology), and how many months were left out.
 
 ## Terms of use
 

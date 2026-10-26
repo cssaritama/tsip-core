@@ -1,18 +1,18 @@
 # Architecture
 
 ```
-            ┌─────────────── scheduled GitHub Actions run (daily) ───────────────┐
-            │                                                                    │
- Coinbase ──┤  tsip fetch btc ──┐                                                │
- Binance  ──┤  tsip fetch btc ──┼──> data/raw/<source>/<instrument>_<tf>.csv.gz  │
- Alpaca   ──┤  tsip fetch spx ──┤     + provenance JSON (cached between runs)    │
- Stooq/FRED─┤                   ┘                                                │
-            │                                                                    │
-            │  tsip report ── frames ── studies ── evidence ── grading ── guard  │
-            │        └──> site/data/report.json (aggregates only)                │
-            │                                                                    │
-            │  tsip site ──> dist/ ──> GitHub Pages                              │
-            └────────────────────────────────────────────────────────────────────┘
+            ┌────────────────── scheduled GitHub Actions run (daily) ───────────────────┐
+            │                                                                           │
+ Coinbase  ─┤  tsip fetch btc ────────────┐                                             │
+ Binance   ─┤  tsip fetch btc ────────────┤                                             │
+ Alpaca    ─┤  tsip fetch sp500|nasdaq100 ┼──> data/raw/<source>/<instr>_<tf>.csv.gz    │
+ Stooq/FRED─┤  tsip fetch sp500|nasdaq100 ┘    + provenance JSON (cached between runs)  │
+            │                                                                           │
+            │  tsip report ── frames ── studies ── evidence ── grading ── guard         │
+            │        └──> site/data/report.json (aggregates only)                       │
+            │                                                                           │
+            │  tsip site ──> dist/ ──> GitHub Pages                                     │
+            └───────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Design choices
