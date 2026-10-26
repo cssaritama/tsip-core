@@ -57,10 +57,11 @@ def read_bars(path: str | Path) -> pd.DataFrame:
     frame = pd.read_csv(path, compression="gzip")
     if label not in frame.columns:  # tolerate either label
         label = frame.columns[0]
-    index = pd.to_datetime(frame.pop(label), utc=intraday)
+    index = pd.to_datetime(frame.pop(label), utc=intraday, format="ISO8601")
     frame.index = pd.DatetimeIndex(index)
     if intraday:
         frame.index.name = "timestamp"
+        frame = frame[frame.index == frame.index.floor("min")]  # stores written before off-grid bars were dropped
     else:
         frame.index = frame.index.normalize()
         frame.index.name = "date"

@@ -123,3 +123,10 @@ def test_stooq_rejects_non_csv_payloads():
         stooq.parse_csv("No data")
     frame = stooq.parse_csv("Date,Open,High,Low,Close,Volume\n2024-01-02,1,2,0.5,1.5,100\n")
     assert frame["close"].iloc[0] == 1.5
+
+
+def test_binance_drops_bars_that_open_off_the_minute_grid():
+    on_grid = 1518166800000  # 2018-02-09 09:00:00 UTC
+    off_grid = 1518168494789  # 2018-02-09 09:28:14.789 UTC, a bar from the exchange outage
+    frame = binance_vision.parse_klines(_kline_row(on_grid, 100) + "\n" + _kline_row(off_grid, 101))
+    assert list(frame.index) == [pd.Timestamp("2018-02-09 09:00", tz="UTC")]

@@ -64,7 +64,10 @@ def parse_klines(text: str) -> pd.DataFrame:
     frame = pd.read_csv(io.StringIO("\n".join(lines)), header=None, names=KLINE_COLUMNS)
     frame.index = _to_utc(frame["open_time"])
     frame.index.name = "timestamp"
-    return frame[["open", "high", "low", "close", "volume"]].astype(float).sort_index()
+    frame = frame[["open", "high", "low", "close", "volume"]].astype(float).sort_index()
+    # Around exchange outages (for example February 2018) the archive holds bars that open
+    # off the minute grid; they are not regular bars of the interval and are left out.
+    return frame[frame.index == frame.index.floor("min")]
 
 
 def verify_checksum(payload: bytes, checksum_text: str) -> bool:
