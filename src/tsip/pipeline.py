@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import sys
+import traceback
 from pathlib import Path
 
 import pandas as pd
@@ -173,9 +175,13 @@ def load_inputs(data_dir: str | Path) -> list[InstrumentInput]:
         q = {"completeness": quality.hourly_completeness(bars)}
         sources = [_provenance(cb)]
         if bn.exists():
-            secondary = read_bars(bn)
-            q["cross_check_vs_binance_btcusdt"] = quality.cross_validate(bars, secondary)
-            sources.append(_provenance(bn))
+            try:
+                secondary = read_bars(bn)
+                q["cross_check_vs_binance_btcusdt"] = quality.cross_validate(bars, secondary)
+                sources.append(_provenance(bn))
+            except Exception:  # the cross-check is optional; the primary source still publishes
+                print("[BTC-USDT] cross-check skipped:", file=sys.stderr)
+                traceback.print_exc(file=sys.stderr)
         inputs.append(InstrumentInput("BTC-USD", "crypto", intraday=bars, sources=sources, quality=q))
     elif bn.exists():
         bars = read_bars(bn)
@@ -192,7 +198,12 @@ def load_inputs(data_dir: str | Path) -> list[InstrumentInput]:
         inputs.append(InstrumentInput("BTC-USD", "crypto"))
 
     for spec in EQUITY_FAMILIES.values():
-        inputs.extend(_equity_inputs(raw, spec))
+        try:
+            inputs.extend(_equity_inputs(raw, spec))
+        except Exception:  # a damaged dataset must not hide the other markets
+            print(f"[{spec['index']}] could not load stored data:", file=sys.stderr)
+            traceback.print_exc(file=sys.stderr)
+            inputs.append(InstrumentInput(spec["etf"], "us_rth"))
     return inputs
 
 

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sys
+import traceback
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -87,8 +89,15 @@ def _instrument_report(inp: InstrumentInput, *, reps: int, seed: int) -> dict:
         }
     ctx = prepare_context(inp, reps=reps, seed=seed)
     cards = []
+    skipped = []
     for study in STUDIES:
-        cards.extend(study.run(ctx))
+        name = study.__name__.rsplit(".", 1)[-1]
+        try:
+            cards.extend(study.run(ctx))
+        except Exception as exc:  # one failing study must not take the whole report down
+            print(f"[{instrument.code}] study {name} failed:", file=sys.stderr)
+            traceback.print_exc(file=sys.stderr)
+            skipped.append({"study": name, "reason": type(exc).__name__})
     grading = finalize_grades(cards)
     for card in cards:
         card.headline = headline(card)
@@ -109,6 +118,7 @@ def _instrument_report(inp: InstrumentInput, *, reps: int, seed: int) -> dict:
         "grading": grading,
         "grade_counts": counts,
         "sections": sections,
+        "skipped_studies": skipped,
     }
 
 
@@ -129,7 +139,23 @@ def build_report(
     seed: int = 20261026,
     hypotheses_path: str | Path | None = None,
 ) -> dict:
-    instruments = [_instrument_report(inp, reps=reps, seed=seed) for inp in inputs]
+    instruments = []
+    for inp in inputs:
+        try:
+            instruments.append(_instrument_report(inp, reps=reps, seed=seed))
+        except Exception as exc:
+            print(f"[{inp.code}] report failed:", file=sys.stderr)
+            traceback.print_exc(file=sys.stderr)
+            instruments.append(
+                {
+                    "code": inp.code,
+                    "instrument": get_instrument(inp.code).to_dict(),
+                    "sources": inp.sources,
+                    "notes": inp.notes,
+                    "status": "unavailable",
+                    "message": f"This build could not compute the statistics ({type(exc).__name__}).",
+                }
+            )
     report = {
         "schema": SCHEMA,
         "version": __version__,

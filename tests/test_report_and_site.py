@@ -87,3 +87,26 @@ def test_site_canonical_address(tmp_path, report):
     assert html.count("</head>") == 1 and "github.com/cssaritama" in html
     with pytest.raises(ValueError):
         build_site(path, tmp_path / "dist2", site_url="http://insecure.example")
+
+
+def test_a_failing_study_does_not_stop_the_report(monkeypatch):
+    import types
+
+    from tsip.report import build as build_module
+
+    def run(ctx):
+        raise RuntimeError("boom")
+
+    Broken = types.ModuleType("tsip.studies.broken")
+    Broken.run = run
+
+    monkeypatch.setattr(build_module, "STUDIES", (Broken, *build_module.STUDIES))
+    idx = pd.date_range("2024-01-01", periods=24 * 120, freq="1h", tz="UTC")
+    rng = np.random.default_rng(1)
+    close = 100 * np.exp(np.cumsum(rng.normal(0, 0.003, len(idx))))
+    frame = pd.DataFrame(
+        {"open": close, "high": close * 1.002, "low": close * 0.998, "close": close, "volume": 1.0}, index=idx
+    )
+    report = build_module.build_report([build_module.InstrumentInput("BTC-USD", "crypto", intraday=frame)], reps=50)
+    inst = report["instruments"][0]
+    assert inst["status"] == "ok" and inst["skipped_studies"] == [{"study": "broken", "reason": "RuntimeError"}]
