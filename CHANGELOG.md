@@ -4,6 +4,8 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.2.1] – 2026-10-26
+
 ### Added
 - About section crediting the author, with links to the GitHub profile and the source code.
 - Optional deployment to Cloudflare Pages (a free `pages.dev` address, no custom domain needed) alongside GitHub Pages. `tsip site --site-url` writes the canonical address so search engines index one copy.
