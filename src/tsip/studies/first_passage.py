@@ -124,13 +124,14 @@ def _statistic(u: dict) -> np.ndarray:
 
 
 def prior_week_first_passage(ctx: StudyContext) -> EvidenceCard | None:
-    if not ctx.has_daily_ohlc or len(ctx.daily) < 400:
+    daily = ctx.daily_with_open
+    if not ctx.has_daily_ohlc or daily is None or len(daily) < 400:
         return None
     items = []
     horizons = (5, 10)
     built_any = None
     for idx, horizon in enumerate(horizons):
-        events = build_events(ctx.daily, crypto=ctx.is_crypto, horizon=horizon, seed=ctx.seed + horizon)
+        events = build_events(daily, crypto=ctx.is_crypto, horizon=horizon, seed=ctx.seed + horizon)
         if events is None:
             continue
         built_any = events

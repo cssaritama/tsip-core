@@ -92,6 +92,118 @@ def period_bars(daily: pd.DataFrame, freq: str, *, min_days: int) -> pd.DataFram
     return out
 
 
+# Calendar horizons for prior-period levels. Weeks run Monday to Sunday, half-years are
+# January–June and July–December.
+HORIZONS = ("week", "month", "quarter", "half", "year")
+HORIZON_NAMES = {"week": "week", "month": "month", "quarter": "quarter", "half": "half-year", "year": "year"}
+# A period counts as complete only with at least this many sessions (trading days for
+# exchange-traded instruments, calendar days for crypto).
+MIN_SESSIONS = {
+    "equity": {"week": 4, "month": 15, "quarter": 55, "half": 110, "year": 220},
+    "crypto": {"week": 7, "month": 28, "quarter": 89, "half": 180, "year": 360},
+}
+_EPOCH_MONDAY = np.datetime64("1970-01-05", "D")
+
+
+def period_key(index: pd.DatetimeIndex, horizon: str) -> np.ndarray:
+    """Integer key of the calendar period of each date; consecutive periods differ by one."""
+    idx = pd.DatetimeIndex(index)
+    if idx.tz is not None:
+        idx = idx.tz_localize(None)
+    if horizon == "week":
+        days = (idx.values.astype("datetime64[D]") - _EPOCH_MONDAY).astype(np.int64)
+        return days // 7
+    years = idx.year.to_numpy().astype(np.int64)
+    months = idx.month.to_numpy().astype(np.int64)
+    if horizon == "month":
+        return years * 12 + (months - 1)
+    if horizon == "quarter":
+        return years * 4 + (months - 1) // 3
+    if horizon == "half":
+        return years * 2 + (months - 1) // 6
+    if horizon == "year":
+        return years
+    raise ValueError(f"unknown horizon {horizon!r}; use one of {HORIZONS}")
+
+
+def period_bounds(key: int, horizon: str) -> tuple[pd.Timestamp, pd.Timestamp]:
+    """First and last calendar day of a period key."""
+    key = int(key)
+    if horizon == "week":
+        start = pd.Timestamp(_EPOCH_MONDAY + np.timedelta64(key * 7, "D"))
+        return start, start + pd.Timedelta(days=6)
+    if horizon == "month":
+        start = pd.Timestamp(year=key // 12, month=key % 12 + 1, day=1)
+        return start, start + pd.offsets.MonthEnd(0)
+    if horizon == "quarter":
+        start = pd.Timestamp(year=key // 4, month=(key % 4) * 3 + 1, day=1)
+        return start, start + pd.offsets.QuarterEnd(0)
+    if horizon == "half":
+        start = pd.Timestamp(year=key // 2, month=(key % 2) * 6 + 1, day=1)
+        return start, (start + pd.DateOffset(months=6)) - pd.Timedelta(days=1)
+    if horizon == "year":
+        start = pd.Timestamp(year=key, month=1, day=1)
+        return start, pd.Timestamp(year=key, month=12, day=31)
+    raise ValueError(f"unknown horizon {horizon!r}; use one of {HORIZONS}")
+
+
+def period_label(key: int, horizon: str) -> str:
+    start, _ = period_bounds(key, horizon)
+    if horizon == "week":
+        return f"week of {start.date()}"
+    if horizon == "month":
+        return start.strftime("%b %Y")
+    if horizon == "quarter":
+        return f"Q{int(key) % 4 + 1} {start.year}"
+    if horizon == "half":
+        return f"H{int(key) % 2 + 1} {start.year}"
+    return str(start.year)
+
+
+def starts_on_time(first_day: pd.Timestamp, period_start: pd.Timestamp, *, crypto: bool) -> bool:
+    """True if data for a period begins at the period start (one weekday of slack for a holiday)."""
+    if crypto:
+        return first_day <= period_start
+    return int(np.busday_count(period_start.date(), first_day.date())) <= 1
+
+
+def has_ended(last_day: pd.Timestamp, period_end: pd.Timestamp, *, crypto: bool) -> bool:
+    """True if no session of the period can follow ``last_day`` (only weekend days remain)."""
+    if crypto:
+        return last_day >= period_end
+    after = (last_day + pd.Timedelta(days=1)).date()
+    return int(np.busday_count(after, (period_end + pd.Timedelta(days=1)).date())) == 0
+
+
+def horizon_bars(daily: pd.DataFrame, horizon: str, *, crypto: bool, min_sessions: int | None = None) -> pd.DataFrame:
+    """Complete calendar-period bars (week to year) from daily bars.
+
+    The index is the integer period key (see :func:`period_key`). Interior periods need
+    at least ``min_sessions`` sessions. The first period also needs data from its start and
+    the last one must have ended, so a period still in progress is never treated as complete.
+    """
+    columns = ["open", "high", "low", "close", "volume", "n_sessions", "first_day", "last_day"]
+    if daily.empty:
+        return pd.DataFrame(columns=columns, index=pd.Index([], name="period", dtype=np.int64))
+    if min_sessions is None:
+        min_sessions = MIN_SESSIONS["crypto" if crypto else "equity"][horizon]
+    keys = period_key(daily.index, horizon)
+    grouped = daily[["open", "high", "low", "close", "volume"]].groupby(keys)
+    out = grouped.agg(OHLCV_AGG)
+    days = pd.Series(daily.index, index=daily.index).groupby(keys)
+    out["n_sessions"] = grouped.size()
+    out["first_day"] = days.first()
+    out["last_day"] = days.last()
+    keep = (out["n_sessions"] >= min_sessions).to_numpy()
+    first_start = period_bounds(out.index[0], horizon)[0]
+    keep[0] = keep[0] and starts_on_time(pd.Timestamp(out["first_day"].iloc[0]), first_start, crypto=crypto)
+    last_end = period_bounds(out.index[-1], horizon)[1]
+    keep[-1] = keep[-1] and has_ended(pd.Timestamp(out["last_day"].iloc[-1]), last_end, crypto=crypto)
+    out = out[keep]
+    out.index.name = "period"
+    return out
+
+
 def crypto_session_labels(index_utc: pd.DatetimeIndex) -> np.ndarray:
     """Label each UTC bar start with its exclusive crypto session."""
     london, new_york = ZoneInfo("Europe/London"), ZoneInfo("America/New_York")

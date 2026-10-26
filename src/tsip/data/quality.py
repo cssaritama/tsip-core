@@ -60,3 +60,35 @@ def session_completeness(daily: pd.DataFrame, calendar_code: str = "XNYS") -> di
         "missing_sessions": int(len(missing)),
         "non_session_rows": int(len(extra)),
     }
+
+
+def ohlc_reliability(daily: pd.DataFrame, *, min_range_share: float = 0.95, max_repeat_open_share: float = 0.5) -> dict:
+    """First dates from which a long daily history carries a real range and a real open.
+
+    Early index histories often repeat the close as the high and low (no range) or as
+    the next day's open. Level studies need a range; gap and open-based studies also
+    need opens. A calendar month fails if fewer than ``min_range_share`` of its days have
+    high > low, or (for opens) if more than ``max_repeat_open_share`` of its opens equal
+    the prior close. Each start is the first day after the last failing month.
+    """
+    if daily is None or daily.empty or not {"open", "high", "low", "close"} <= set(daily.columns):
+        return {}
+    months = daily.index.year * 12 + daily.index.month - 1
+    ranged = (daily["high"] > daily["low"]).groupby(months).mean()
+    same_open = np.isclose(daily["open"].to_numpy(float), daily["close"].shift(1).to_numpy(float), rtol=0.0, atol=1e-9)
+    repeat_open = pd.Series(same_open, index=daily.index).groupby(months).mean()
+
+    def first_ok(failing_months: pd.Index) -> str | None:
+        if len(failing_months) == 0:
+            return str(pd.Timestamp(daily.index[0]).date())
+        later = daily.index[months > failing_months.max()]
+        return str(pd.Timestamp(later[0]).date()) if len(later) else None
+
+    no_range = ranged[ranged < min_range_share].index
+    repeated = repeat_open[repeat_open > max_repeat_open_share].index
+    return {
+        "range_reliable_from": first_ok(no_range),
+        "open_reliable_from": first_ok(no_range.union(repeated)),
+        "months_without_range": int(len(no_range)),
+        "months_with_repeated_opens": int(len(repeated)),
+    }

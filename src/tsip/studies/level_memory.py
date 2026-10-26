@@ -1,9 +1,9 @@
 """Level memory: how often price trades through the prior period's high and low.
 
-Base rates for days, weeks and months: the share of periods that trade
-above the prior high, below the prior low, both or neither, and how often a
-break is still in place at the period close. For weeks, also how often the
-Monday high and low are exceeded later in the week.
+Base rates for days and for calendar periods (week, month, quarter, half-year and
+year): the share of periods that trade above the prior high, below the prior low,
+both or neither, and how often a break is still in place at the period close. For
+weeks, also how often the Monday high and low are exceeded later in the week.
 """
 
 from __future__ import annotations
@@ -12,8 +12,8 @@ import numpy as np
 import pandas as pd
 
 from tsip.evidence.bootstrap import evaluate
-from tsip.evidence.card import EvidenceCard, items_from_evaluation
-from tsip.frames import period_bars
+from tsip.evidence.card import EvidenceCard, items_from_evaluation, widen_proportions
+from tsip.frames import HORIZON_NAMES, horizon_bars, period_bounds, period_key
 from tsip.studies.common import StudyContext, consecutive_mask, period_of
 
 PP = 100.0
@@ -26,6 +26,9 @@ LABELS = [
     "Close holds below the prior low (when broken)",
 ]
 MONDAY_LABELS = ["Monday high exceeded later in the week", "Monday low undercut later in the week"]
+# Bootstrap block length and "recent" window, both in periods.
+HORIZON_SETTINGS = {"week": (8, 52), "month": (6, 12), "quarter": (4, 8), "half": (2, 4), "year": (2, 5)}
+MIN_PERIODS = 8  # fewer complete periods: no card. Fewer than 30 are shown as insufficient.
 
 
 def _indicators(high, low, close, prev_high, prev_low) -> dict[str, np.ndarray]:
@@ -66,7 +69,13 @@ def _card(
     n_items = [len(index)] * 4 + [int(units["took_high"].sum()), int(units["took_low"].sum())]
     if "mon_high" in units:
         n_items += [int(np.isfinite(units["mon_high"]).sum()), int(np.isfinite(units["mon_low"]).sum())]
-    items = items_from_evaluation(labels, result, scale=PP, recent=recent_values, n_per_item=n_items)
+    items = widen_proportions(items_from_evaluation(labels, result, scale=PP, recent=recent_values, n_per_item=n_items))
+    notes = []
+    if scope not in ("day", "week", "month"):
+        notes.append(
+            f"Long horizons have few observations: {len(index)} complete {n_label} here. "
+            "Fewer than 30 are reported but not graded."
+        )
     return EvidenceCard(
         id=f"{ctx.instrument.code}.levels.{scope}",
         instrument=ctx.instrument.code,
@@ -78,12 +87,14 @@ def _card(
         method=(
             f"Share of complete {n_label} with each outcome; conditional rates use only {n_label} that broke the level. "
             f"95% interval by circular block bootstrap ({block}-{n_label[:-1]} blocks); stability compares the first 70% "
-            f"of the sample with the most recent 30%. 'Recent' covers the last {recent} {n_label}."
+            f"of the sample with the most recent 30%. 'Recent' covers the last {recent} {n_label}. Weeks run Monday "
+            "to Sunday and half-years January–June and July–December; a period counts only once it is complete."
         ),
         control="Descriptive base rate (no null)",
         n_label=n_label,
         items=items,
         period=period_of(index),
+        notes=notes,
     )
 
 
@@ -113,65 +124,68 @@ def daily_levels(ctx: StudyContext) -> EvidenceCard | None:
     )
 
 
-def _period_units(ctx: StudyContext, freq: str) -> tuple[dict, pd.DatetimeIndex] | None:
+def _monday_units(d: pd.DataFrame, keys: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """For each period key, whether the Monday high/low is exceeded later in the week (NaN if no Monday)."""
+    mon_high = np.full(len(keys), np.nan)
+    mon_low = np.full(len(keys), np.nan)
+    position = {int(k): i for i, k in enumerate(keys)}
+    for k, g in d.groupby(period_key(d.index, "week")):
+        i = position.get(int(k))
+        if i is None or len(g) < 2 or g.index[0].dayofweek != 0:
+            continue
+        rest = g.iloc[1:]
+        mon_high[i] = float(rest["high"].max() > g["high"].iloc[0])
+        mon_low[i] = float(rest["low"].min() < g["low"].iloc[0])
+    return mon_high, mon_low
+
+
+def horizon_units(ctx: StudyContext, horizon: str) -> tuple[dict, pd.DatetimeIndex] | None:
+    """Indicator units for each complete period that directly follows a complete period."""
     d = ctx.daily
-    min_days = (7 if freq == "W" else 28) if ctx.is_crypto else (4 if freq == "W" else 15)
-    bars = period_bars(d, freq, min_days=min_days)
-    if len(bars) < 24:
+    bars = horizon_bars(d, horizon, crypto=ctx.is_crypto)
+    if len(bars) < MIN_PERIODS + 1:
         return None
-    periods = bars.index
-    step_ok = np.concatenate(
-        [[False], np.asarray([(b - a).n == 1 for a, b in zip(periods[:-1], periods[1:], strict=True)])]
-    )
+    keys = bars.index.to_numpy()
+    sel = np.concatenate([[False], np.diff(keys) == 1])
+    if sel.sum() < MIN_PERIODS:
+        return None
     prev = bars.shift(1)
-    sel = step_ok
     units = _indicators(
-        bars["high"].to_numpy()[sel],
-        bars["low"].to_numpy()[sel],
-        bars["close"].to_numpy()[sel],
-        prev["high"].to_numpy()[sel],
-        prev["low"].to_numpy()[sel],
+        bars["high"].to_numpy(float)[sel],
+        bars["low"].to_numpy(float)[sel],
+        bars["close"].to_numpy(float)[sel],
+        prev["high"].to_numpy(float)[sel],
+        prev["low"].to_numpy(float)[sel],
     )
-    if freq == "W":
-        week = d.index.to_period("W-SUN")
-        mon_high = np.full(len(bars), np.nan)
-        mon_low = np.full(len(bars), np.nan)
-        position = {p: i for i, p in enumerate(periods)}
-        for p, g in d.groupby(week):
-            i = position.get(p)
-            if i is None or len(g) < 2 or g.index[0].dayofweek != 0:
-                continue
-            rest = g.iloc[1:]
-            mon_high[i] = float(rest["high"].max() > g["high"].iloc[0])
-            mon_low[i] = float(rest["low"].min() < g["low"].iloc[0])
+    if horizon == "week":
+        mon_high, mon_low = _monday_units(d, keys)
         units["mon_high"] = mon_high[sel]
         units["mon_low"] = mon_low[sel]
-    index = pd.DatetimeIndex([p.start_time for p in periods[sel]])
+    index = pd.DatetimeIndex([period_bounds(k, horizon)[0] for k in keys[sel]])
     return units, index
 
 
-def weekly_levels(ctx: StudyContext) -> EvidenceCard | None:
+def horizon_levels(ctx: StudyContext, horizon: str) -> EvidenceCard | None:
     if not ctx.has_daily_ohlc:
         return None
-    built = _period_units(ctx, "W")
+    built = horizon_units(ctx, horizon)
     if built is None:
         return None
     units, index = built
-    return _card(
-        ctx, units, scope="week", block=8, recent=52, index=index, n_label="weeks", labels=LABELS + MONDAY_LABELS
-    )
+    block, recent = HORIZON_SETTINGS[horizon]
+    name = HORIZON_NAMES[horizon]
+    labels = LABELS + MONDAY_LABELS if horizon == "week" else LABELS
+    return _card(ctx, units, scope=name, block=block, recent=recent, index=index, n_label=f"{name}s", labels=labels)
+
+
+def weekly_levels(ctx: StudyContext) -> EvidenceCard | None:
+    return horizon_levels(ctx, "week")
 
 
 def monthly_levels(ctx: StudyContext) -> EvidenceCard | None:
-    if not ctx.has_daily_ohlc:
-        return None
-    built = _period_units(ctx, "M")
-    if built is None:
-        return None
-    units, index = built
-    return _card(ctx, units, scope="month", block=6, recent=12, index=index, n_label="months", labels=LABELS)
+    return horizon_levels(ctx, "month")
 
 
 def run(ctx: StudyContext) -> list[EvidenceCard]:
-    cards = [daily_levels(ctx), weekly_levels(ctx), monthly_levels(ctx)]
+    cards = [daily_levels(ctx)] + [horizon_levels(ctx, h) for h in HORIZON_SETTINGS]
     return [c for c in cards if c is not None]

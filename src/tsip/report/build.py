@@ -16,18 +16,19 @@ from tsip.frames import daily_from_intraday_utc, rth_daily_from_intraday
 from tsip.instruments import get_instrument
 from tsip.report.headlines import headline
 from tsip.report.publish import assert_publishable
-from tsip.studies import calendar, entry_timing, first_passage, intraday, level_memory
+from tsip.studies import calendar, entry_timing, first_passage, intraday, level_map, level_memory
 from tsip.studies.common import StudyContext
 
 SCHEMA = "tsip.report/1"
 SECTIONS = [
+    ("now", "Where we are now", ("map",)),
     ("levels", "Level memory", ("levels",)),
     ("sessions", "Sessions and intraday", ("sessions", "intraday")),
     ("weekly", "Weekly structure", ("weekly",)),
     ("paths", "Paths and entries", ("paths", "entries")),
     ("calendar", "Calendar", ("calendar",)),
 ]
-STUDIES = (level_memory, intraday, first_passage, entry_timing, calendar)
+STUDIES = (level_map, level_memory, intraday, first_passage, entry_timing, calendar)
 
 
 @dataclass
@@ -39,6 +40,7 @@ class InstrumentInput:
     sources: list[dict] = field(default_factory=list)
     quality: dict = field(default_factory=dict)
     notes: list[str] = field(default_factory=list)
+    open_from: str | None = None  # long daily histories: first day with genuine opens
 
 
 def _coverage(frame: pd.DataFrame | None) -> dict | None:
@@ -70,6 +72,7 @@ def prepare_context(inp: InstrumentInput, *, reps: int, seed: int) -> StudyConte
         rth_bars=rth_bars,
         reps=reps,
         seed=seed,
+        open_reliable_from=pd.Timestamp(inp.open_from) if inp.open_from else None,
     )
 
 

@@ -26,7 +26,33 @@ def _best_index(card: EvidenceCard) -> int:
     )
 
 
+MAP_PHRASES = {
+    "took_high": "traded above the prior {h}'s high before it ended",
+    "took_low": "traded below the prior {h}'s low before it ended",
+    "close_above": "closed above the prior {h}'s high",
+    "close_below": "closed below the prior {h}'s low",
+    "close_inside": "closed inside the prior {h}'s range",
+}
+
+
+def _map_headline(card: EvidenceCard) -> str:
+    h = card.state.get("horizon", "period")
+    if not card.items:
+        return f"No past {h}s in this position yet."
+    card.primary = 0
+    parts = []
+    for item in card.items[:2]:
+        phrase = MAP_PHRASES.get(item.extra.get("outcome", ""), item.label.lower()).format(h=h)
+        parts.append(f"{item.estimate:.0f}% {phrase}")
+    n = card.items[0].n
+    graded = card.grade != "N/A"
+    tail = f"reliability {card.grade}" if graded else "too few to grade"
+    return f"Of {n} past {h}s in the same position, " + " and ".join(parts) + f" ({tail})."
+
+
 def headline(card: EvidenceCard) -> str:
+    if card.family == "map":
+        return _map_headline(card)
     if not card.items:
         return "No data."
     if all(i.grade == "N/A" for i in card.items):

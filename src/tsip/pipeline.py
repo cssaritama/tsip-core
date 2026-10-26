@@ -34,11 +34,11 @@ SOURCE_INFO = {
     "stooq": {
         "name": "Stooq daily index history",
         "url": "https://stooq.com/",
-        "terms": "Used for derived statistics only.",
+        "terms": "Long daily index history used for derived statistics only; levels are not redistributed.",
     },
     "fred": {
-        "name": "FRED, Federal Reserve Bank of St. Louis (S&P 500 close)",
-        "url": "https://fred.stlouisfed.org/series/SP500",
+        "name": "FRED, Federal Reserve Bank of St. Louis (index close)",
+        "url": "https://fred.stlouisfed.org/",
         "terms": "Close-only series; index data copyright of its provider. Aggregates only.",
     },
 }
@@ -93,35 +93,53 @@ def fetch_bitcoin(data_dir: str | Path, *, source: str = "coinbase", start: str 
     raise ValueError(f"unknown Bitcoin source {source!r}")
 
 
-def fetch_sp500(data_dir: str | Path, *, source: str = "alpaca", start: str = "2016-01-01") -> dict:
+# Exchange-traded families: ETF (intraday, Alpaca), index (long daily history, Stooq) and index close (FRED).
+EQUITY_FAMILIES = {
+    "sp500": {"etf": "SPY", "index": "SPX", "stooq": "^spx", "fred": "SP500", "name": "S&P 500"},
+    "nasdaq100": {"etf": "QQQ", "index": "NDX", "stooq": "^ndx", "fred": "NASDAQ100", "name": "Nasdaq-100"},
+}
+
+
+def fetch_equity(data_dir: str | Path, family: str, *, source: str = "alpaca", start: str = "2016-01-01") -> dict:
+    spec = EQUITY_FAMILIES[family]
     if source == "alpaca":
+        etf = spec["etf"]
         return fetch_dataset(
             data_dir,
             source="alpaca",
-            instrument="SPY",
+            instrument=etf,
             timeframe="30min",
             start=start,
-            fetcher=lambda s: alpaca.fetch("SPY", "30min", start=s, adjustment="all"),
+            fetcher=lambda s: alpaca.fetch(etf, "30min", start=s, adjustment="all"),
         )
     if source == "stooq":
+        # The endpoint returns the whole history; it is re-read in full so revisions are picked up.
         return fetch_dataset(
             data_dir,
             source="stooq",
-            instrument="SPX",
+            instrument=spec["index"],
             timeframe="1d",
             start=start,
-            fetcher=lambda s: stooq.fetch("^spx", start=str(s.date())),
+            fetcher=lambda s: stooq.fetch(spec["stooq"], start=start),
         )
     if source == "fred":
         return fetch_dataset(
             data_dir,
             source="fred",
-            instrument="SPX",
+            instrument=spec["index"],
             timeframe="1d",
             start=start,
-            fetcher=lambda s: fred.fetch("SP500", start=str(s.date())),
+            fetcher=lambda s: fred.fetch(spec["fred"], start=str(s.date())),
         )
-    raise ValueError(f"unknown S&P 500 source {source!r}")
+    raise ValueError(f"unknown {spec['name']} source {source!r}")
+
+
+def fetch_sp500(data_dir: str | Path, *, source: str = "alpaca", start: str = "2016-01-01") -> dict:
+    return fetch_equity(data_dir, "sp500", source=source, start=start)
+
+
+def fetch_nasdaq100(data_dir: str | Path, *, source: str = "alpaca", start: str = "2016-01-01") -> dict:
+    return fetch_equity(data_dir, "nasdaq100", source=source, start=start)
 
 
 def _provenance(path: Path) -> dict:
@@ -173,44 +191,70 @@ def load_inputs(data_dir: str | Path) -> list[InstrumentInput]:
     else:
         inputs.append(InstrumentInput("BTC-USD", "crypto"))
 
-    # S&P 500: SPY intraday (Alpaca) if available, otherwise SPX daily (Stooq), otherwise SPX close (FRED).
-    al = dataset_path(raw, "SPY", "alpaca", "30min")
-    st = dataset_path(raw, "SPX", "stooq", "1d")
-    fr = dataset_path(raw, "SPX", "fred", "1d")
-    if al.exists():
-        bars = read_bars(al)
-        inputs.append(InstrumentInput("SPY", "us_rth", intraday=bars, sources=[_provenance(al)]))
-    elif st.exists():
-        inputs.append(
-            InstrumentInput(
-                "SPX",
-                "us_rth",
-                daily=read_bars(st),
-                sources=[_provenance(st)],
-                notes=["Daily index levels only: intraday and session studies need an intraday feed."],
-            )
-        )
-    elif fr.exists():
-        inputs.append(
-            InstrumentInput(
-                "SPX",
-                "us_rth",
-                daily=read_bars(fr),
-                sources=[_provenance(fr)],
-                notes=["Close-only series: range, level and path studies need open/high/low."],
-            )
-        )
-    else:
-        inputs.append(InstrumentInput("SPY", "us_rth"))
-    for inp in inputs:
-        if inp.session_model != "us_rth":
-            continue
-        if inp.intraday is not None:
-            daily, _ = rth_daily_from_intraday(inp.intraday)
-            inp.quality = {"sessions": quality.session_completeness(daily)}
-        elif inp.daily is not None:
-            inp.quality = {"sessions": quality.session_completeness(inp.daily)}
+    for spec in EQUITY_FAMILIES.values():
+        inputs.extend(_equity_inputs(raw, spec))
     return inputs
 
 
-__all__ = ["SourceUnavailable", "fetch_bitcoin", "fetch_sp500", "load_inputs"]
+def _equity_inputs(raw: Path, spec: dict) -> list[InstrumentInput]:
+    """ETF intraday bars (sessions) and the index's long daily history (levels), never mixed."""
+    found: list[InstrumentInput] = []
+    al = dataset_path(raw, spec["etf"], "alpaca", "30min")
+    if al.exists():
+        bars = read_bars(al)
+        daily, _ = rth_daily_from_intraday(bars)
+        found.append(
+            InstrumentInput(
+                spec["etf"],
+                "us_rth",
+                intraday=bars,
+                sources=[_provenance(al)],
+                quality={"sessions": quality.session_completeness(daily)},
+            )
+        )
+    st = dataset_path(raw, spec["index"], "stooq", "1d")
+    fr = dataset_path(raw, spec["index"], "fred", "1d")
+    if st.exists():
+        daily = read_bars(st)
+        info = quality.ohlc_reliability(daily)
+        start = info.get("range_reliable_from")
+        notes = [
+            "Long daily index history for prior-period levels and calendar questions; sessions and intraday "
+            f"questions use {spec['etf']}."
+        ]
+        if start is None:
+            notes.append("No span of this history carries a genuine daily range; level studies are skipped.")
+            daily = daily.iloc[0:0]
+        elif start != str(pd.Timestamp(daily.index[0]).date()):
+            notes.append(f"Days before {start} repeat the close as high and low and are left out.")
+            daily = daily[daily.index >= pd.Timestamp(start)]
+        open_from = info.get("open_reliable_from")
+        if open_from and start and open_from > start:
+            notes.append(f"Opens are genuine from {open_from}; gap and open-based studies start there.")
+        found.append(
+            InstrumentInput(
+                spec["index"],
+                "us_rth",
+                daily=daily,
+                sources=[_provenance(st)],
+                quality={"sessions": quality.session_completeness(daily), "history": info},
+                notes=notes,
+                open_from=open_from,
+            )
+        )
+    elif fr.exists():
+        found.append(
+            InstrumentInput(
+                spec["index"],
+                "us_rth",
+                daily=read_bars(fr),
+                sources=[_provenance(fr)],
+                notes=["Close-only series: range, level and path studies need open, high and low."],
+            )
+        )
+    if not found:
+        found.append(InstrumentInput(spec["etf"], "us_rth"))
+    return found
+
+
+__all__ = ["SourceUnavailable", "fetch_bitcoin", "fetch_equity", "fetch_nasdaq100", "fetch_sp500", "load_inputs"]

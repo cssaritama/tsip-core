@@ -206,9 +206,11 @@ def session_return_effect(ctx: StudyContext) -> EvidenceCard | None:
 
 
 def overnight_intraday(ctx: StudyContext) -> EvidenceCard | None:
-    if ctx.is_crypto or not ctx.has_daily_ohlc or len(ctx.daily) < 250:
+    if ctx.is_crypto or not ctx.has_daily_ohlc:
         return None
-    d = ctx.daily
+    d = ctx.daily_with_open
+    if d is None or len(d) < 250:
+        return None
     ok = consecutive_mask(d.index, crypto=False)
     overnight = np.log(d["open"] / d["close"].shift(1)).to_numpy()[ok]
     intraday = np.log(d["close"] / d["open"]).to_numpy()[ok]

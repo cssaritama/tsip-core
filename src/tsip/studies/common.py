@@ -24,6 +24,7 @@ class StudyContext:
     reps: int = 1000
     seed: int = 20261026
     sources: dict = field(default_factory=dict)
+    open_reliable_from: pd.Timestamp | None = None  # long daily histories: first day with genuine opens
 
     @property
     def is_crypto(self) -> bool:
@@ -32,6 +33,13 @@ class StudyContext:
     @property
     def has_daily_ohlc(self) -> bool:
         return self.daily is not None and len(self.daily) > 0 and has_ohlc(self.daily)
+
+    @property
+    def daily_with_open(self) -> pd.DataFrame | None:
+        """Daily bars restricted to the span where opens are genuine (for gap and open-based studies)."""
+        if self.daily is None or self.open_reliable_from is None:
+            return self.daily
+        return self.daily[self.daily.index >= self.open_reliable_from]
 
     @property
     def trading_days_per_year(self) -> int:

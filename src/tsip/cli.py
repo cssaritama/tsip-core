@@ -1,7 +1,8 @@
 """Command line interface.
 
-tsip fetch btc [--source coinbase|binance] [--start 2016-01-01]
-tsip fetch spx [--source alpaca|stooq|fred] [--start 2016-01-01]
+tsip fetch btc       [--source coinbase|binance] [--start 2016-01-01]
+tsip fetch sp500     [--source alpaca|stooq|fred] [--start 2016-01-01]   (alias: spx)
+tsip fetch nasdaq100 [--source alpaca|stooq|fred] [--start 2016-01-01]
 tsip report [--out site/data/report.json]
 tsip site   [--report site/data/report.json] [--out dist]
 """
@@ -21,14 +22,18 @@ DEFAULT_REPORT = "site/data/report.json"
 DEFAULT_HYPOTHESES = "registry/hypotheses.json"
 
 
-def _cmd_fetch(args: argparse.Namespace) -> int:
-    from tsip.pipeline import fetch_bitcoin, fetch_sp500
+MARKETS = {"btc": "btc", "sp500": "sp500", "spx": "sp500", "nasdaq100": "nasdaq100", "ndx": "nasdaq100"}
 
+
+def _cmd_fetch(args: argparse.Namespace) -> int:
+    from tsip.pipeline import fetch_bitcoin, fetch_equity
+
+    market = MARKETS[args.market]
     try:
-        if args.market == "btc":
+        if market == "btc":
             meta = fetch_bitcoin(args.data_dir, source=args.source or "coinbase", start=args.start)
         else:
-            meta = fetch_sp500(args.data_dir, source=args.source or "alpaca", start=args.start)
+            meta = fetch_equity(args.data_dir, market, source=args.source or "alpaca", start=args.start)
     except SourceUnavailable as exc:
         print(json.dumps({"status": "unavailable", "market": args.market, "reason": str(exc)}), file=sys.stderr)
         return 3
@@ -65,8 +70,8 @@ def main(argv: list[str] | None = None) -> int:
     sub = parser.add_subparsers(dest="command", required=True)
 
     fetch = sub.add_parser("fetch", help="download or update market data into the local store")
-    fetch.add_argument("market", choices=["btc", "spx"])
-    fetch.add_argument("--source", help="btc: coinbase|binance; spx: alpaca|stooq|fred")
+    fetch.add_argument("market", choices=sorted(MARKETS))
+    fetch.add_argument("--source", help="btc: coinbase|binance; sp500 and nasdaq100: alpaca|stooq|fred")
     fetch.add_argument("--start", default="2016-01-01")
     fetch.add_argument("--data-dir", default=DEFAULT_DATA)
     fetch.set_defaults(func=_cmd_fetch)

@@ -62,9 +62,10 @@ def _statistic(u: dict) -> np.ndarray:
 
 
 def prior_month_low_limit(ctx: StudyContext) -> EvidenceCard | None:
-    if not ctx.has_daily_ohlc or len(ctx.daily) < 750:
+    daily = ctx.daily_with_open
+    if not ctx.has_daily_ohlc or daily is None or len(daily) < 750:
         return None
-    months = build_months(ctx.daily, min_days=20 if ctx.is_crypto else 12)
+    months = build_months(daily, min_days=20 if ctx.is_crypto else 12)
     if months is None:
         return None
     result = evaluate(months, _statistic, block=6, reps=ctx.reps, seed=ctx.seed)
