@@ -1,0 +1,21 @@
+{
+  "as_of_date": "2026-10-23",
+  "retrieved_on": "2026-10-26",
+  "purpose": "Point-in-time external cross-check ONLY. Not live market feed, historical distribution right or a benchmark TR series.",
+  "references": [
+    {
+      "symbol": "SPX",
+      "close": 7623.68,
+      "units": "index points",
+      "vendor": "Yahoo Finance historical/SPX",
+      "url": "https://es.finance.yahoo.com/quote/%5ESPX/history/"
+    },
+    {
+      "symbol": "SPY",
+      "close": 759.97,
+      "units": "USD per ETF share",
+      "vendor": "Yahoo Finance historical/SPY",
+      "url": "https://finance.yahoo.com/quote/SPY/history/"
+    }
+  ]
+}
