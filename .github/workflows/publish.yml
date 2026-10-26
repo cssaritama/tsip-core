@@ -1,0 +1,76 @@
+name: Publish report
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "23 6 * * *"  # daily, after the US close and the Asian session
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      ALPACA_API_KEY_ID: ${{ secrets.ALPACA_API_KEY_ID }}
+      ALPACA_API_SECRET_KEY: ${{ secrets.ALPACA_API_SECRET_KEY }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Install
+        run: python -m pip install -e ".[calendar]"
+
+      - name: Restore market data cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: data
+          key: market-data-${{ github.run_id }}
+          restore-keys: market-data-
+
+      - name: Bitcoin · Coinbase hourly
+        continue-on-error: true
+        run: tsip fetch btc --source coinbase --start 2016-01-01
+      - name: Bitcoin · Binance archive (independent cross-check)
+        continue-on-error: true
+        run: tsip fetch btc --source binance --start 2018-01-01
+      - name: S&P 500 · SPY 30-minute (Alpaca)
+        if: env.ALPACA_API_KEY_ID != ''
+        continue-on-error: true
+        run: tsip fetch spx --source alpaca --start 2016-01-01
+      - name: S&P 500 · index daily (no-key fallback)
+        if: env.ALPACA_API_KEY_ID == ''
+        continue-on-error: true
+        run: tsip fetch spx --source stooq --start 2006-01-01 || tsip fetch spx --source fred --start 2016-01-01
+
+      - name: Build report
+        run: tsip report --out site/data/report.json
+      - name: Build site
+        run: tsip site --report site/data/report.json --out dist
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
