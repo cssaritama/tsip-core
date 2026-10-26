@@ -1,0 +1,28 @@
+# Data policy
+
+## Sources
+
+| Market | Primary | Cross-check / fallback | Access |
+|---|---|---|---|
+| Bitcoin (BTC-USD) | Coinbase Exchange public candles, hourly, from 2015 | Binance public data archive (BTC-USDT), hourly, from 2017, SHA-256 verified | No key |
+| S&P 500 (SPY) | Alpaca Market Data, 30-minute bars from 2016, adjusted for splits and distributions | — | Free account (bring your own key) |
+| S&P 500 (SPX) | Stooq daily index history | FRED `SP500` daily close (close-only) | No key |
+
+The connectors never fill, interpolate or invent observations. FRED is a close-only series: studies that need opens, highs or lows are skipped rather than approximated.
+
+## What is published
+
+Only **derived, aggregated statistics** (frequencies, means, differences, intervals and grades over years of data) are published. Raw bars are cached locally and in the build environment, and are never committed or deployed. The publication guard (`tsip.report.publish.assert_publishable`) fails the build if the report contains price-series fields or long numeric arrays.
+
+## Provenance
+
+Every cached dataset has a JSON sidecar recording source, instrument, timeframe, price basis, data feed, row count, time coverage, retrieval time and SHA-256. The same fields appear in the report's data section.
+
+## Quality checks published with each report
+
+* Bitcoin: hourly completeness (expected versus present bars) and an independent-feed cross-check: correlation of hourly returns and median close difference between Coinbase BTC-USD and Binance BTC-USDT.
+* S&P 500: observed sessions versus the New York Stock Exchange calendar.
+
+## Terms of use
+
+Each provider's terms govern the use of its data. Before any commercial use, review the current terms of every source and keep a dated copy. Statistics derived from the data do not transfer any right to the underlying data. This document is not legal advice.
