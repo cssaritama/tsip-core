@@ -1,0 +1,62 @@
+[
+  {
+    "id": "H-2026-001",
+    "instrument": "SPY",
+    "statement": "Monday sets the weekly high less often than a random walk would.",
+    "metric": "Share of complete Monday–Friday weeks whose high forms on Monday, minus the within-week permutation baseline (percentage points).",
+    "criterion": "Estimate below zero over the evaluation window.",
+    "basis": "Discovery on SPY daily bars 2006–2025: −4.3 pp, grade A.",
+    "registered": "2026-10-26",
+    "evaluation_start": "2026-10-27",
+    "evaluation_end": "2027-10-29",
+    "status": "open"
+  },
+  {
+    "id": "H-2026-002",
+    "instrument": "SPY",
+    "statement": "A limit order at the prior month's low does not beat buying at the first session's open of the month.",
+    "metric": "Mean per-purchase price improvement versus first-session open (%).",
+    "criterion": "Estimate at or below zero over the evaluation window.",
+    "basis": "Discovery on SPY daily bars 2006–2025: −0.34% per purchase, grade D; limit filled in 33% of months.",
+    "registered": "2026-10-26",
+    "evaluation_start": "2026-11-01",
+    "evaluation_end": "2028-10-31",
+    "status": "open"
+  },
+  {
+    "id": "H-2026-003",
+    "instrument": "SPY",
+    "statement": "Prior-week levels add less than two percentage points beyond geometry to the chance of reaching the high side first within ten sessions.",
+    "metric": "Upper-first rate of events minus geometry-matched controls (percentage points).",
+    "criterion": "Absolute estimate below 2 pp over the evaluation window.",
+    "basis": "Discovery on SPY daily bars 2006–2025: +0.9 pp, grade C.",
+    "registered": "2026-10-26",
+    "evaluation_start": "2026-10-27",
+    "evaluation_end": "2028-10-27",
+    "status": "open"
+  },
+  {
+    "id": "H-2026-004",
+    "instrument": "BTC-USD",
+    "statement": "The 15:00 UTC hour returns more than the average hour of the day.",
+    "metric": "Mean log return of the 15:00 UTC hour minus the mean of all hours (basis points).",
+    "criterion": "Estimate above zero over the evaluation window.",
+    "basis": "Published research on Bitcoin intraday seasonality; not examined on this project's data before registration.",
+    "registered": "2026-10-26",
+    "evaluation_start": "2026-10-27",
+    "evaluation_end": "2027-10-27",
+    "status": "open"
+  },
+  {
+    "id": "H-2026-005",
+    "instrument": "SPY",
+    "statement": "Overnight returns exceed intraday returns on average.",
+    "metric": "Mean overnight log return (prior close to open) minus mean intraday log return (open to close), basis points.",
+    "criterion": "Estimate above zero over the evaluation window.",
+    "basis": "Academic literature on overnight versus intraday returns; SPY 2006–2025 overnight mean +2.0 bps, grade C.",
+    "registered": "2026-10-26",
+    "evaluation_start": "2026-10-27",
+    "evaluation_end": "2027-10-29",
+    "status": "open"
+  }
+]
