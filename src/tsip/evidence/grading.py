@@ -19,6 +19,9 @@ Base-rate items (a frequency, no null), graded on reliability:
 * **B** – half-width ≤ 4 pp and drift ≤ 6 pp
 * **C** – half-width ≤ 7.5 pp and drift ≤ 10 pp
 * **D** – anything wider or less stable (still at least 30 units)
+
+Version 2026.10.1: proportion intervals are never narrower than the Wilson score
+interval, so an all-or-nothing sample (for example 0 of 38) cannot look precise.
 """
 
 from __future__ import annotations
@@ -30,7 +33,7 @@ import numpy as np
 from tsip.evidence.card import EvidenceCard, EvidenceItem
 from tsip.evidence.inference import benjamini_hochberg
 
-RULES_VERSION = "2026.10"
+RULES_VERSION = "2026.10.1"
 MIN_UNITS = 30
 GRADE_ORDER = {"A": 0, "B": 1, "C": 2, "D": 3, "F": 4, "N/A": 5}
 GRADE_LABELS = {

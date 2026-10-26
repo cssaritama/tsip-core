@@ -73,9 +73,29 @@ class EvidenceCard:
     headline: str = ""
     grade: str = "N/A"
     grade_label: str = ""
+    state: dict = field(default_factory=dict)  # current-situation cards: where the latest session stands
 
     def to_dict(self) -> dict:
         return _clean(asdict(self))
+
+
+def widen_proportions(items: list[EvidenceItem], scale: float = 100.0) -> list[EvidenceItem]:
+    """Make proportion intervals at least as wide as the Wilson interval.
+
+    A percentile bootstrap collapses to a zero-width interval when every unit has the
+    same outcome (for example 0 of 38), which would overstate reliability. The reported
+    interval is the union of the bootstrap and Wilson intervals.
+    """
+    from tsip.evidence.inference import wilson_interval
+
+    for item in items:
+        if item.n <= 0 or item.estimate is None or not math.isfinite(item.estimate):
+            continue
+        low, high = wilson_interval(item.estimate / scale, item.n)
+        if math.isfinite(low):
+            item.ci_low = min(item.ci_low, low * scale) if math.isfinite(item.ci_low) else low * scale
+            item.ci_high = max(item.ci_high, high * scale) if math.isfinite(item.ci_high) else high * scale
+    return items
 
 
 def items_from_evaluation(
