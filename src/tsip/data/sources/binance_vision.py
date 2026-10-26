@@ -18,7 +18,7 @@ from collections.abc import Callable
 
 import pandas as pd
 
-from tsip.data.schema import make_bars
+from tsip.data.schema import align_to_grid, grid_frequency, make_bars
 from tsip.data.sources.base import SourceUnavailable, now_utc, utc_timestamp
 from tsip.http import HTTPError, get_bytes
 
@@ -55,7 +55,7 @@ def _to_utc(values: pd.Series) -> pd.DatetimeIndex:
     return pd.DatetimeIndex(pd.to_datetime(numbers, unit=unit, utc=True))
 
 
-def parse_klines(text: str) -> pd.DataFrame:
+def parse_klines(text: str, interval: str = "1h") -> pd.DataFrame:
     lines = [line for line in text.splitlines() if line.strip()]
     if lines and not lines[0].split(",")[0].strip().isdigit():
         lines = lines[1:]  # header row present in some files
@@ -65,9 +65,10 @@ def parse_klines(text: str) -> pd.DataFrame:
     frame.index = _to_utc(frame["open_time"])
     frame.index.name = "timestamp"
     frame = frame[["open", "high", "low", "close", "volume"]].astype(float).sort_index()
-    # Around exchange outages (for example February 2018) the archive holds bars that open
-    # off the minute grid; they are not regular bars of the interval and are left out.
-    return frame[frame.index == frame.index.floor("min")]
+    # Around exchange outages (for example February 2018) the archive holds partial bars that
+    # open off the interval grid; they are folded into the bar of their interval.
+    aligned, _ = align_to_grid(frame, grid_frequency(interval))
+    return aligned
 
 
 def verify_checksum(payload: bytes, checksum_text: str) -> bool:
@@ -75,7 +76,7 @@ def verify_checksum(payload: bytes, checksum_text: str) -> bool:
     return hashlib.sha256(payload).hexdigest() == expected
 
 
-def _download(url: str, getter: Callable[[str], bytes]) -> pd.DataFrame | None:
+def _download(url: str, getter: Callable[[str], bytes], interval: str = "1h") -> pd.DataFrame | None:
     try:
         payload = getter(url)
     except HTTPError as exc:
@@ -90,7 +91,7 @@ def _download(url: str, getter: Callable[[str], bytes]) -> pd.DataFrame | None:
         pass  # checksum files are occasionally missing for the latest daily file
     with zipfile.ZipFile(io.BytesIO(payload)) as archive:
         name = archive.namelist()[0]
-        return parse_klines(archive.read(name).decode("utf-8"))
+        return parse_klines(archive.read(name).decode("utf-8"), interval)
 
 
 def fetch(
@@ -107,13 +108,13 @@ def fetch(
     frames = []
     for period in pd.period_range(start_ts.tz_localize(None).to_period("M"), current_month, freq="M"):
         if period < current_month:
-            frame = _download(monthly_url(symbol, interval, period.year, period.month), getter)
+            frame = _download(monthly_url(symbol, interval, period.year, period.month), getter, interval)
             if frame is not None:
                 frames.append(frame)
         else:
             day = period.start_time.tz_localize("UTC")
             while day.normalize() < end_ts.normalize():
-                frame = _download(daily_url(symbol, interval, day), getter)
+                frame = _download(daily_url(symbol, interval, day), getter, interval)
                 if frame is not None:
                     frames.append(frame)
                 day += pd.Timedelta(days=1)

@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from tsip.data.schema import BAR_COLUMNS, is_intraday
+from tsip.data.schema import BAR_COLUMNS, align_to_grid, grid_frequency, is_intraday
 
 
 def dataset_path(data_dir: str | Path, instrument: str, source: str, timeframe: str) -> Path:
@@ -61,11 +61,12 @@ def read_bars(path: str | Path) -> pd.DataFrame:
     frame.index = pd.DatetimeIndex(index)
     if intraday:
         frame.index.name = "timestamp"
-        frame = frame[frame.index == frame.index.floor("min")]  # stores written before off-grid bars were dropped
     else:
         frame.index = frame.index.normalize()
         frame.index.name = "date"
     frame = frame[BAR_COLUMNS].astype(float)
+    if intraday and timeframe:  # stores written before partial bars were folded into their interval
+        frame, _ = align_to_grid(frame, grid_frequency(timeframe))
     frame.attrs = {
         k: meta[k] for k in ("instrument", "source", "timeframe", "price_basis", "close_only", "feed") if k in meta
     }

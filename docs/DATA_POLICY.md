@@ -25,6 +25,7 @@ Every cached dataset has a JSON sidecar recording source, instrument, timeframe,
 ## Quality checks published with each report
 
 * Bitcoin: hourly completeness (expected versus present bars) and an independent-feed cross-check: correlation of hourly returns and median close difference between Coinbase BTC-USD and Binance BTC-USDT.
+* Partial bars that start off the interval grid (they appear in the Binance archive around exchange outages) are folded into the bar of their interval; nothing is discarded.
 * S&P 500 and Nasdaq-100: observed sessions versus the New York Stock Exchange calendar.
 * Long index histories: the first dates with genuine daily ranges and genuine opens (see the methodology), and how many months were left out.
 

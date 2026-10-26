@@ -125,8 +125,10 @@ def test_stooq_rejects_non_csv_payloads():
     assert frame["close"].iloc[0] == 1.5
 
 
-def test_binance_drops_bars_that_open_off_the_minute_grid():
-    on_grid = 1518166800000  # 2018-02-09 09:00:00 UTC
-    off_grid = 1518168494789  # 2018-02-09 09:28:14.789 UTC, a bar from the exchange outage
-    frame = binance_vision.parse_klines(_kline_row(on_grid, 100) + "\n" + _kline_row(off_grid, 101))
+def test_binance_folds_partial_outage_bars_into_their_hour():
+    on_grid = 1518166800000  # 2018-02-09 09:00:00 UTC, the hour before the outage
+    off_grid = 1518168494789  # 2018-02-09 09:28:14.789 UTC, a partial bar after it
+    frame = binance_vision.parse_klines(_kline_row(on_grid, 100) + "\n" + _kline_row(off_grid, 110))
     assert list(frame.index) == [pd.Timestamp("2018-02-09 09:00", tz="UTC")]
+    bar = frame.iloc[0]
+    assert (bar["open"], bar["high"], bar["low"], bar["close"], bar["volume"]) == (100, 111, 99, 110.5, 20)

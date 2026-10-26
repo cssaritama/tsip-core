@@ -49,6 +49,43 @@ def is_intraday(timeframe: str) -> bool:
     return timeframe not in {"1d", "1w", "1mo"}
 
 
+def grid_frequency(timeframe: str) -> str:
+    """Pandas frequency of an intraday timeframe ("1h", "30min", or Binance style "15m")."""
+    if timeframe.endswith("m") and not timeframe.endswith("min"):
+        return timeframe[:-1] + "min"
+    return timeframe
+
+
+def align_to_grid(frame: pd.DataFrame, freq: str) -> tuple[pd.DataFrame, int]:
+    """Fold bars that open off the interval grid into the bar of the interval that contains them.
+
+    Exchange outages leave partial bars that start mid-interval (Binance, February 2018).
+    They are real trades, so they are merged into their interval rather than dropped:
+    first open, highest high, lowest low, last close, summed volume. Returns the aligned
+    frame and the number of bars that were off the grid.
+    """
+    if frame.empty:
+        return frame, 0
+    frame = frame.sort_index()
+    grid = frame.index.floor(freq)
+    off_grid = int((grid != frame.index).sum())
+    if off_grid == 0:
+        return frame, 0
+    grouped = frame.groupby(grid)
+    out = pd.DataFrame(
+        {
+            "open": grouped["open"].first(),
+            "high": grouped["high"].max(),
+            "low": grouped["low"].min(),
+            "close": grouped["close"].last(),
+            "volume": grouped["volume"].sum(min_count=1),
+        }
+    )
+    out.index.name = frame.index.name
+    out.attrs = dict(frame.attrs)
+    return out, off_grid
+
+
 def validate_bars(bars: pd.DataFrame, *, strict: bool = True) -> dict:
     """Check schema and OHLC consistency.
 

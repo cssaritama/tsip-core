@@ -4,6 +4,11 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.2.3] – 2026-10-27
+
+### Fixed
+- Partial bars that open off the interval grid (Binance archive around the February 2018 outage) are no longer left out: they are folded into the bar of their interval (first open, highest high, lowest low, last close, summed volume), when downloaded and when an existing store is read. No trade is discarded.
+
 ## [0.2.2] – 2026-10-26
 
 ### Fixed

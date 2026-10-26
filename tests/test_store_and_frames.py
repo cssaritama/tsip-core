@@ -77,13 +77,16 @@ def test_path_units_reference_previous_close_within_period():
     assert units["hi"][0, 1] == pytest.approx(np.log(second["high"] / first["close"]))
 
 
-def test_read_bars_tolerates_and_drops_off_grid_timestamps(tmp_path):
+def test_read_bars_folds_off_grid_timestamps_into_their_bar(tmp_path):
     bars = hourly("2018-02-09", 3)
     path = dataset_path(tmp_path, "BTC-USDT", "test", "1h")
     write_bars(bars, path)
     raw = pd.read_csv(path, compression="gzip")
     extra = raw.iloc[[0]].copy()
     extra.iloc[0, 0] = "2018-02-09 00:28:14.789000+00:00"
+    extra.loc[:, ["high", "close"]] = [500.0, 450.0]
     pd.concat([raw, extra]).to_csv(path, index=False, compression="gzip")
     loaded = read_bars(path)
-    assert len(loaded) == 3 and (loaded.index == loaded.index.floor("min")).all()
+    assert len(loaded) == 3 and (loaded.index == loaded.index.floor("h")).all()
+    first = loaded.iloc[0]
+    assert first["high"] == 500.0 and first["close"] == 450.0 and first["volume"] == 2.0
