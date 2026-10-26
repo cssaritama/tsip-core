@@ -76,3 +76,14 @@ def test_site_build(tmp_path, report):
     out = build_site(path, tmp_path / "dist")
     assert (out / "index.html").exists() and (out / "assets" / "app.js").exists()
     assert json.loads((out / "data" / "report.json").read_text())["schema"] == report["schema"]
+
+
+def test_site_canonical_address(tmp_path, report):
+    path = tmp_path / "report.json"
+    path.write_text(json.dumps(report))
+    out = build_site(path, tmp_path / "dist", site_url="https://example.pages.dev")
+    html = (out / "index.html").read_text(encoding="utf-8")
+    assert '<link rel="canonical" href="https://example.pages.dev/">' in html
+    assert html.count("</head>") == 1 and "github.com/cssaritama" in html
+    with pytest.raises(ValueError):
+        build_site(path, tmp_path / "dist2", site_url="http://insecure.example")

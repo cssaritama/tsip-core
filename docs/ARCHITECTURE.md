@@ -19,7 +19,7 @@
 
 | Decision | Reason |
 |---|---|
-| Static site plus a JSON report | No server, no database, no attack surface, free hosting; the report is a versioned artifact. |
+| Static site plus a JSON report | No server, no database, no attack surface, free hosting; the report is a versioned artifact. Deployed to GitHub Pages and, when configured, to Cloudflare Pages (`CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets, `CLOUDFLARE_PROJECT` and `SITE_URL` variables). |
 | Python core with pandas and numpy only | Reproducible anywhere; optional `exchange_calendars` for calendar checks. |
 | Standard-library HTTP client | No network dependency in the core; connectors are testable offline through an injected `getter`. |
 | Incremental cache restored between workflow runs | Each daily run downloads only the newest bars. |

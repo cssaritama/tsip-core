@@ -59,7 +59,7 @@ def _cmd_report(args: argparse.Namespace) -> int:
 def _cmd_site(args: argparse.Namespace) -> int:
     from tsip.site import build_site
 
-    path = build_site(args.report, args.out, web_dir=args.web)
+    path = build_site(args.report, args.out, web_dir=args.web, site_url=args.site_url or None)
     print(json.dumps({"site": str(path)}))
     return 0
 
@@ -88,6 +88,7 @@ def main(argv: list[str] | None = None) -> int:
     site.add_argument("--report", default=DEFAULT_REPORT)
     site.add_argument("--out", default="dist")
     site.add_argument("--web", default=None, help="override the bundled web assets directory")
+    site.add_argument("--site-url", default=None, help="primary public address, written as the canonical URL")
     site.set_defaults(func=_cmd_site)
 
     args = parser.parse_args(argv)

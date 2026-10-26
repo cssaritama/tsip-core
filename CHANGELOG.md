@@ -2,6 +2,15 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- About section crediting the author, with links to the GitHub profile and the source code.
+- Optional deployment to Cloudflare Pages (a free `pages.dev` address, no custom domain needed) alongside GitHub Pages. `tsip site --site-url` writes the canonical address so search engines index one copy.
+
+### Changed
+- On small screens the navigation scrolls inside the header instead of widening the page.
+
 ## [0.2.0] – 2026-10-26
 
 ### Added

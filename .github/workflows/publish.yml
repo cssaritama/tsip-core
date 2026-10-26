@@ -21,6 +21,8 @@ jobs:
     env:
       ALPACA_API_KEY_ID: ${{ secrets.ALPACA_API_KEY_ID }}
       ALPACA_API_SECRET_KEY: ${{ secrets.ALPACA_API_SECRET_KEY }}
+      # Cloudflare Pages is used when its token and project name are configured; GitHub Pages always runs.
+      HAS_CLOUDFLARE: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && vars.CLOUDFLARE_PROJECT != '' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
@@ -62,7 +64,19 @@ jobs:
       - name: Build report
         run: tsip report --out site/data/report.json
       - name: Build site
-        run: tsip site --report site/data/report.json --out dist
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+        run: tsip site --report site/data/report.json --out dist --site-url "$SITE_URL"
+      - name: Deploy to Cloudflare Pages
+        if: env.HAS_CLOUDFLARE == 'true'
+        continue-on-error: true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PROJECT: ${{ vars.CLOUDFLARE_PROJECT }}
+        run: |
+          npx --yes wrangler@4.149.0 pages project create "$PROJECT" --production-branch main || true
+          npx --yes wrangler@4.149.0 pages deploy dist --project-name "$PROJECT" --branch main --commit-dirty=true
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:

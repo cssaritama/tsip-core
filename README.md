@@ -57,7 +57,7 @@ tsip fetch sp500     --source stooq --start 1950-01-01  # or: --source fred (clo
 tsip fetch nasdaq100 --source stooq --start 1985-01-01
 
 tsip report            # writes site/data/report.json
-tsip site              # assembles the static site in dist/
+tsip site              # assembles the static site in dist/ (--site-url sets the canonical address)
 python -m http.server --directory dist 8000
 ```
 
