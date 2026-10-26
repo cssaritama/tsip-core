@@ -1,11 +1,14 @@
 (() => {
   "use strict";
 
-  const MARKET_NAMES = { SPY: "S&P 500", SPX: "S&P 500", "BTC-USD": "Bitcoin", "BTC-USDT": "Bitcoin" };
-  const FAMILY_NAMES = {
-    levels: "Level memory", sessions: "Sessions", intraday: "Intraday", weekly: "Weekly structure",
-    paths: "Paths", entries: "Entries", calendar: "Calendar",
+  const MARKET_NAMES = {
+    SPY: "S&P 500", SPX: "S&P 500", QQQ: "Nasdaq-100", NDX: "Nasdaq-100", "BTC-USD": "Bitcoin", "BTC-USDT": "Bitcoin",
   };
+  const FAMILY_NAMES = {
+    map: "Where we are now", levels: "Level memory", sessions: "Sessions", intraday: "Intraday",
+    weekly: "Weekly structure", paths: "Paths", entries: "Entries", calendar: "Calendar",
+  };
+  const ZONE_TEXT = { above: "above the prior range", inside: "inside the prior range", below: "below the prior range" };
   const state = { report: null, active: null };
 
   const el = (tag, attrs = {}, ...children) => {
@@ -161,9 +164,23 @@
       el("table", {}, el("thead", {}, el("tr", {}, ...head.map((h) => el("th", {}, h)))), el("tbody", {}, ...rows)));
   }
 
+  function stateStrip(card) {
+    const st = card.state || {};
+    const flag = (done, text) => el("span", { class: `state__item ${done ? "state__item--yes" : "state__item--no"}` },
+      el("span", { class: "state__mark", "aria-hidden": "true" }, done ? "✓" : "–"), text);
+    const typical = st.typical_sessions ? ` of ~${st.typical_sessions}` : "";
+    return el("div", { class: "state", role: "group", "aria-label": `${st.period} versus ${st.prior_period}` },
+      el("span", { class: "state__ref" }, `${st.period} vs ${st.prior_period}`),
+      flag(st.broke_prior_high, "Above prior high"),
+      flag(st.broke_prior_low, "Below prior low"),
+      el("span", { class: "state__item" }, `Last close ${ZONE_TEXT[st.last_close_vs_prior_range] || "–"}`),
+      el("span", { class: "state__item state__item--meta" }, `${st.sessions_elapsed}${typical} ${st.session_unit || "sessions"} · as of ${st.as_of}`));
+  }
+
   function renderCard(card) {
     let visual;
-    if (card.kind === "base_rate") visual = baseRateBars(card.items);
+    if (card.family === "map") visual = card.items.length ? baseRateBars(card.items) : null;
+    else if (card.kind === "base_rate") visual = baseRateBars(card.items);
     else if (card.items.length > 3) visual = verticalBars(card.items, card.unit, card.primary);
     else visual = statBlocks(card);
     const notes = (card.notes || []).map((n) => el("p", {}, n));
@@ -175,6 +192,7 @@
         el("div", { class: `badge ${gradeClass(card.grade)}`, title: card.grade_label },
           el("span", {}, card.grade), el("small", {}, card.kind === "edge" ? "evidence" : "reliability"))),
       el("p", { class: "card__question" }, card.question),
+      card.family === "map" ? stateStrip(card) : null,
       el("p", { class: "card__headline" }, card.headline),
       visual,
       el("details", {},
@@ -184,7 +202,7 @@
           el("p", {}, el("b", {}, "Method: "), card.method),
           el("p", {}, el("b", {}, "Sample: "), `${card.period.start} to ${card.period.end}`),
           ...notes,
-          detailsTable(card))));
+          card.items.length ? detailsTable(card) : null)));
   }
 
   // ------------------------------------------------------------------ views

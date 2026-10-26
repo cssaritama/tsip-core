@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>TSIP · Time–Space Intelligence</title>
-  <meta name="description" content="Evidence-graded statistics on how the S&amp;P 500 and Bitcoin move through time and price levels. Every figure ships with its sample size, uncertainty, control and out-of-sample check.">
+  <meta name="description" content="Evidence-graded statistics on how the S&amp;P 500, the Nasdaq-100 and Bitcoin move through time and price levels. Every figure ships with its sample size, uncertainty, control and out-of-sample check.">
   <meta name="theme-color" content="#0b1220">
   <meta property="og:title" content="TSIP · Time–Space Intelligence">
   <meta property="og:description" content="Everyone shows you the odds. We show you which odds are real.">
@@ -36,7 +36,7 @@
       <div class="wrap hero__inner">
         <p class="eyebrow">Evidence-ready market statistics</p>
         <h1>Everyone shows you the odds.<br><span>We show you which odds are real.</span></h1>
-        <p class="lede">TSIP measures how the S&amp;P 500 and Bitcoin move through time (sessions, days, weeks, months) and price levels (the prior period's high, low, open and close). Every statistic is graded against a control, with its sample size, uncertainty, out-of-sample stability and a correction for the number of questions asked.</p>
+        <p class="lede">TSIP measures how the S&amp;P 500, the Nasdaq-100 and Bitcoin move through time (sessions, days, weeks, months, quarters, half-years and years) and price levels (the prior period's high, low, open and close). Every statistic is graded against a control, with its sample size, uncertainty, out-of-sample stability and a correction for the number of questions asked.</p>
         <div class="kpis" id="kpis" aria-live="polite"></div>
       </div>
     </section>
@@ -81,8 +81,10 @@
               <dd>In a random walk the high and low of a period cluster near its start and end. Bars are reordered within each period to measure what timing would look like by chance.</dd>
               <dt>Geometry-matched levels</dt>
               <dd>A close near the top of a range reaches the top first more often for purely mechanical reasons. Control bands of the same width and position isolate what the real levels add.</dd>
+              <dt>Same-position analogs</dt>
+              <dd>The week, month, quarter, half-year and year in progress are compared only with past periods at the same point and in the same position against the prior range.</dd>
               <dt>Dependence-aware uncertainty</dt>
-              <dd>Market days are not independent. Intervals come from a circular block bootstrap over days, weeks or months.</dd>
+              <dd>Market days are not independent. Intervals come from a circular block bootstrap over days, weeks, months or longer periods.</dd>
             </dl>
           </article>
         </div>

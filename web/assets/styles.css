@@ -138,6 +138,14 @@ h3 { font-size: 1.05rem; }
 .hbar__ci { position: absolute; top: -3px; bottom: -3px; border-left: 1.5px solid var(--ink-2); border-right: 1.5px solid var(--ink-2); opacity: 0.6; }
 .hbar__value { font-weight: 650; }
 
+.state { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 0.8rem; }
+.state__ref { font-weight: 650; color: var(--ink); margin-right: 2px; }
+.state__item { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px; color: var(--ink-2); background: var(--surface-2); }
+.state__item--yes { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); color: var(--ink); }
+.state__item--yes .state__mark { color: var(--accent); font-weight: 800; }
+.state__item--no .state__mark { color: var(--muted); }
+.state__item--meta { background: transparent; border-style: dashed; color: var(--muted); }
+
 .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .stat { background: var(--surface-2); border-radius: 10px; padding: 10px; }
 .stat__label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
