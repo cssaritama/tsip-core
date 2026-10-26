@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+/build/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Market data and generated output (never committed)
+/data/
+/site/
+/dist/
+*.csv.gz
+*.parquet
+
+# Secrets and local configuration
+.env
+.env.*
+*.key
+*.pem
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
