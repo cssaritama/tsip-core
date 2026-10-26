@@ -2,11 +2,20 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.2.0] – 2026-10-26
+
+### Added
+- Nasdaq-100: QQQ 30-minute bars (Alpaca) and the NDX long daily history, next to SPY and SPX. ETF and index series stay separate instruments.
+- Long daily index histories for SPX and NDX, with a check of the first dates that carry genuine daily ranges and genuine opens.
+- Prior-period levels for quarters, half-years and years, in addition to days, weeks and months.
+- "Where we are now": for the week, month, quarter, half-year and year in progress, the state against the prior period's range and the outcomes of past periods in the same position (analog base rates).
+- `tsip fetch sp500|nasdaq100` (`spx` remains an alias).
 
 ### Changed
-- Development tooling: the lint and format tool is pinned to an exact version so CI results are reproducible, and dependency updates arrive as grouped monthly proposals.
-- File permissions normalized: no file in the repository is marked as executable.
+- Calendar periods are complete only if they start on time and have ended; a period in progress never enters a base rate (affects the first and last week or month of a history).
+- Grading rules 2026.10.1: proportion intervals are never narrower than the Wilson score interval.
+- Gap and open-based studies use only the span of a history with genuine opens.
+- Development tooling: the lint and format tool is pinned to an exact version and dependency updates arrive as grouped monthly proposals. File permissions normalized.
 
 ## [0.1.0] – 2026-10-26
 
