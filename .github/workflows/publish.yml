@@ -47,11 +47,17 @@ jobs:
       - name: S&P 500 · SPY 30-minute (Alpaca)
         if: env.ALPACA_API_KEY_ID != ''
         continue-on-error: true
-        run: tsip fetch spx --source alpaca --start 2016-01-01
-      - name: S&P 500 · index daily (no-key fallback)
-        if: env.ALPACA_API_KEY_ID == ''
+        run: tsip fetch sp500 --source alpaca --start 2016-01-01
+      - name: Nasdaq-100 · QQQ 30-minute (Alpaca)
+        if: env.ALPACA_API_KEY_ID != ''
         continue-on-error: true
-        run: tsip fetch spx --source stooq --start 2006-01-01 || tsip fetch spx --source fred --start 2016-01-01
+        run: tsip fetch nasdaq100 --source alpaca --start 2016-01-01
+      - name: S&P 500 · index daily, long history (Stooq; FRED close as fallback)
+        continue-on-error: true
+        run: tsip fetch sp500 --source stooq --start 1950-01-01 || tsip fetch sp500 --source fred --start 2016-01-01
+      - name: Nasdaq-100 · index daily, long history (Stooq)
+        continue-on-error: true
+        run: tsip fetch nasdaq100 --source stooq --start 1985-01-01
 
       - name: Build report
         run: tsip report --out site/data/report.json
