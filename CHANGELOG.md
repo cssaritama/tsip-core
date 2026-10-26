@@ -4,6 +4,12 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.2.2] – 2026-10-26
+
+### Fixed
+- Binance archive bars that open off the minute grid (they appear around exchange outages such as February 2018) are left out, and stored data with sub-second timestamps loads correctly. The first production build stopped on them.
+- A study or an instrument that fails no longer stops the whole report: the error goes to the build log and the report lists the skipped study or marks the instrument unavailable. The Binance cross-check is optional.
+
 ## [0.2.1] – 2026-10-26
 
 ### Added
