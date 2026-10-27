@@ -7,7 +7,9 @@ All notable changes to this project are documented here. The format follows [Kee
 ## [0.2.3] – 2026-10-27
 
 ### Fixed
-- Partial bars that open off the interval grid (Binance archive around the February 2018 outage) are no longer left out: they are folded into the bar of their interval (first open, highest high, lowest low, last close, summed volume), when downloaded and when an existing store is read. No trade is discarded.
+- Preserve off-grid Binance source bars and cached timestamps unchanged. The proposed folding repair was rejected after inspecting the official February 2018 archive: 43 hourly bars cross hour boundaries and one interval overlaps its predecessor. Flooring cannot reconstruct these observations.
+- Suppress cross-feed statistics and reject UTC-day aggregation when interval alignment is unresolved; retained data are not silently erased or represented as repaired. Other vendors' session-aligned timestamps remain unchanged.
+- Exact reconstruction of the affected Binance intervals remains pending trade-level data verification. Existing caches from v0.2.2 may require a full re-download to recover previously filtered observations.
 
 ## [0.2.2] – 2026-10-26
 

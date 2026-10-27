@@ -33,6 +33,9 @@ def daily_from_intraday_utc(bars: pd.DataFrame, bars_per_day: int) -> pd.DataFra
     """Aggregate UTC intraday bars into complete UTC calendar days."""
     if bars.empty:
         return _empty_daily()
+    interval = pd.Timedelta(days=1) / bars_per_day
+    if (bars.index != bars.index.floor(interval)).any():
+        raise ValueError("Off-grid bars retained in source; exact UTC-day reconstruction required")
     day = bars.index.tz_convert("UTC").tz_localize(None).normalize()
     grouped = bars.groupby(day)
     daily = grouped.agg(OHLCV_AGG)

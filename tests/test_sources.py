@@ -125,10 +125,10 @@ def test_stooq_rejects_non_csv_payloads():
     assert frame["close"].iloc[0] == 1.5
 
 
-def test_binance_folds_partial_outage_bars_into_their_hour():
+def test_binance_preserves_off_grid_bars_without_relabeling():
     on_grid = 1518166800000  # 2018-02-09 09:00:00 UTC, the hour before the outage
     off_grid = 1518168494789  # 2018-02-09 09:28:14.789 UTC, a partial bar after it
     frame = binance_vision.parse_klines(_kline_row(on_grid, 100) + "\n" + _kline_row(off_grid, 110))
-    assert list(frame.index) == [pd.Timestamp("2018-02-09 09:00", tz="UTC")]
-    bar = frame.iloc[0]
-    assert (bar["open"], bar["high"], bar["low"], bar["close"], bar["volume"]) == (100, 111, 99, 110.5, 20)
+    assert list(frame.index) == pd.to_datetime([on_grid, off_grid], unit="ms", utc=True).tolist()
+    assert frame["volume"].sum() == 20
+    assert frame["open"].tolist() == [100, 110]

@@ -77,7 +77,7 @@ def test_path_units_reference_previous_close_within_period():
     assert units["hi"][0, 1] == pytest.approx(np.log(second["high"] / first["close"]))
 
 
-def test_read_bars_folds_off_grid_timestamps_into_their_bar(tmp_path):
+def test_read_bars_preserves_off_grid_timestamps_and_values(tmp_path):
     bars = hourly("2018-02-09", 3)
     path = dataset_path(tmp_path, "BTC-USDT", "test", "1h")
     write_bars(bars, path)
@@ -87,6 +87,34 @@ def test_read_bars_folds_off_grid_timestamps_into_their_bar(tmp_path):
     extra.loc[:, ["high", "close"]] = [500.0, 450.0]
     pd.concat([raw, extra]).to_csv(path, index=False, compression="gzip")
     loaded = read_bars(path)
-    assert len(loaded) == 3 and (loaded.index == loaded.index.floor("h")).all()
-    first = loaded.iloc[0]
-    assert first["high"] == 500.0 and first["close"] == 450.0 and first["volume"] == 2.0
+    assert len(loaded) == 4
+    extra_bar = loaded.loc[pd.Timestamp("2018-02-09 00:28:14.789", tz="UTC")]
+    assert extra_bar["high"] == 500.0 and extra_bar["close"] == 450.0
+    assert loaded["volume"].sum() == 4.0
+
+
+def test_equity_hourly_store_preserves_half_hour_session_anchor(tmp_path):
+    bars = hourly("2024-01-02T14:30Z", 6)
+    bars.attrs.update(instrument="SPY", source="alpaca")
+    path = dataset_path(tmp_path, "SPY", "alpaca", "1h")
+    write_bars(bars, path)
+    loaded = read_bars(path)
+    pd.testing.assert_frame_equal(loaded, bars, check_freq=False, check_names=False)
+
+
+def test_shifted_crypto_day_is_not_mislabeled_complete():
+    bars = hourly("2018-02-10T00:28:14.789Z", 24)
+    with pytest.raises(ValueError, match="reconstruction required"):
+        daily_from_intraday_utc(bars, bars_per_day=24)
+
+
+def test_cross_feed_reports_unresolved_alignment():
+    from tsip.data.quality import cross_validate
+
+    primary = hourly("2018-02-10T00:00Z", 120)
+    secondary = hourly("2018-02-10T00:28:14.789Z", 120)
+    result = cross_validate(primary, secondary)
+    assert result["status"] == "unavailable"
+    assert result["off_grid_bars"]["secondary"] == 120
+    assert "return_correlation" not in result
+    assert len(secondary) == 120

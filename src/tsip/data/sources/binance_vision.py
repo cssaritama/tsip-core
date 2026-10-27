@@ -18,7 +18,7 @@ from collections.abc import Callable
 
 import pandas as pd
 
-from tsip.data.schema import align_to_grid, grid_frequency, make_bars
+from tsip.data.schema import make_bars
 from tsip.data.sources.base import SourceUnavailable, now_utc, utc_timestamp
 from tsip.http import HTTPError, get_bytes
 
@@ -65,10 +65,9 @@ def parse_klines(text: str, interval: str = "1h") -> pd.DataFrame:
     frame.index = _to_utc(frame["open_time"])
     frame.index.name = "timestamp"
     frame = frame[["open", "high", "low", "close", "volume"]].astype(float).sort_index()
-    # Around exchange outages (for example February 2018) the archive holds partial bars that
-    # open off the interval grid; they are folded into the bar of their interval.
-    aligned, _ = align_to_grid(frame, grid_frequency(interval))
-    return aligned
+    # Preserve vendor timestamps. A bar spanning two clock intervals cannot be
+    # reconstructed by flooring its start; it needs finer data or original trades.
+    return frame
 
 
 def verify_checksum(payload: bytes, checksum_text: str) -> bool:

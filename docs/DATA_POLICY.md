@@ -25,7 +25,8 @@ Every cached dataset has a JSON sidecar recording source, instrument, timeframe,
 ## Quality checks published with each report
 
 * Bitcoin: hourly completeness (expected versus present bars) and an independent-feed cross-check: correlation of hourly returns and median close difference between Coinbase BTC-USD and Binance BTC-USDT.
-* Partial bars that start off the interval grid (they appear in the Binance archive around exchange outages) are folded into the bar of their interval; nothing is discarded.
+* Off-grid source bars are retained with their original timestamps. They are never moved to a different clock interval by rounding. Cross-feed statistics are unavailable and UTC-day aggregation is rejected when alignment is unresolved. An original source record and a reconstructed analysis bar are different objects.
+* February 2018 Binance verification: the checksum-verified hourly archive contains 640 records, 43 off-grid intervals crossing clock-hour boundaries, and one overlapping interval. Its one-minute archive also contains shifted intervals; simply summing minute bars is not an exact repair. Trade-level reconstruction, provenance, overlap reconciliation and coverage checks remain pending. Cached data previously filtered by v0.2.2 need re-acquisition; reading a reduced cache cannot recover missing records.
 * S&P 500 and Nasdaq-100: observed sessions versus the New York Stock Exchange calendar.
 * Long index histories: the first dates with genuine daily ranges and genuine opens (see the methodology), and how many months were left out.
 

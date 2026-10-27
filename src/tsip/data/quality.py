@@ -5,6 +5,8 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
+from tsip.data.schema import grid_frequency
+
 
 def hourly_completeness(bars: pd.DataFrame) -> dict:
     if bars is None or bars.empty:
@@ -23,6 +25,17 @@ def cross_validate(primary: pd.DataFrame, secondary: pd.DataFrame) -> dict:
     """Compare two independent feeds of the same asset on shared timestamps."""
     if primary is None or secondary is None or primary.empty or secondary.empty:
         return {}
+    off_grid = {}
+    for name, frame in (("primary", primary), ("secondary", secondary)):
+        timeframe = frame.attrs.get("timeframe")
+        if timeframe and timeframe not in {"1d", "1w", "1mo"}:
+            off_grid[name] = int((frame.index != frame.index.floor(grid_frequency(timeframe))).sum())
+    if any(off_grid.values()):
+        return {
+            "status": "unavailable",
+            "reason": "Off-grid source bars retained unchanged; interval reconstruction required.",
+            "off_grid_bars": off_grid,
+        }
     joined = pd.concat({"a": primary["close"], "b": secondary["close"]}, axis=1, join="inner").dropna()
     if len(joined) < 100:
         return {"overlap_bars": int(len(joined))}
