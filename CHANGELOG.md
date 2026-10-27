@@ -4,6 +4,9 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Changed
+- Dependency update pull requests only widen version ranges when a new release falls outside them; they no longer raise the minimum supported versions of pandas, numpy and the build tools.
+
 ## [0.2.4] – 2026-10-27
 
 ### Fixed
