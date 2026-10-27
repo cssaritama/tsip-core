@@ -4,6 +4,9 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Documentation
+- The trade and hour counts stated for 0.2.4 were independently re-verified against the official Binance archives (1,066,634 aggregate trades, 62 hours, 19 of 20 comparable hours identical).
+
 ### Changed
 - Dependency update pull requests only widen version ranges when a new release falls outside them; they no longer raise the minimum supported versions of pandas, numpy and the build tools.
 
