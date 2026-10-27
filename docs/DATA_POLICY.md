@@ -33,3 +33,9 @@ Every cached dataset has a JSON sidecar recording source, instrument, timeframe,
 ## Terms of use
 
 Each provider's terms govern the use of its data. Before any commercial use, review the current terms of every source and keep a dated copy. Statistics derived from the data do not transfer any right to the underlying data. This document is not legal advice.
+
+## Verified February 2018 reconstruction (v0.2.4)
+
+The preceding v0.2.3 preservation guard remains the generic policy. The specifically investigated BTC-USDT interval is now repaired during Binance fetch/cache updates when the stored history covers February 9–12, 2018. Three official daily aggregate-trade archives must supply records with consecutive aggregate and underlying trade IDs and nondecreasing timestamps. OHLC and summed quantity are reconstructed by UTC trade hour; no observation is fabricated for hours without trades. The development run reported 1,066,634 records and 62 occupied hours; these figures are pending re-verification against the manifest of the first production run. All affected source dates, including the overlapping regular boundary hour, are replaced in the derived cache only after validation succeeds.
+
+Original affected cached rows, checksum-verified archives and a hash-linked manifest are retained under the data directory's `source_evidence/binance` folder, excluded from Git. A repair marker persists in the cache metadata, so a v0.2.2 cache can recover filtered history and normal incremental updates do not repeat the repair. Histories that do not span the affected dates remain unchanged. Unknown irregular intervals still require investigation; source agreement does not independently certify every underlying exchange trade. On checksum/identity/coverage failure, the existing cache is not rewritten.

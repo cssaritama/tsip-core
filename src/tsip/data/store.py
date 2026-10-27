@@ -66,7 +66,9 @@ def read_bars(path: str | Path) -> pd.DataFrame:
         frame.index.name = "date"
     frame = frame[BAR_COLUMNS].astype(float)
     frame.attrs = {
-        k: meta[k] for k in ("instrument", "source", "timeframe", "price_basis", "close_only", "feed") if k in meta
+        k: meta[k]
+        for k in ("instrument", "source", "timeframe", "price_basis", "close_only", "feed", "binance_feb2018_repair")
+        if k in meta
     }
     return frame
 
@@ -83,4 +85,11 @@ def merge_incremental(existing: pd.DataFrame | None, new: pd.DataFrame) -> pd.Da
         merged = pd.concat([existing, new])
         merged = merged[~merged.index.duplicated(keep="last")].sort_index()
     merged.attrs = dict(new.attrs or (existing.attrs if existing is not None else {}))
+    if existing is not None and "binance_feb2018_repair" in existing.attrs:
+        record = existing.attrs["binance_feb2018_repair"]
+        overlaps_repair = bool(
+            ((new.index >= pd.Timestamp(record["start"])) & (new.index < pd.Timestamp(record["end_exclusive"]))).any()
+        )
+        if not overlaps_repair:
+            merged.attrs["binance_feb2018_repair"] = record
     return merged

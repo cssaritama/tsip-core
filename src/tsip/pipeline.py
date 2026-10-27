@@ -11,6 +11,7 @@ import pandas as pd
 from tsip.data import quality
 from tsip.data.schema import drop_invalid
 from tsip.data.sources import SourceUnavailable, alpaca, binance_vision, coinbase, fred, stooq
+from tsip.data.sources.binance_repair import repair_february_2018
 from tsip.data.store import dataset_path, merge_incremental, read_bars, read_meta, write_bars
 from tsip.frames import rth_daily_from_intraday
 from tsip.report.build import InstrumentInput
@@ -65,6 +66,8 @@ def fetch_dataset(
         fetch_start = max(fetch_start, last - OVERLAP.get(timeframe, pd.Timedelta(days=3)))
     new = fetcher(fetch_start)
     merged = merge_incremental(existing, new)
+    if source == "binance" and instrument == "BTC-USDT" and timeframe == "1h":
+        merged = repair_february_2018(merged, Path(data_dir) / "source_evidence" / "binance")
     if merged.attrs.get("close_only"):
         cleaned, dropped = merged, 0
     else:

@@ -4,6 +4,13 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.2.4] – 2026-10-27
+
+### Fixed
+- Reconstruct February 9–11, 2018 Binance BTC-USDT UTC hourly bars from checksum-verified official aggregate trades. Verify contiguous aggregate/underlying trade IDs, timestamps, prices and quantities before replacing affected dates. Retain original cached rows and raw trade archives with a repair manifest outside Git.
+- Automatically migrate sufficiently long existing Binance caches, including v0.2.2 stores whose irregular rows were filtered out. Persist the repair revision across cache reads and incremental updates; subsequent fetches do not repeat the migration.
+- The development run reported 1,066,634 aggregate trades and 62 reconstructed occupied UTC hours, with nineteen of twenty comparable regular source hours matching OHLC and volume; the remaining overlapping boundary hour is replaced from trades as well. These figures are pending re-verification against the repair manifest written by the first production run. No empty hour is invented. This repairs the documented interval defect, not every possible source-quality issue.
+
 ## [0.2.3] – 2026-10-27
 
 ### Fixed
