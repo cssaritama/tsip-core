@@ -13,6 +13,7 @@ from pathlib import Path
 import pandas as pd
 
 from tsip import __version__
+from tsip.data import freshness
 from tsip.evidence.grading import GRADE_LABELS, RULES_VERSION, finalize_grades
 from tsip.frames import daily_from_intraday_utc, rth_daily_from_intraday
 from tsip.instruments import get_instrument
@@ -166,5 +167,6 @@ def build_report(
         "instruments": instruments,
         "hypotheses": load_hypotheses(hypotheses_path),
     }
+    report["data_status"] = freshness.assess(report)
     assert_publishable(report)
     return report

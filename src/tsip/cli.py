@@ -5,6 +5,7 @@ tsip fetch sp500     [--source alpaca|stooq|fred] [--start 2016-01-01]   (alias:
 tsip fetch nasdaq100 [--source alpaca|stooq|fred] [--start 2016-01-01]
 tsip report [--out site/data/report.json]
 tsip site   [--report site/data/report.json] [--out dist]
+tsip check  [--report site/data/report.json] [--summary FILE]   exit 1 if a market is stale or missing
 """
 
 from __future__ import annotations
@@ -64,6 +65,20 @@ def _cmd_site(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_check(args: argparse.Namespace) -> int:
+    from tsip.data import freshness
+
+    report = json.loads(Path(args.report).read_text())
+    status = freshness.assess(report)
+    print(json.dumps(status, indent=2))
+    if args.summary:
+        with open(args.summary, "a", encoding="utf-8") as handle:
+            handle.write(freshness.to_markdown(status))
+    if status["overall"] == "stale":
+        return 1
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="tsip", description="Evidence-graded market statistics.")
     parser.add_argument("--version", action="version", version=f"tsip {__version__}")
@@ -90,6 +105,11 @@ def main(argv: list[str] | None = None) -> int:
     site.add_argument("--web", default=None, help="override the bundled web assets directory")
     site.add_argument("--site-url", default=None, help="primary public address, written as the canonical URL")
     site.set_defaults(func=_cmd_site)
+
+    check = sub.add_parser("check", help="report whether every expected market is present and up to date")
+    check.add_argument("--report", default=DEFAULT_REPORT)
+    check.add_argument("--summary", default=None, help="append a Markdown status table to this file")
+    check.set_defaults(func=_cmd_check)
 
     args = parser.parse_args(argv)
     return int(args.func(args))

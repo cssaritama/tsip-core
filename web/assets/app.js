@@ -222,6 +222,17 @@
       kpi(`${Math.round(Math.max(0, ...years))} yrs`, "longest history covered"),
       kpi(new Date(report.generated_at).toUTCString().slice(5, 22), "last update (UTC)"));
   }
+  // Data status: every expected market, its last bar and whether it is up to date.
+  function renderFreshness(report) {
+    const box = document.getElementById("freshness");
+    const st = report.data_status;
+    if (!box || !st) return;
+    const label = { fresh: "up to date", degraded: "fallback source", stale: "out of date" };
+    box.replaceChildren(
+      el("span", { class: `fresh fresh--${st.overall}` }, `Data ${label[st.overall] || st.overall}`),
+      ...st.instruments.map((r) => el("span", { class: `fresh fresh--${r.status}`, title: r.reason || r.allowed || "" },
+        `${r.code} · ${r.last_bar ? r.last_bar.slice(0, 16).replace("T", " ").replace(" 00:00", "") : "missing"}`)));
+  }
   const kpi = (value, label) => el("div", { class: "kpi" }, el("div", { class: "kpi__value" }, value), el("div", { class: "kpi__label" }, label));
 
   function renderTabs(report) {
@@ -320,6 +331,7 @@
       document.getElementById("rules-version").textContent = report.rules_version;
       document.getElementById("generated").textContent = `Report ${report.version}, generated ${report.generated_at.replace("T", " ").replace("+00:00", " UTC")}`;
       renderKpis(report);
+      renderFreshness(report);
       renderTabs(report);
       if (report.instruments.length) selectMarket(report.instruments[0].code);
       renderData(report);

@@ -200,3 +200,10 @@ th { color: var(--muted); font-weight: 600; }
 
 .footer { padding: 28px 0 40px; color: var(--muted); font-size: 0.86rem; border-top: 1px solid var(--line); }
 .footer__meta { margin-top: 6px; }
+
+/* data status strip */
+.freshness { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.fresh { font-size: 12px; padding: 3px 9px; border-radius: 999px; border: 1px solid currentColor; color: var(--hero-muted); white-space: nowrap; }
+.fresh--fresh { color: var(--hero-accent); }
+.fresh--degraded { color: #e0b44c; }
+.fresh--stale { color: #f08a75; font-weight: 600; }

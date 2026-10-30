@@ -110,3 +110,10 @@ def test_a_failing_study_does_not_stop_the_report(monkeypatch):
     report = build_module.build_report([build_module.InstrumentInput("BTC-USD", "crypto", intraday=frame)], reps=50)
     inst = report["instruments"][0]
     assert inst["status"] == "ok" and inst["skipped_studies"] == [{"study": "broken", "reason": "RuntimeError"}]
+
+
+def test_report_carries_data_status(report):
+    status = report["data_status"]
+    assert status["overall"] in {"fresh", "degraded", "stale"}
+    codes = {r["code"] for r in status["instruments"]}
+    assert {"BTC-USD", "SPY", "QQQ", "SPX", "NDX"} <= codes
