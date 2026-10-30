@@ -4,6 +4,20 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.2.7] – 2026-10-30
+
+### Added
+- Time to revisit a level (`tsip.studies.revisit`): for closed weeks, months, quarters and years, how often and how soon price trades back at the period's high and low, against arbitrary levels at the same volatility-scaled distance from all other period closes; Kaplan–Meier median times with open levels censored. New report section "Time to revisit".
+- Open levels: highs and lows of recent closed periods not traded since, with age and distance in percent and ATR (`open_levels` in the report, a board under the grid on the website).
+- Position: distances from the last close to each horizon's reference high and low in percent and in 14-session ATR, and the position within the range (`position` in the report).
+- Ether (ETH-USD, Coinbase hourly) as a market: `tsip fetch eth`, scheduled build and data status.
+
+### Fixed
+- The grid no longer loses the week and month after a Friday close or at weekends: a closed period now shows the next period's starting position against the period that just closed, with the matching level-memory rates.
+
+### Changed
+- The website grid shows a range bar with the last close and the distances; the hero is shorter so the grid is visible without scrolling.
+
 ## [0.2.6] – 2026-10-30
 
 ### Changed
