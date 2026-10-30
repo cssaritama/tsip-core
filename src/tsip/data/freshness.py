@@ -30,7 +30,8 @@ EXPECTED = {
 }
 # Allowed delay. Hourly crypto bars: hours. Exchange data: completed sessions after the last bar.
 MAX_CRYPTO_AGE_HOURS = 6.0
-MAX_SESSIONS_BEHIND = {"alpaca": 0, "stooq": 1, "fred": 1}
+# FRED posts a close the next day and the S&P 500 series sometimes one day later still.
+MAX_SESSIONS_BEHIND = {"alpaca": 0, "stooq": 1, "fred": 2}
 SESSION_CLOSE_NY = pd.Timedelta(hours=16, minutes=30)  # regular close plus a margin for late bars
 
 

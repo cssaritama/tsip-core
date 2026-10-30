@@ -34,7 +34,7 @@ Every cached dataset has a JSON sidecar recording source, instrument, timeframe,
 
 Every report carries a `data_status` section, shown as a strip at the top of the website, with one row per expected instrument (BTC-USD, SPY, QQQ, SPX, NDX):
 
-* **fresh**: the last bar is as recent as the source allows: hourly Bitcoin bars at most 6 hours old; Alpaca intraday bars with no completed NYSE session missing; daily index series at most one completed session behind.
+* **fresh**: the last bar is as recent as the source allows: hourly Bitcoin bars at most 6 hours old; Alpaca intraday bars with no completed NYSE session missing; daily index series at most one completed session behind (two for FRED, which posts closes the next day and is sometimes a further day late).
 * **degraded**: present and recent, but served by the fallback source (for example FRED close-only instead of the Stooq long history).
 * **stale**: older than allowed, or missing from the build.
 

@@ -79,3 +79,12 @@ def test_check_command_exit_code_and_summary(tmp_path):
     path.write_text(json.dumps(_report(NDX=None)))
     assert main(["check", "--report", str(path), "--summary", str(summary)]) == 1
     assert "NDX" in summary.read_text()
+
+
+def test_fred_close_two_sessions_behind_is_only_degraded():
+    # 2026-10-30 20:35 UTC: sessions of 10-29 and 10-30 are closed, FRED still ends on 10-28.
+    now = pd.Timestamp("2026-10-30 20:35", tz="UTC")
+    row = freshness.assess_instrument("SPX", _inst("SPX", "fred", "2026-10-28 00:00:00"), now)
+    assert row["sessions_behind"] == 2 and row["status"] == "degraded"
+    late = freshness.assess_instrument("SPX", _inst("SPX", "fred", "2026-10-27 00:00:00"), now)
+    assert late["status"] == "stale"
