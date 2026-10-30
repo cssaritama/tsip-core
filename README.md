@@ -5,7 +5,7 @@
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/python-3.10%E2%80%933.12-informational)
 
-**Where price stands in time, with the evidence behind every figure.**
+**Time–Space Intelligence: where we are in time, where price stands in space, and the evidence behind every figure.** The model is described in [docs/TIME_SPACE_MODEL.md](docs/TIME_SPACE_MODEL.md).
 
 **▶ Live report: [cssaritama.github.io/tsip-core](https://cssaritama.github.io/tsip-core/)**, rebuilt every day from market data up to the previous session.
 
