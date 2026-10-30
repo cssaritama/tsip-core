@@ -88,3 +88,20 @@ def test_open_levels_lists_only_untraded_levels():
                 assert (h[tail] < level * (1 + 1e-4)).all()
             else:
                 assert (lo[tail] > level * (1 - 1e-4)).all()
+
+
+def test_close_only_series_publish_cleanly():
+    """Regression: a FRED close-only index produced NaN distances and stopped the report (0.2.7)."""
+    import json
+
+    from tsip.data.schema import make_bars
+    from tsip.report.build import InstrumentInput, build_report
+
+    d = random_walk_daily(n=900)
+    d[["open", "high", "low"]] = np.nan
+    bars = make_bars(d, instrument="NDX", source="fred", timeframe="1d", price_basis="close-only")
+    bars.attrs["close_only"] = True
+    report = build_report([InstrumentInput("NDX", "us_rth", daily=bars)], reps=30)
+    json.dumps(report, allow_nan=False)  # must not raise
+    inst = report["instruments"][0]
+    assert inst["open_levels"] == {} and inst["position"] == {}

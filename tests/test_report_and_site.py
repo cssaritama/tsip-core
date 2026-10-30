@@ -131,3 +131,12 @@ def test_site_is_self_contained(tmp_path, report):
     assert external == []  # no third-party scripts, styles, fonts or trackers
     assert (out / "assets" / "fonts" / "instrument-sans-latin.woff2").stat().st_size > 10_000
     assert (out / "assets" / "fonts" / "OFL-instrument-sans.txt").exists()
+
+
+def test_non_finite_values_never_reach_the_report():
+    from tsip.report.build import _finite
+
+    assert _finite({"a": [1.0, float("nan"), {"b": float("inf")}], "c": "x"}) == {
+        "a": [1.0, None, {"b": None}],
+        "c": "x",
+    }

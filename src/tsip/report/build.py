@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import sys
 import traceback
 from dataclasses import dataclass, field
@@ -127,6 +128,17 @@ def _instrument_report(inp: InstrumentInput, *, reps: int, seed: int) -> dict:
     }
 
 
+def _finite(obj):
+    """Replace any non-finite number by null so one bad value can never stop publication."""
+    if isinstance(obj, float):
+        return obj if math.isfinite(obj) else None
+    if isinstance(obj, dict):
+        return {k: _finite(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_finite(v) for v in obj]
+    return obj
+
+
 def _safe(fn, *args, **kwargs) -> dict:
     """Descriptive blocks must never stop the report; failures go to the build log."""
     try:
@@ -182,5 +194,6 @@ def build_report(
         "hypotheses": load_hypotheses(hypotheses_path),
     }
     report["data_status"] = freshness.assess(report)
+    report = _finite(report)
     assert_publishable(report)
     return report

@@ -56,7 +56,7 @@ def _sigma(close: np.ndarray) -> np.ndarray:
 
 def atr_pct(daily: pd.DataFrame, window: int = ATR_WINDOW) -> float | None:
     """Average true range of the last ``window`` sessions, as a percentage of the last close."""
-    if len(daily) < window + 1:
+    if len(daily) < window + 1 or daily[["high", "low", "close"]].iloc[-window - 1 :].isna().any().any():
         return None
     h, lo, c = (daily[col].to_numpy(float) for col in ("high", "low", "close"))
     prev = np.concatenate([[np.nan], c[:-1]])
@@ -257,6 +257,8 @@ def open_levels(daily: pd.DataFrame, *, crypto: bool) -> dict:
     """Closed periods whose high or low has not been traded since, with age and distance."""
     if daily is None or len(daily) < ATR_WINDOW + 2:
         return {}
+    if daily.attrs.get("close_only") or daily[["high", "low"]].isna().any().any():
+        return {}  # close-only series have no highs or lows to revisit
     close = float(daily["close"].iloc[-1])
     atr = atr_pct(daily)
     position = pd.Series(np.arange(len(daily)), index=daily.index)
@@ -277,6 +279,8 @@ def open_levels(daily: pd.DataFrame, *, crypto: bool) -> dict:
                 if not untouched:
                     continue
                 dist = (level / close - 1.0) * PP
+                if not np.isfinite(dist):
+                    continue
                 board.append(
                     {
                         "horizon": HORIZON_NAMES[horizon],
