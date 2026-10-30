@@ -117,3 +117,17 @@ def test_report_carries_data_status(report):
     assert status["overall"] in {"fresh", "degraded", "stale"}
     codes = {r["code"] for r in status["instruments"]}
     assert {"BTC-USD", "SPY", "QQQ", "SPX", "NDX"} <= codes
+
+
+def test_site_is_self_contained(tmp_path, report):
+    import re
+
+    path = tmp_path / "r.json"
+    path.write_text(json.dumps(report))
+    out = build_site(path, tmp_path / "site")
+    html = (out / "index.html").read_text(encoding="utf-8")
+    assets = re.findall(r'(?:src|href)="([^"#]+)"', html)
+    external = [a for a in assets if a.startswith("http") and "github.com" not in a]
+    assert external == []  # no third-party scripts, styles, fonts or trackers
+    assert (out / "assets" / "fonts" / "instrument-sans-latin.woff2").stat().st_size > 10_000
+    assert (out / "assets" / "fonts" / "OFL-instrument-sans.txt").exists()

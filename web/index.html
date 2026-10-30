@@ -3,135 +3,162 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>TSIP · Time–Space Intelligence</title>
-  <meta name="description" content="Evidence-graded statistics on how the S&amp;P 500, the Nasdaq-100 and Bitcoin move through time and price levels. Every figure ships with its sample size, uncertainty, control and out-of-sample check.">
-  <meta name="theme-color" content="#0b1220">
-  <meta property="og:title" content="TSIP · Time–Space Intelligence">
-  <meta property="og:description" content="Everyone shows you the odds. We show you which odds are real.">
+  <title>TSIP | Time–Space Intelligence</title>
+  <meta name="description" content="Where SPY, QQQ and Bitcoin stand against the prior week, month, quarter, half-year and year, and what happened in past periods that stood in the same place. Every figure is graded against a control.">
+  <meta name="theme-color" content="#0d1828" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f3f5f7" media="(prefers-color-scheme: light)">
+  <meta property="og:title" content="TSIP | Time–Space Intelligence">
+  <meta property="og:description" content="Where price stands in time, with the evidence behind every figure.">
   <meta property="og:type" content="website">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/fonts/instrument-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="assets/styles.css">
   <script defer src="assets/app.js"></script>
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
-  <header class="topbar">
-    <div class="wrap topbar__inner">
-      <a class="brand" href="#top" aria-label="TSIP home">
-        <svg class="brand__mark" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 3v6M16 23v6M3 16h6M23 16h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="16" r="3.2" fill="currentColor"/></svg>
-        <span class="brand__name">TSIP</span>
-        <span class="brand__tag">Time–Space Intelligence</span>
+  <header class="bar">
+    <div class="wrap bar__inner">
+      <a class="mark" href="#top" aria-label="TSIP, back to top">
+        <svg class="mark__glyph" viewBox="0 0 28 28" aria-hidden="true"><rect x="3" y="3" width="22" height="22" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M3 10.5h22M3 17.5h22" stroke="currentColor" stroke-width="1.5" opacity=".45"/><rect x="15.5" y="11.6" width="5" height="4.8" fill="var(--brass)"/></svg>
+        <span class="mark__name">TSIP</span>
       </a>
       <nav class="nav" aria-label="Primary">
-        <a href="#markets">Markets</a>
-        <a href="#method">Methodology</a>
+        <a href="#markets">Findings</a>
+        <a href="#method">Method</a>
         <a href="#data">Data</a>
         <a href="#register">Register</a>
         <a href="#about">About</a>
       </nav>
+      <a class="status" id="status" href="#data" aria-live="polite"><span class="status__dot"></span><span class="status__text">Loading data</span></a>
     </div>
   </header>
 
   <main id="main">
     <section class="hero" id="top">
-      <div class="wrap hero__inner">
-        <p class="eyebrow">Evidence-ready market statistics</p>
-        <h1>Everyone shows you the odds.<br><span>We show you which odds are real.</span></h1>
-        <p class="lede">TSIP measures how the S&amp;P 500, the Nasdaq-100 and Bitcoin move through time (sessions, days, weeks, months, quarters, half-years and years) and price levels (the prior period's high, low, open and close). Every statistic is graded against a control, with its sample size, uncertainty, out-of-sample stability and a correction for the number of questions asked.</p>
-        <div class="kpis" id="kpis" aria-live="polite"></div>
-        <div class="freshness" id="freshness" aria-live="polite"></div>
+      <div class="wrap">
+        <h1 class="hero__title">Where price stands in time.</h1>
+        <p class="hero__lede">The position of today's price against the prior week, month, quarter, half-year and year, and what happened by the end of past periods that stood in the same place. Every figure carries its sample, its uncertainty and a grade.</p>
+
+        <div class="switch" role="tablist" id="market-switch" aria-label="Market"></div>
+
+        <figure class="grid" id="grid" aria-live="polite">
+          <div class="grid__head" aria-hidden="true">
+            <span>Horizon</span><span>Time elapsed</span><span>Position against the prior range</span><span>What followed in past periods like this</span>
+          </div>
+          <div class="grid__rows" id="grid-rows"></div>
+          <figcaption class="grid__caption" id="grid-caption"></figcaption>
+        </figure>
       </div>
     </section>
 
-    <section class="markets" id="markets">
-      <div class="wrap">
-        <div class="tabs" role="tablist" id="market-tabs" aria-label="Markets"></div>
+    <section class="findings" id="markets">
+      <div class="wrap findings__inner">
+        <aside class="index" aria-label="Sections">
+          <p class="index__market" id="index-market"></p>
+          <nav id="section-index"></nav>
+          <div class="index__refs" id="index-refs"></div>
+        </aside>
         <div id="market-panel" class="panel" role="tabpanel"></div>
       </div>
     </section>
 
     <section class="method" id="method">
       <div class="wrap">
-        <h2>How every number is graded</h2>
-        <p class="section-lede">A frequency without a control is not evidence. Each card states what it is compared with, and the grade follows published rules, version <span id="rules-version"></span>.</p>
-        <div class="method__grid">
-          <article class="method__card">
-            <h3>Edge findings · A to F</h3>
-            <p>An effect measured against a control or a null. Adjusted for multiple testing across the whole report (Benjamini–Hochberg).</p>
-            <ul class="rules">
-              <li><span class="g g-A">A</span><span><b>Strong.</b> q ≤ 0.05, the most recent 30% of the sample agrees (p ≤ 0.10), at least 200 observations.</span></li>
-              <li><span class="g g-B">B</span><span><b>Moderate.</b> q ≤ 0.10 and both halves of the sample agree.</span></li>
-              <li><span class="g g-C">C</span><span><b>Weak.</b> Nominally significant (p ≤ 0.05) but does not survive the multiple-testing correction.</span></li>
-              <li><span class="g g-D">D</span><span><b>Inconclusive.</b> No reliable difference from the control.</span></li>
-              <li><span class="g g-F">F</span><span><b>Contradicted.</b> The most recent data points the other way.</span></li>
+        <h2 class="title">How every figure is graded</h2>
+        <p class="intro">A frequency without a control is not evidence. Each finding states what it is compared with, and its grade follows published rules, version <span id="rules-version"></span>.</p>
+        <div class="method__cols">
+          <div>
+            <h3>Effects, graded A to F</h3>
+            <p class="small">An effect measured against a control or a null, adjusted for the number of questions asked across the whole report (Benjamini–Hochberg).</p>
+            <ul class="scale">
+              <li><span class="meter" data-g="A"></span><span><b>A, strong.</b> q at most 0.05, the most recent 30% of the sample agrees, at least 200 observations.</span></li>
+              <li><span class="meter" data-g="B"></span><span><b>B, moderate.</b> q at most 0.10 and both halves of the sample agree.</span></li>
+              <li><span class="meter" data-g="C"></span><span><b>C, weak.</b> Nominally significant, but it does not survive the multiple-testing correction.</span></li>
+              <li><span class="meter" data-g="D"></span><span><b>D, inconclusive.</b> No reliable difference from the control.</span></li>
+              <li><span class="meter" data-g="F"></span><span><b>F, contradicted.</b> The most recent data points the other way.</span></li>
             </ul>
-          </article>
-          <article class="method__card">
-            <h3>Base rates · reliability A to D</h3>
-            <p>How often something happens. No null, but precision and stability matter.</p>
-            <ul class="rules">
-              <li><span class="g g-A">A</span><span>95% interval within ±2.5 pp and earlier vs. recent sample within 3 pp.</span></li>
-              <li><span class="g g-B">B</span><span>Within ±4 pp and 6 pp.</span></li>
-              <li><span class="g g-C">C</span><span>Within ±7.5 pp and 10 pp.</span></li>
-              <li><span class="g g-D">D</span><span>Wider or less stable.</span></li>
+          </div>
+          <div>
+            <h3>Base rates, reliability A to D</h3>
+            <p class="small">How often something happens. There is no null, so precision and stability decide the grade.</p>
+            <ul class="scale">
+              <li><span class="meter" data-g="A"></span><span>95% interval within ±2.5 pp; earlier and recent samples within 3 pp.</span></li>
+              <li><span class="meter" data-g="B"></span><span>Within ±4 pp and 6 pp.</span></li>
+              <li><span class="meter" data-g="C"></span><span>Within ±7.5 pp and 10 pp.</span></li>
+              <li><span class="meter" data-g="D"></span><span>Wider or less stable.</span></li>
+              <li><span class="meter" data-g="N/A"></span><span>Too few observations to grade.</span></li>
             </ul>
-          </article>
-          <article class="method__card">
-            <h3>Controls that change the answer</h3>
-            <dl class="controls">
-              <dt>Random-walk timing baseline</dt>
-              <dd>In a random walk the high and low of a period cluster near its start and end. Bars are reordered within each period to measure what timing would look like by chance.</dd>
-              <dt>Geometry-matched levels</dt>
-              <dd>A close near the top of a range reaches the top first more often for purely mechanical reasons. Control bands of the same width and position isolate what the real levels add.</dd>
-              <dt>Same-position analogs</dt>
-              <dd>The week, month, quarter, half-year and year in progress are compared only with past periods at the same point and in the same position against the prior range.</dd>
-              <dt>Dependence-aware uncertainty</dt>
-              <dd>Market days are not independent. Intervals come from a circular block bootstrap over days, weeks, months or longer periods.</dd>
-            </dl>
-          </article>
+          </div>
+          <dl class="controls">
+            <dt>Random-walk timing</dt>
+            <dd>In a random walk a period's high and low cluster near its start and end. Bars are reordered within each period to measure what timing looks like by chance.</dd>
+            <dt>Geometry-matched levels</dt>
+            <dd>A close near the top of a range reaches the top first more often for purely mechanical reasons. Bands of the same width and position isolate what the real levels add.</dd>
+            <dt>Same-position analogs</dt>
+            <dd>A period in progress is compared only with past periods at the same point and in the same position against their prior range.</dd>
+            <dt>Dependence-aware uncertainty</dt>
+            <dd>Market days are not independent. Intervals come from a circular block bootstrap over days, weeks, months or longer.</dd>
+          </dl>
+        </div>
+        <div class="limits">
+          <div>
+            <h3>What these statistics can do</h3>
+            <ul>
+              <li>Describe how price behaved at each horizon and level over years of data.</li>
+              <li>Compare every effect with a control and grade it on data it was not fitted to.</li>
+              <li>Show where the current period stands and how similar periods ended.</li>
+              <li>Re-grade everything every day as new data arrives.</li>
+            </ul>
+          </div>
+          <div>
+            <h3>What they cannot do</h3>
+            <ul>
+              <li>Guarantee any outcome. Past frequencies are not promises.</li>
+              <li>Include costs, slippage or taxes; returns are gross.</li>
+              <li>Tell anyone to buy or sell. There are no signals here.</li>
+              <li>Turn a weak pattern into an edge by repeating it.</li>
+            </ul>
+          </div>
         </div>
       </div>
     </section>
 
     <section class="data" id="data">
       <div class="wrap">
-        <h2>Data and provenance</h2>
-        <p class="section-lede">Only derived statistics are published. Raw vendor prices are never redistributed. Every dataset is checksummed and checked for completeness.</p>
-        <div id="data-panel" class="data__grid"></div>
+        <h2 class="title">Data and provenance</h2>
+        <p class="intro">Only derived statistics are published; raw vendor prices are never redistributed. Every dataset is checksummed, checked for completeness and dated.</p>
+        <div id="data-status" class="ledger"></div>
+        <div id="data-panel" class="sources"></div>
       </div>
     </section>
 
     <section class="register" id="register">
       <div class="wrap">
-        <h2>Pre-registered hypotheses</h2>
-        <p class="section-lede">Statements fixed in advance, with a fingerprint, and evaluated later on data that did not exist when they were written. A track record of statistics, not of tips.</p>
+        <h2 class="title">Pre-registered hypotheses</h2>
+        <p class="intro">Statements fixed in advance with a fingerprint and evaluated later on data that did not exist when they were written.</p>
         <div id="register-panel"></div>
       </div>
     </section>
+
     <section class="about" id="about">
       <div class="wrap about__inner">
         <div>
-          <h2>About</h2>
-          <p class="section-lede">TSIP is designed, built and maintained by <b>Carlos Saritama</b>: built by a trader, for traders. The methodology, the code and every statistic on this page are open for inspection.</p>
+          <h2 class="title">About</h2>
+          <p class="intro">TSIP is designed, built and maintained by <b>Carlos Saritama</b>, a trader building the reference he wanted to use. The methodology, the code and every statistic on this page are open for inspection.</p>
         </div>
-        <div class="about__links">
-          <a class="about__link" href="https://github.com/cssaritama" rel="noopener">
-            <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-            <span><b>github.com/cssaritama</b><small>Profile and projects</small></span>
-          </a>
-          <a class="about__link" href="https://github.com/cssaritama/tsip-core" rel="noopener">
-            <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 010-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 11-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1h-8a1 1 0 00-1 1v6.708A2.486 2.486 0 014.5 9h8V1.5z"/></svg>
-            <span><b>Source code</b><small>Methodology, tests and data pipeline (Apache-2.0)</small></span>
-          </a>
-        </div>
+        <ul class="links">
+          <li><a href="https://github.com/cssaritama" rel="noopener"><b>github.com/cssaritama</b><span>Profile and projects</span></a></li>
+          <li><a href="https://github.com/cssaritama/tsip-core" rel="noopener"><b>Source code</b><span>Methodology, tests and data pipeline, Apache-2.0</span></a></li>
+        </ul>
       </div>
     </section>
   </main>
 
-  <footer class="footer">
-    <div class="wrap footer__inner">
+  <footer class="foot">
+    <div class="wrap foot__inner">
       <p><b>Research and education only.</b> Nothing on this site is investment advice or a recommendation to buy or sell any security or digital asset. Past frequencies do not guarantee future outcomes.</p>
-      <p class="footer__meta"><span id="generated"></span> · <a href="https://github.com/cssaritama/tsip-core">Source code</a> (Apache-2.0) · Built by <a href="https://github.com/cssaritama">Carlos Saritama</a> · © 2026</p>
+      <p class="foot__meta"><span id="generated"></span><span>© 2026 Carlos Saritama</span></p>
     </div>
   </footer>
 </body>

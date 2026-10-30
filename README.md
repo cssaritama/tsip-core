@@ -1,11 +1,11 @@
-# TSIP · Time–Space Intelligence
+# TSIP | Time–Space Intelligence
 
 [![CI](https://github.com/cssaritama/tsip-core/actions/workflows/ci.yml/badge.svg)](https://github.com/cssaritama/tsip-core/actions/workflows/ci.yml)
 [![Report](https://github.com/cssaritama/tsip-core/actions/workflows/publish.yml/badge.svg)](https://github.com/cssaritama/tsip-core/actions/workflows/publish.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/python-3.10%E2%80%933.12-informational)
 
-**Everyone shows you the odds. We show you which odds are real.**
+**Where price stands in time, with the evidence behind every figure.**
 
 **▶ Live report: [cssaritama.github.io/tsip-core](https://cssaritama.github.io/tsip-core/)**, rebuilt every day from market data up to the previous session.
 
@@ -73,7 +73,7 @@ src/tsip/
   studies/     where we are now, level memory, sessions and intraday, first passage with geometry control, entry timing, calendar
   report/      report assembly, headlines, publication guard (no raw prices leave the pipeline)
   research/    exploratory research toolkit (temporal levels, session analytics, cross-market studies)
-web/           static front end (no framework, no tracking)
+web/           static front end (no framework, no tracking, self-hosted font); design rules in docs/DESIGN.md
 registry/      pre-registered hypotheses, fingerprinted and evaluated later on new data
 ```
 
