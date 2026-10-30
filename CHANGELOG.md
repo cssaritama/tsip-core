@@ -4,6 +4,11 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.2.9] – 2026-10-30
+
+### Fixed
+- The report build stopped in 0.2.7 and 0.2.8: open levels were computed for close-only series (FRED SPX and NDX), whose missing highs and lows produced non-numeric distances that cannot be written as JSON. Close-only series now have no open levels or position, and any non-finite number left in a report is published as null instead of stopping the build. Regression tests cover both.
+
 ## [0.2.8] – 2026-10-30
 
 ### Added
