@@ -323,6 +323,125 @@
     requestAnimationFrame(() => grid.classList.add("is-ready"));
   }
 
+  // ------------------------------------------------------------------ time coordinates
+  // Calendar coordinates of the current (or next) session, in the instrument's own clock, paired
+  // with the graded statistics for those coordinates. Exchange holidays are not modelled here.
+  const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  function zoned(date, timeZone) {
+    const parts = Object.fromEntries(new Intl.DateTimeFormat("en-US", {
+      timeZone, year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric", hourCycle: "h23", weekday: "long",
+    }).formatToParts(date).map((p) => [p.type, p.value]));
+    return { y: +parts.year, m: +parts.month, d: +parts.day, h: +parts.hour, min: +parts.minute, wd: DAY_NAMES.indexOf(parts.weekday) };
+  }
+
+  function equityClock(now) {
+    const t = zoned(now, "America/New_York");
+    const minutes = t.h * 60 + t.min;
+    let day = new Date(now);
+    let wd = t.wd;
+    let session, label, open = false;
+    const weekend = wd === 0 || wd === 6;
+    if (!weekend && minutes >= 570 && minutes < 960) {
+      open = true;
+      session = minutes < 630 ? "Opening hour" : minutes < 900 ? "Midday" : "Closing hour";
+      label = `Regular session in progress, ${String(t.h).padStart(2, "0")}:${String(t.min).padStart(2, "0")} New York`;
+    } else {
+      // next session: today if before the open on a weekday, otherwise the next weekday
+      let add = !weekend && minutes < 570 ? 0 : 1;
+      while ([0, 6].includes((wd + add) % 7)) add += 1;
+      day = new Date(now.getTime() + add * 864e5);
+      wd = (wd + add) % 7;
+      session = "Opening hour";
+      label = add === 0 ? "Before the open; next: today's regular session" : `Market closed; next session ${DAY_NAMES[wd]}`;
+    }
+    const z = zoned(day, "America/New_York");
+    return { open, session, label, weekday: DAY_NAMES[wd], month: MONTH_SHORT[z.m - 1], dom: z.d, y: z.y, m: z.m };
+  }
+
+  const offsetMinutes = (now, tz) => {
+    const z = zoned(now, tz);
+    return Math.round((Date.UTC(z.y, z.m - 1, z.d, z.h, z.min) - Math.floor(now.getTime() / 60000) * 60000) / 60000);
+  };
+
+  function cryptoClock(now) {
+    const u = zoned(now, "UTC");
+    const utcMin = u.h * 60 + u.min;
+    const london = utcMin + offsetMinutes(now, "Europe/London");
+    const newYork = utcMin + offsetMinutes(now, "America/New_York");
+    const session = london < 480 ? "Asia" : newYork < 540 ? "London" : newYork < 960 ? "New York" : "Late US";
+    const hh = String(u.h).padStart(2, "0");
+    return { open: true, session, label: `Trading around the clock; ${hh}:${String(u.min).padStart(2, "0")} UTC`, hour: `${hh}:00 UTC`,
+      weekday: DAY_NAMES[u.wd], month: MONTH_SHORT[u.m - 1], dom: u.d, y: u.y, m: u.m };
+  }
+
+  const findCard = (inst, suffix) => cardsOf(inst).find((c) => c.id === `${inst.code}.${suffix}`);
+  const findItem = (card, pred) => card?.items.find(pred) || null;
+
+  function fact(card, item, text) {
+    if (!card || !item) return null;
+    return { text, value: fmt(item.estimate, card.unit), grade: item.grade, href: `#${card.id.replaceAll(".", "-")}`, control: card.contrast || "control" };
+  }
+
+  function timeCoordinates(inst, now = new Date()) {
+    const crypto = inst.instrument.calendar === "24/7";
+    const clk = crypto ? cryptoClock(now) : equityClock(now);
+    const starts = (label) => (l) => l.label.startsWith(label);
+    const coords = [];
+    // session
+    const hi = findCard(inst, "sessions.day_high"), lo = findCard(inst, "sessions.day_low");
+    const sessionFacts = [
+      fact(hi, findItem(hi, starts(clk.session)), "Day high forms in this window, against a random walk"),
+      fact(lo, findItem(lo, starts(clk.session)), "Day low forms in this window, against a random walk"),
+    ];
+    if (crypto) {
+      const hr = findCard(inst, "intraday.hour");
+      sessionFacts.push(fact(hr, findItem(hr, (l) => l.label === clk.hour), `Return in the ${clk.hour} hour, versus ${hr?.contrast || "the other hours"}`));
+    } else {
+      const ov = findCard(inst, "intraday.overnight");
+      if (!clk.open) sessionFacts.push(fact(ov, findItem(ov, starts("Overnight (")), "Overnight return, prior close to open, versus zero"));
+    }
+    coords.push({ name: "Session", value: clk.session, note: clk.label, facts: sessionFacts });
+    // weekday
+    const wh = findCard(inst, "weekly.week_high"), wl = findCard(inst, "weekly.week_low"), wd = findCard(inst, "calendar.weekday");
+    coords.push({ name: "Day of the week", value: clk.weekday, note: crypto ? "" : clk.open ? "Today" : "Next session", facts: [
+      fact(wh, findItem(wh, (l) => l.label === clk.weekday), "Week high forms on this day, against a random walk"),
+      fact(wl, findItem(wl, (l) => l.label === clk.weekday), "Week low forms on this day, against a random walk"),
+      fact(wd, findItem(wd, (l) => l.label === clk.weekday), `Return on ${clk.weekday}, versus ${wd?.contrast || "the other days"}`),
+    ] });
+    // month
+    const mo = findCard(inst, "calendar.month"), tom = findCard(inst, "calendar.turn_of_month");
+    const lastDay = new Date(Date.UTC(clk.y, clk.m, 0)).getUTCDate();
+    const inTurn = clk.dom <= 3 || clk.dom === lastDay;
+    const monthFacts = [fact(mo, findItem(mo, (l) => l.label === clk.month), `Return in ${clk.month}, versus ${mo?.contrast || "the other months"}`)];
+    if (tom && inTurn) monthFacts.push(fact(tom, tom.items[0], `Turn-of-month days, versus ${tom?.contrast || "the other days"}`));
+    coords.push({ name: "Month", value: `${clk.month}, day ${clk.dom}`,
+      note: [!clk.open && "Next session", inTurn && "inside the turn-of-month window"].filter(Boolean).join(", ").replace(/^i/, "I"), facts: monthFacts });
+    // quarter and year progress from the position block
+    const q = (inst.position?.horizons || []).find((p) => p.horizon === "quarter");
+    const yr = (inst.position?.horizons || []).find((p) => p.horizon === "year");
+    const mapQ = cardsOf(inst).find((c) => c.family === "map" && c.state?.horizon === "quarter");
+    const mapY = cardsOf(inst).find((c) => c.family === "map" && c.state?.horizon === "year");
+    const prog = (m) => (m?.state?.typical_sessions ? `${m.state.sessions_elapsed} of about ${m.state.typical_sessions} ${m.state.session_unit || "sessions"}` : "");
+    coords.push({ name: "Quarter and year", value: q?.period || "–",
+      note: [prog(mapQ) && `Quarter: ${prog(mapQ)}`, prog(mapY) && `Year ${yr?.period}: ${prog(mapY)}`].filter(Boolean).join(". "), facts: [], link: "#space" });
+    return { clock: clk, coords };
+  }
+
+  function renderTime(inst) {
+    const box = document.getElementById("time-coords");
+    if (!inst || inst.status !== "ok") { box.replaceChildren(); return; }
+    const { coords } = timeCoordinates(inst);
+    box.replaceChildren(...coords.map((c) => el("div", { class: "coord" },
+      el("div", { class: "coord__name" }, c.name),
+      el("div", { class: "coord__value" }, c.value),
+      c.note ? el("div", { class: "coord__note" }, c.note) : null,
+      el("ul", { class: "coord__facts" }, ...c.facts.filter(Boolean).map((f) => el("li", {},
+        el("a", { href: f.href }, el("span", { class: "coord__fact" }, f.text), el("span", { class: "coord__fig" }, f.value), gradeTag(f.grade, null))))),
+      !c.facts.filter(Boolean).length && c.link ? el("a", { class: "coord__more", href: c.link }, "Position against prior quarters and years") : null)));
+  }
+
   // ------------------------------------------------------------------ views
   function ordered(report) {
     const codes = report.instruments.map((i) => i.code);
@@ -350,6 +469,7 @@
     state.active = code;
     for (const b of document.querySelectorAll(".switch__opt")) b.setAttribute("aria-selected", String(b.dataset.code === code));
     const inst = state.report.instruments.find((i) => i.code === code);
+    renderTime(inst);
     renderGrid(inst);
     const panel = document.getElementById("market-panel");
     const index = document.getElementById("section-index");
@@ -363,7 +483,10 @@
     const span = [cov.daily && `Daily ${cov.daily.start} to ${cov.daily.end}`, cov.intraday && `${cov.intraday.timeframe} bars from ${cov.intraday.start}`].filter(Boolean);
     document.getElementById("index-refs").replaceChildren(...span.map((s) => el("div", {}, s)),
       el("div", {}, `Source: ${inst.sources.map((s) => s.name || s.source).join(", ")}`));
-    index.replaceChildren(...inst.sections.map((s) => el("a", { href: `#sec-${code}-${s.id}` }, s.title)));
+    const AXIS = { now: "Space", levels: "Space", revisits: "Space", paths: "Space", sessions: "Time", weekly: "Time", calendar: "Time" };
+    const groups = ["Time", "Space"].map((axis) => [axis, inst.sections.filter((s) => (AXIS[s.id] || "Space") === axis)]).filter(([, list]) => list.length);
+    index.replaceChildren(...groups.flatMap(([axis, list]) => [el("span", { class: "index__axis" }, axis),
+      ...list.map((s) => el("a", { href: `#sec-${code}-${s.id}` }, s.title))]));
     const labels = state.report.grade_labels || {};
     const notes = (inst.notes || []).map((n) => el("div", { class: "notice" }, n));
     panel.replaceChildren(...notes, ...inst.sections.map((s) =>

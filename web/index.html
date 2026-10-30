@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>TSIP | Time–Space Intelligence</title>
-  <meta name="description" content="Where SPY, QQQ and Bitcoin stand against the prior week, month, quarter, half-year and year, and what happened in past periods that stood in the same place. Every figure is graded against a control.">
+  <meta name="description" content="Time and price coordinates for SPY, QQQ, Bitcoin and Ether: where we are in the calendar, where price stands against prior-period levels, and what has followed, with every figure graded against a control.">
   <meta name="theme-color" content="#0d1828" media="(prefers-color-scheme: dark)">
   <meta name="theme-color" content="#f3f5f7" media="(prefers-color-scheme: light)">
   <meta property="og:title" content="TSIP | Time–Space Intelligence">
-  <meta property="og:description" content="Where price stands in time, with the evidence behind every figure.">
+  <meta property="og:description" content="Where we are in time, where price stands in space, and the evidence behind every figure.">
   <meta property="og:type" content="website">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="preload" href="assets/fonts/instrument-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
@@ -37,11 +37,24 @@
   <main id="main">
     <section class="hero" id="top">
       <div class="wrap">
-        <h1 class="hero__title">Where price stands in time.</h1>
-        <p class="hero__lede">The position of today's price against the prior week, month, quarter, half-year and year, and what happened by the end of past periods that stood in the same place. Every figure carries its sample, its uncertainty and a grade.</p>
+        <h1 class="hero__title">Time–Space Intelligence</h1>
+        <p class="hero__lede">Markets move through time and through price. <b>Time</b> is where we are in the calendar: session, day, week, month, quarter and year. <b>Space</b> is where price stands against the levels those periods left behind. For every coordinate, the page shows what has followed in the past and how strong the evidence is.</p>
 
         <div class="switch" role="tablist" id="market-switch" aria-label="Market"></div>
 
+        <section class="axis" id="time" aria-labelledby="time-title">
+          <div class="axis__head">
+            <h2 id="time-title">Time</h2>
+            <p id="time-note">Where we are in the calendar, and what has followed at the same coordinates.</p>
+          </div>
+          <div class="coords" id="time-coords"></div>
+        </section>
+
+        <section class="axis" id="space" aria-labelledby="space-title">
+          <div class="axis__head">
+            <h2 id="space-title">Space</h2>
+            <p>Where the last close stands against each horizon's reference range, and what followed in past periods in the same place.</p>
+          </div>
         <figure class="grid" id="grid" aria-live="polite">
           <div class="grid__head" aria-hidden="true">
             <span>Horizon</span><span>Time elapsed</span><span>Last close against the reference range</span><span>What followed in past periods like this</span>
@@ -51,6 +64,7 @@
         </figure>
 
         <section class="open-levels" id="open-levels" hidden></section>
+        </section>
       </div>
     </section>
 
