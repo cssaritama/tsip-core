@@ -23,6 +23,7 @@ import pandas as pd
 # Instruments the scheduled build is expected to publish, and the source each one should come from.
 EXPECTED = {
     "BTC-USD": {"source": "coinbase", "calendar": "24/7"},
+    "ETH-USD": {"source": "coinbase", "calendar": "24/7"},
     "SPY": {"source": "alpaca", "calendar": "XNYS"},
     "QQQ": {"source": "alpaca", "calendar": "XNYS"},
     "SPX": {"source": "stooq", "calendar": "XNYS"},

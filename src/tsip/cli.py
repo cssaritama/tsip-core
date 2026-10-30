@@ -1,6 +1,7 @@
 """Command line interface.
 
 tsip fetch btc       [--source coinbase|binance] [--start 2016-01-01]
+tsip fetch eth       [--start 2016-06-01]   (Coinbase ETH-USD hourly)
 tsip fetch sp500     [--source alpaca|stooq|fred] [--start 2016-01-01]   (alias: spx)
 tsip fetch nasdaq100 [--source alpaca|stooq|fred] [--start 2016-01-01]
 tsip report [--out site/data/report.json]
@@ -23,15 +24,17 @@ DEFAULT_REPORT = "site/data/report.json"
 DEFAULT_HYPOTHESES = "registry/hypotheses.json"
 
 
-MARKETS = {"btc": "btc", "sp500": "sp500", "spx": "sp500", "nasdaq100": "nasdaq100", "ndx": "nasdaq100"}
+MARKETS = {"btc": "btc", "eth": "eth", "sp500": "sp500", "spx": "sp500", "nasdaq100": "nasdaq100", "ndx": "nasdaq100"}
 
 
 def _cmd_fetch(args: argparse.Namespace) -> int:
-    from tsip.pipeline import fetch_bitcoin, fetch_equity
+    from tsip.pipeline import fetch_bitcoin, fetch_equity, fetch_ether
 
     market = MARKETS[args.market]
     try:
-        if market == "btc":
+        if market == "eth":
+            meta = fetch_ether(args.data_dir, start=args.start if args.start != "2016-01-01" else "2016-06-01")
+        elif market == "btc":
             meta = fetch_bitcoin(args.data_dir, source=args.source or "coinbase", start=args.start)
         else:
             meta = fetch_equity(args.data_dir, market, source=args.source or "alpaca", start=args.start)

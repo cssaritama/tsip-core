@@ -98,6 +98,18 @@ def fetch_bitcoin(data_dir: str | Path, *, source: str = "coinbase", start: str 
     raise ValueError(f"unknown Bitcoin source {source!r}")
 
 
+def fetch_ether(data_dir: str | Path, *, start: str = "2016-06-01") -> dict:
+    """Ether: Coinbase ETH-USD hourly (public endpoint, no key)."""
+    return fetch_dataset(
+        data_dir,
+        source="coinbase",
+        instrument="ETH-USD",
+        timeframe="1h",
+        start=start,
+        fetcher=lambda s: coinbase.fetch("ETH-USD", "1h", start=s),
+    )
+
+
 # Exchange-traded families: ETF (intraday, Alpaca), index (long daily history, Stooq) and index close (FRED).
 EQUITY_FAMILIES = {
     "sp500": {"etf": "SPY", "index": "SPX", "stooq": "^spx", "fred": "SP500", "name": "S&P 500"},
@@ -200,6 +212,24 @@ def load_inputs(data_dir: str | Path) -> list[InstrumentInput]:
     else:
         inputs.append(InstrumentInput("BTC-USD", "crypto"))
 
+    eth = dataset_path(raw, "ETH-USD", "coinbase", "1h")
+    if eth.exists():
+        try:
+            bars = read_bars(eth)
+            inputs.append(
+                InstrumentInput(
+                    "ETH-USD",
+                    "crypto",
+                    intraday=bars,
+                    sources=[_provenance(eth)],
+                    quality={"completeness": quality.hourly_completeness(bars)},
+                )
+            )
+        except Exception:  # a damaged dataset must not hide the other markets
+            print("[ETH-USD] could not load stored data:", file=sys.stderr)
+            traceback.print_exc(file=sys.stderr)
+            inputs.append(InstrumentInput("ETH-USD", "crypto"))
+
     for spec in EQUITY_FAMILIES.values():
         try:
             inputs.extend(_equity_inputs(raw, spec))
@@ -271,4 +301,12 @@ def _equity_inputs(raw: Path, spec: dict) -> list[InstrumentInput]:
     return found
 
 
-__all__ = ["SourceUnavailable", "fetch_bitcoin", "fetch_equity", "fetch_nasdaq100", "fetch_sp500", "load_inputs"]
+__all__ = [
+    "SourceUnavailable",
+    "fetch_bitcoin",
+    "fetch_ether",
+    "fetch_equity",
+    "fetch_nasdaq100",
+    "fetch_sp500",
+    "load_inputs",
+]

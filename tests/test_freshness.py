@@ -18,6 +18,7 @@ def _inst(code, source, end, calendar="XNYS"):
 def _report(**overrides):
     insts = {
         "BTC-USD": _inst("BTC-USD", "coinbase", "2026-10-30 12:00:00+00:00", "24/7"),
+        "ETH-USD": _inst("ETH-USD", "coinbase", "2026-10-30 12:00:00+00:00", "24/7"),
         "SPY": _inst("SPY", "alpaca", "2026-10-29 19:30:00+00:00"),
         "QQQ": _inst("QQQ", "alpaca", "2026-10-29 19:30:00+00:00"),
         "SPX": _inst("SPX", "stooq", "2026-10-29 00:00:00"),

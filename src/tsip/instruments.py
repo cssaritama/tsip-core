@@ -36,6 +36,7 @@ _REGISTRY = {
         "NQ", "E-mini Nasdaq-100 futures", "future", "index points", "America/Chicago", "CME Globex", "Nasdaq-100"
     ),
     "BTC-USD": Instrument("BTC-USD", "Bitcoin / US dollar", "crypto", "USD per BTC", "UTC", "24/7", "Bitcoin"),
+    "ETH-USD": Instrument("ETH-USD", "Ether / US dollar", "crypto", "USD per ETH", "UTC", "24/7", "Ether"),
     "BTC-USDT": Instrument("BTC-USDT", "Bitcoin / Tether", "crypto", "USDT per BTC", "UTC", "24/7", "Bitcoin"),
 }
 

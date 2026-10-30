@@ -49,6 +49,9 @@ jobs:
       - name: Bitcoin · Binance archive (independent cross-check)
         continue-on-error: true
         run: tsip fetch btc --source binance --start 2018-01-01
+      - name: Ether · Coinbase hourly
+        continue-on-error: true
+        run: tsip fetch eth --start 2016-06-01
       - name: S&P 500 · SPY 30-minute (Alpaca)
         if: env.ALPACA_API_KEY_ID != ''
         continue-on-error: true

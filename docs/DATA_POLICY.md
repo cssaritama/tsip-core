@@ -5,6 +5,7 @@
 | Market | Primary | Cross-check / fallback | Access |
 |---|---|---|---|
 | Bitcoin (BTC-USD) | Coinbase Exchange public candles, hourly, from 2015 | Binance public data archive (BTC-USDT), hourly, from 2017, SHA-256 verified | No key |
+| Ether (ETH-USD) | Coinbase Exchange public candles, hourly, from mid-2016 | — | No key |
 | S&P 500 (SPY) | Alpaca Market Data, 30-minute bars from 2016, adjusted for splits and distributions | — | Free account (bring your own key) |
 | S&P 500 (SPX) | Stooq daily index history (long history, checked for genuine ranges and opens) | FRED `SP500` daily close (close-only) | No key |
 | Nasdaq-100 (QQQ) | Alpaca Market Data, 30-minute bars from 2016, adjusted for splits and distributions | — | Free account (bring your own key) |
@@ -14,9 +15,13 @@ ETF and index series are separate instruments and are never combined: sessions a
 
 The connectors never fill, interpolate or invent observations. FRED is a close-only series: studies that need opens, highs or lows are skipped rather than approximated.
 
+### Stooq status (checked 2026-10-30)
+
+Since April 2026 Stooq serves CSV history only with a personal key obtained by solving a captcha, and since June 2026 it adds an automated-browser challenge. The key expires by IP address or usage. Automated retrieval from the build environment is therefore not possible without circumventing those controls, which the project does not do. The Stooq connector stays for owners who download with their own key; the scheduled build relies on the FRED close fallback for SPX and NDX.
+
 ## What is published
 
-Only **derived, aggregated statistics** (frequencies, means, differences, intervals and grades over years of data) are published. Raw bars are cached locally and in the build environment, and are never committed or deployed. The publication guard (`tsip.report.publish.assert_publishable`) fails the build if the report contains price-series fields or long numeric arrays.
+Only **derived, aggregated statistics** (frequencies, means, differences, intervals and grades over years of data) and **distances** (from the last close to reference highs and lows, in percent and in ATR multiples) are published. Price levels and bars are not. Raw bars are cached locally and in the build environment, and are never committed or deployed. The publication guard (`tsip.report.publish.assert_publishable`) fails the build if the report contains price-series fields or long numeric arrays.
 
 ## Provenance
 
@@ -32,8 +37,9 @@ Every cached dataset has a JSON sidecar recording source, instrument, timeframe,
 
 ## Data status (freshness)
 
-Every report carries a `data_status` section, shown as a strip at the top of the website, with one row per expected instrument (BTC-USD, SPY, QQQ, SPX, NDX):
+Every report carries a `data_status` section, shown as a strip at the top of the website, with one row per expected instrument:
 
+* Expected markets: BTC-USD, ETH-USD, SPY, QQQ, SPX, NDX.
 * **fresh**: the last bar is as recent as the source allows: hourly Bitcoin bars at most 6 hours old; Alpaca intraday bars with no completed NYSE session missing; daily index series at most one completed session behind (two for FRED, which posts closes the next day and is sometimes a further day late).
 * **degraded**: present and recent, but served by the fallback source (for example FRED close-only instead of the Stooq long history).
 * **stale**: older than allowed, or missing from the build.
