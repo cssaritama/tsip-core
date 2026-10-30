@@ -79,6 +79,18 @@ These are conditional base rates, not forecasts. Each card shows how many analog
 
 Index histories from the early decades often repeat the close as the day's high and low, or as the next open. A calendar month fails the range check if fewer than 95% of its days have a high above the low, and the open check if more than half of its opens equal the prior close. Level studies start after the last month that fails the range check; gap and open-based studies (first passage, entry timing, overnight returns) start after the last month that fails either check. The dates are printed with each instrument.
 
+### Time to revisit a level
+
+Event: a calendar period (week, month, quarter, year) closes; its high and low become reference levels, frozen at its last close. The clock starts at the next session, and a level is revisited when a later session trades at or beyond it. Distance is measured in units of the 60-session volatility of daily log returns known at the close.
+
+Control: for each event, the share of paths from all other period closes in the same history that travelled at least the same volatility-scaled distance, on the same side, within the same window. It keeps drift, fat tails and the instrument's volatility pattern, so the difference isolates what the actual levels add. A positive difference means real levels are revisited sooner than equally distant arbitrary levels.
+
+Windows (sessions; calendar days for crypto): week 5/10/20, month 10/20/60, quarter 20/60/120, year 60/120/250. Only fully observed windows count. The median time to revisit is a Kaplan–Meier estimate with levels not yet revisited censored; when fewer than half are revisited within the observed span, no median is reported.
+
+### Position and open levels
+
+The report states, for each horizon, the distance from the last close to the reference range's high and low in percent and in multiples of the 14-session average true range, and the position of the close within that range (0% at the low, 100% at the high). For a period in progress the reference is the prior complete period; once a period has ended, the reference is the period that just closed and the row describes the next period's starting position. The open-levels board lists highs and lows of recent closed periods not traded since, with age and distance. Price levels are not published.
+
 ### Entry timing
 
 The baseline buys at the first session's open every month. The rule places a limit order at the prior month's low at the start of the month. It fills at the limit, or at the open if the session opens below it. If it never fills, it buys at the month's last close. Only information available before the order is used.

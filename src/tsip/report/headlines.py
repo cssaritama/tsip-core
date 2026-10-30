@@ -83,6 +83,20 @@ def headline(card: EvidenceCard) -> str:
             f"{_fmt(first.estimate, '%')} per purchase versus plain DCA; the limit fills in {fill:.0f}% of months "
             f"({first.grade_label.lower()}, {first.grade})."
         )
+    if card.family == "revisits":
+        x = best.extra
+        median = x.get("median_sessions")
+        when = f"; median time {median:.0f} {x.get('unit_word', 'sessions')}" if median else ""
+        verdict = "sooner than" if (best.estimate or 0) > 0 else "later than"
+        if best.grade not in {"A", "B", "C"}:
+            return (
+                f"{best.label}: {x['observed_pct']:.0f}% of {card.n_label}, against {x['control_pct']:.0f}% for "
+                f"equally distant arbitrary levels{when}; no reliable difference ({grade})."
+            )
+        return (
+            f"{best.label}: {x['observed_pct']:.0f}% of {card.n_label}, {verdict} equally distant arbitrary levels "
+            f"({x['control_pct']:.0f}%){when} ({grade})."
+        )
     contrast = card.contrast or "the control"
     if best.grade in {"A", "B", "C"}:
         return f"{best.label}: {_fmt(best.estimate, card.unit)} versus {contrast} ({grade})."

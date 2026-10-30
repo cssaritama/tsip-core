@@ -19,8 +19,9 @@ from tsip.frames import daily_from_intraday_utc, rth_daily_from_intraday
 from tsip.instruments import get_instrument
 from tsip.report.headlines import headline
 from tsip.report.publish import assert_publishable
-from tsip.studies import calendar, entry_timing, first_passage, intraday, level_map, level_memory
+from tsip.studies import calendar, entry_timing, first_passage, intraday, level_map, level_memory, revisit
 from tsip.studies.common import StudyContext
+from tsip.studies.position import position
 
 SCHEMA = "tsip.report/1"
 SECTIONS = [
@@ -28,10 +29,11 @@ SECTIONS = [
     ("levels", "Level memory", ("levels",)),
     ("sessions", "Sessions and intraday", ("sessions", "intraday")),
     ("weekly", "Weekly structure", ("weekly",)),
+    ("revisits", "Time to revisit", ("revisits",)),
     ("paths", "Paths and entries", ("paths", "entries")),
     ("calendar", "Calendar", ("calendar",)),
 ]
-STUDIES = (level_map, level_memory, intraday, first_passage, entry_timing, calendar)
+STUDIES = (level_map, level_memory, revisit, intraday, first_passage, entry_timing, calendar)
 
 
 @dataclass
@@ -116,11 +118,23 @@ def _instrument_report(inp: InstrumentInput, *, reps: int, seed: int) -> dict:
         "status": "ok",
         "coverage": {"daily": _coverage(ctx.daily), "intraday": _coverage(inp.intraday)},
         "quality": inp.quality,
+        "position": _safe(position, ctx.daily, crypto=ctx.is_crypto),
+        "open_levels": _safe(revisit.open_levels, ctx.daily, crypto=ctx.is_crypto),
         "grading": grading,
         "grade_counts": counts,
         "sections": sections,
         "skipped_studies": skipped,
     }
+
+
+def _safe(fn, *args, **kwargs) -> dict:
+    """Descriptive blocks must never stop the report; failures go to the build log."""
+    try:
+        return fn(*args, **kwargs)
+    except Exception:
+        print(f"{fn.__name__} failed:", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
+        return {}
 
 
 def load_hypotheses(path: str | Path | None) -> list[dict]:

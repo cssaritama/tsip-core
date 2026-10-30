@@ -58,5 +58,17 @@
     "evaluation_start": "2026-10-27",
     "evaluation_end": "2027-10-29",
     "status": "open"
+  },
+  {
+    "id": "H-2026-006",
+    "instrument": "SPY",
+    "statement": "Closed weeks' lows are traded again within 10 sessions more often than arbitrary levels at the same volatility-scaled distance.",
+    "metric": "Share of closed weeks whose low is traded again within 10 sessions minus the control share (time-to-revisit study), percentage points.",
+    "criterion": "Estimate above zero for weeks closing in the evaluation window.",
+    "basis": "Author's thesis of 2026-10-30 that prior-period levels attract price; registered before any real-data result of the study was seen.",
+    "registered": "2026-10-30",
+    "evaluation_start": "2026-11-02",
+    "evaluation_end": "2027-10-29",
+    "status": "open"
   }
 ]
