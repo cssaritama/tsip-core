@@ -2,12 +2,12 @@
   "use strict";
 
   // Display order follows ADR 0049: one tradable instrument per family first, index references after.
-  const PRIMARY = ["SPY", "QQQ", "BTC-USD", "BTC-USDT"];
+  const PRIMARY = ["SPY", "QQQ", "BTC-USD", "ETH-USD", "BTC-USDT"];
   const REFERENCES = ["SPX", "NDX"];
   const MARKET_NAMES = {
-    SPY: "S&P 500", SPX: "S&P 500 index", QQQ: "Nasdaq-100", NDX: "Nasdaq-100 index", "BTC-USD": "Bitcoin", "BTC-USDT": "Bitcoin",
+    SPY: "S&P 500", SPX: "S&P 500 index", QQQ: "Nasdaq-100", NDX: "Nasdaq-100 index", "BTC-USD": "Bitcoin", "BTC-USDT": "Bitcoin", "ETH-USD": "Ether",
   };
-  const SHORT_CODE = { "BTC-USD": "BTC", "BTC-USDT": "BTC" };
+  const SHORT_CODE = { "BTC-USD": "BTC", "BTC-USDT": "BTC", "ETH-USD": "ETH" };
   const HORIZONS = ["day", "week", "month", "quarter", "half-year", "year"];
   const HORIZON_NAMES = { day: "Day", week: "Week", month: "Month", quarter: "Quarter", "half-year": "Half-year", year: "Year" };
   const SEGMENTS = { A: 5, B: 4, C: 3, D: 2, F: 1, "N/A": 0 };
@@ -212,64 +212,114 @@
   }
 
   // ------------------------------------------------------------------ time–space grid
-  function mapCards(inst) {
-    const cards = (inst.sections || []).flatMap((s) => s.cards).filter((c) => c.family === "map" && c.state);
-    return cards.sort((a, b) => HORIZONS.indexOf(a.state.horizon) - HORIZONS.indexOf(b.state.horizon));
+  const HKEY = { week: "week", month: "month", quarter: "quarter", "half-year": "half-year", year: "year" };
+  const signed = (v, d = 2) => (v === null || v === undefined ? "–" : `${v > 0 ? "+" : ""}${v.toFixed(d)}`);
+  const capital = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+
+  function cardsOf(inst) {
+    return (inst.sections || []).flatMap((s) => s.cards);
   }
 
-  function gridRow(card, labels) {
-    const st = card.state;
-    const share = st.typical_sessions ? Math.min(1, st.sessions_elapsed / st.typical_sessions) : 0;
-    const unit = st.session_unit || "sessions";
-    const zones = ["below", "inside", "above"].map((z) => {
-      const on = st.last_close_vs_prior_range === z;
-      const label = { below: "Below", inside: "Inside", above: "Above" }[z];
-      const zone = el("span", { class: `zone${on ? " zone--on" : ""}` }, label);
-      if (z === "inside" && st.broke_prior_low) zone.append(el("span", { class: "zone__tick zone__tick--low", title: "Prior low taken" }));
-      if (z === "inside" && st.broke_prior_high) zone.append(el("span", { class: "zone__tick zone__tick--high", title: "Prior high taken" }));
-      return zone;
-    });
-    const taken = [st.broke_prior_high && "prior high taken", st.broke_prior_low && "prior low taken"].filter(Boolean);
-    const item = card.items[card.primary ?? 0];
-    const gradeLabel = labels[card.grade] || card.grade_label;
-    return el("a", { class: "row", href: `#${card.id.replaceAll(".", "-")}`,
-      "aria-label": `${HORIZON_NAMES[st.horizon]}: ${card.headline}` },
-      el("div", { class: "row__h" }, el("b", {}, HORIZON_NAMES[st.horizon] || st.horizon), el("span", {}, st.period)),
+  // Range bar: the reference range is the middle 50% of the track; the marker is the last close.
+  function rangeBar(p) {
+    const pos = p.range_position_pct;
+    const x = pos === null || pos === undefined ? null : Math.max(-45, Math.min(145, pos));
+    const left = x === null ? 50 : 25 + x * 0.5;
+    const zone = x === null ? "" : pos > 100 ? "above" : pos < 0 ? "below" : "inside";
+    const bar = el("div", { class: `range range--${zone}`, role: "img",
+      "aria-label": `Last close at ${pos === null ? "an unknown point" : `${pos.toFixed(0)}% of the ${p.reference} range`}` },
+      el("span", { class: "range__band" }),
+      el("span", { class: "range__edge range__edge--low" }),
+      el("span", { class: "range__edge range__edge--high" }),
+      x === null ? null : el("span", { class: "range__mark", style: `left:${left.toFixed(1)}%` }));
+    const atr = (v) => (v === undefined || v === null ? "" : ` (${signed(v, 1)} ATR)`);
+    return el("div", {}, bar,
+      el("div", { class: "range__text" },
+        el("span", {}, `Low ${signed(p.to_reference_low_pct)}%${atr(p.to_reference_low_atr)}`),
+        el("span", {}, `High ${signed(p.to_reference_high_pct)}%${atr(p.to_reference_high_atr)}`)));
+  }
+
+  function outcomeFor(p, inst) {
+    const cards = cardsOf(inst);
+    const h = HKEY[p.horizon];
+    if (p.status === "in_progress") {
+      const map = cards.find((c) => c.family === "map" && c.state?.horizon === p.horizon);
+      if (!map || !map.items.length) return null;
+      const item = map.items[map.primary ?? 0];
+      return { fig: pct(item.estimate), label: item.label, grade: map.grade, n: `${num(map.state.analogs ?? item.n)} past ${map.n_label}` };
+    }
+    const lv = cards.find((c) => c.id.endsWith(`.levels.${h}`));
+    if (!lv || lv.items.length < 2) return null;
+    const up = lv.items[0], dn = lv.items[1];
+    const pick = Math.abs(p.to_reference_high_pct ?? 99) <= Math.abs(p.to_reference_low_pct ?? 99) ? up : dn;
+    const side = pick === up ? `trades above the ${p.reference} high` : `trades below the ${p.reference} low`;
+    return { fig: pct(pick.estimate), label: `The next ${p.horizon} ${side}`, grade: lv.grade, n: `${num(pick.n)} past ${lv.n_label}` };
+  }
+
+  function gridRow(p, inst) {
+    const map = cardsOf(inst).find((c) => c.family === "map" && c.state?.horizon === p.horizon);
+    const st = map?.state;
+    const closed = p.status === "closed";
+    const share = !closed && st?.typical_sessions ? Math.min(1, st.sessions_elapsed / st.typical_sessions) : closed ? 0 : null;
+    const unit = st?.session_unit || "sessions";
+    const taken = closed ? [] : [p.took_reference_high && "reference high taken", p.took_reference_low && "reference low taken"].filter(Boolean);
+    const out = outcomeFor(p, inst);
+    const target = closed ? cardsOf(inst).find((c) => c.id.endsWith(`.levels.${HKEY[p.horizon]}`)) : map;
+    const attrs = { class: "row" };
+    if (target) attrs.href = `#${target.id.replaceAll(".", "-")}`;
+    return el(target ? "a" : "div", attrs,
+      el("div", { class: "row__h" }, el("b", {}, capital(p.horizon)), el("span", {}, closed ? `${p.period} opens next` : p.period)),
       el("div", {},
-        el("div", { class: "elapsed__track" }, el("span", { class: "elapsed__fill", style: `width:${(share * 100).toFixed(1)}%` })),
-        el("div", { class: "elapsed__text" }, `${st.sessions_elapsed} of about ${st.typical_sessions} ${unit}`)),
-      el("div", {},
-        el("div", { class: "zones", role: "img", "aria-label": `Last close ${st.last_close_vs_prior_range} the prior ${st.horizon} range` }, ...zones),
-        el("div", { class: "zones__note" }, taken.length ? capital(taken.join(", ")) : "Neither prior extreme taken")),
-      item
+        el("div", { class: "elapsed__track" }, share === null ? null : el("span", { class: "elapsed__fill", style: `width:${(share * 100).toFixed(1)}%` })),
+        el("div", { class: "elapsed__text" }, closed ? `Against ${p.reference}, which has closed` : st ? `${st.sessions_elapsed} of about ${st.typical_sessions} ${unit}, against ${p.reference}` : `Against ${p.reference}`)),
+      el("div", {}, rangeBar(p), taken.length ? el("div", { class: "zones__note" }, capital(taken.join(", "))) : null),
+      out
         ? el("div", { class: "outcome" },
-            el("div", {},
-              el("div", { class: "outcome__fig" }, pct(item.estimate)),
-              el("div", { class: "outcome__label" }, item.label)),
-            el("div", { class: "outcome__side" }, gradeTag(card.grade, null), el("div", { class: "outcome__n" }, `${num(st.analogs ?? item.n)} past ${card.n_label}`)))
+            el("div", {}, el("div", { class: "outcome__fig" }, out.fig), el("div", { class: "outcome__label" }, out.label)),
+            el("div", { class: "outcome__side" }, gradeTag(out.grade, null), el("div", { class: "outcome__n" }, out.n)))
         : el("div", { class: "outcome" }, el("div", { class: "outcome__label" }, "Not enough comparable periods yet")));
   }
-  const capital = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+
+  function renderOpenLevels(inst) {
+    const box = document.getElementById("open-levels");
+    const ol = inst?.open_levels;
+    if (!ol || !ol.levels?.length) { box.replaceChildren(); box.hidden = true; return; }
+    box.hidden = false;
+    const rows = ol.levels.slice(0, 10).map((l) => el("tr", {},
+      el("td", {}, `${capital(l.horizon)} ${l.side}`),
+      el("td", {}, l.period),
+      el("td", {}, l.age_sessions === 0 ? "Just closed" : `${num(l.age_sessions)}`),
+      el("td", { class: l.distance_pct >= 0 ? "up" : "down" }, `${signed(l.distance_pct)}%`),
+      el("td", {}, l.distance_atr === null ? "–" : signed(l.distance_atr, 1))));
+    const revisit = cardsOf(inst).find((c) => c.family === "revisits");
+    box.replaceChildren(
+      el("div", { class: "levels__head" },
+        el("h2", {}, "Open levels"),
+        el("p", {}, `Highs and lows of closed periods not traded since, nearest first, as of ${ol.as_of}. ATR ${ol.atr_pct ? ol.atr_pct.toFixed(2) : "–"}% over 14 sessions.`),
+        revisit ? el("a", { href: `#sec-${inst.code}-revisits` }, "How soon levels are revisited") : null),
+      el("div", { class: "table-wrap" }, el("table", { class: "levels" },
+        el("thead", {}, el("tr", {}, ...["Level", "Period", "Age (sessions)", "Distance", "In ATR"].map((h) => el("th", {}, h)))),
+        el("tbody", {}, ...rows))));
+  }
 
   function renderGrid(inst) {
     const grid = document.getElementById("grid");
     const rows = document.getElementById("grid-rows");
     const caption = document.getElementById("grid-caption");
     grid.classList.remove("is-ready");
+    renderOpenLevels(inst);
     if (!inst || inst.status !== "ok") {
       rows.replaceChildren(el("div", { class: "grid__empty" }, `${marketName(inst?.code)}: no data in this build. It appears after the next scheduled update.`));
       caption.replaceChildren();
       return;
     }
-    const cards = mapCards(inst);
-    const labels = state.report.grade_labels?.base_rate || {};
-    rows.replaceChildren(...(cards.length
-      ? cards.map((c) => gridRow(c, labels))
-      : [el("div", { class: "grid__empty" }, "The position against prior periods needs a longer history for this market.")]));
-    const asOf = cards[0]?.state?.as_of;
+    const positions = inst.position?.horizons || [];
+    rows.replaceChildren(...(positions.length
+      ? positions.map((p) => gridRow(p, inst))
+      : [el("div", { class: "grid__empty" }, `${marketName(inst.code)} is a close-only series: positions need daily highs and lows. Its long-history statistics are listed below.`)]));
     caption.replaceChildren(
-      el("span", {}, `${inst.instrument.name}, ${inst.instrument.unit}${asOf ? `, as of ${asOf}` : ""}`),
-      el("span", {}, "Past periods are compared at the same point and in the same position. Price levels are not published."));
+      el("span", {}, `${inst.instrument.name}, last close ${inst.position?.as_of || "–"}`),
+      el("span", {}, "Distances are from the last close, in percent and in 14-session ATR. Outcomes come from past periods in the same position."));
     requestAnimationFrame(() => grid.classList.add("is-ready"));
   }
 
