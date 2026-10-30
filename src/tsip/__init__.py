@@ -6,6 +6,6 @@ price coordinates (prior period open, high, low and close) that traders watch, w
 reported next to its sample size, uncertainty and an appropriate control.
 """
 
-__version__ = "0.2.7"
+__version__ = "0.2.8"
 
 __all__ = ["__version__"]

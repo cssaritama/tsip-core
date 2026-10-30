@@ -4,6 +4,15 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.2.8] – 2026-10-30
+
+### Added
+- Time–space model (`docs/TIME_SPACE_MODEL.md`): every coordinate and study placed on the time axis (session, hour, weekday, turn of the month, month, period progress, elapsed time) or the space axis (reference ranges, zones, open levels, first passage), and where they meet.
+- Time panel on the website: the calendar coordinates of the current or next session in the instrument's own clock (session window, day of the week, month and turn of the month, quarter and year progress), each with the graded statistics for that coordinate and a link to the full finding.
+
+### Changed
+- The page is organised in two panels, Time and Space; the findings index is grouped the same way. Title: "Time–Space Intelligence".
+
 ## [0.2.7] – 2026-10-30
 
 ### Added
