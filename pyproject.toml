@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tsip"
-version = "0.2.4"
+version = "0.2.5"
 description = "Time–Space Intelligence Platform: evidence-graded statistics on how markets move through time and price levels."
 readme = "README.md"
 requires-python = ">=3.10"

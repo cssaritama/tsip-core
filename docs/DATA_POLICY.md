@@ -8,7 +8,7 @@
 | S&P 500 (SPY) | Alpaca Market Data, 30-minute bars from 2016, adjusted for splits and distributions | — | Free account (bring your own key) |
 | S&P 500 (SPX) | Stooq daily index history (long history, checked for genuine ranges and opens) | FRED `SP500` daily close (close-only) | No key |
 | Nasdaq-100 (QQQ) | Alpaca Market Data, 30-minute bars from 2016, adjusted for splits and distributions | — | Free account (bring your own key) |
-| Nasdaq-100 (NDX) | Stooq daily index history | — | No key |
+| Nasdaq-100 (NDX) | Stooq daily index history | FRED `NASDAQ100` daily close (close-only) | No key |
 
 ETF and index series are separate instruments and are never combined: sessions and intraday questions use the ETFs; prior-period levels over long horizons and calendar questions also use the index histories.
 
@@ -29,6 +29,16 @@ Every cached dataset has a JSON sidecar recording source, instrument, timeframe,
 * February 2018 Binance verification: the checksum-verified hourly archive contains 640 records, 43 off-grid intervals crossing clock-hour boundaries, and one overlapping interval. Its one-minute archive also contains shifted intervals; simply summing minute bars is not an exact repair. Trade-level reconstruction, provenance, overlap reconciliation and coverage checks remain pending. Cached data previously filtered by v0.2.2 need re-acquisition; reading a reduced cache cannot recover missing records.
 * S&P 500 and Nasdaq-100: observed sessions versus the New York Stock Exchange calendar.
 * Long index histories: the first dates with genuine daily ranges and genuine opens (see the methodology), and how many months were left out.
+
+## Data status (freshness)
+
+Every report carries a `data_status` section, shown as a strip at the top of the website, with one row per expected instrument (BTC-USD, SPY, QQQ, SPX, NDX):
+
+* **fresh**: the last bar is as recent as the source allows: hourly Bitcoin bars at most 6 hours old; Alpaca intraday bars with no completed NYSE session missing; daily index series at most one completed session behind.
+* **degraded**: present and recent, but served by the fallback source (for example FRED close-only instead of the Stooq long history).
+* **stale**: older than allowed, or missing from the build.
+
+The scheduled job runs twice a day (after the Asian session and, on weekdays, after the US close). Each provider may fail without stopping the others, so publication always goes ahead, but the run is marked as failed whenever a market is stale or missing, and its summary lists the status of every market. `tsip check --report site/data/report.json` gives the same answer locally.
 
 ## Terms of use
 

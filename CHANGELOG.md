@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.2.5] – 2026-10-30
+
+### Added
+- Data status: every report carries `data_status` with the last bar of each expected market (BTC-USD, SPY, QQQ, SPX, NDX) and whether it is fresh, served by a fallback source (degraded) or stale/missing. The website shows it as a strip under the key figures.
+- `tsip check` prints the same status, appends a Markdown table to a job summary and exits with an error when a market is stale or missing.
+
+### Changed
+- The scheduled build also runs on weekdays after the US close, so the evening report includes the session.
+- A run that publishes stale or incomplete data is now marked as failed (a separate status job), instead of showing green because each data step may fail on its own.
+- Nasdaq-100 index: FRED `NASDAQ100` daily close is used when the Stooq long history is unavailable, as already done for the S&P 500.
+
 ### Documentation
 - The trade and hour counts stated for 0.2.4 were independently re-verified against the official Binance archives (1,066,634 aggregate trades, 62 hours, 19 of 20 comparable hours identical).
 
