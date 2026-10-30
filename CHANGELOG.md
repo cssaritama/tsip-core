@@ -4,6 +4,13 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.2.6] – 2026-10-30
+
+### Changed
+- New website design (`docs/DESIGN.md`): a time–space grid at the top shows, for the selected market, each horizon's time elapsed, the position of the last close against the prior range, whether the prior high or low has been taken and what followed in comparable past periods, with its grade. SPY, QQQ and Bitcoin lead the market switch; SPX and NDX are labelled index references (ADR 0049). Findings are listed by section with a sticky index; grades are shown as an evidence meter; the data section lists the status of every market. A "what these statistics can and cannot do" section is added. Dark and light colour schemes follow the system setting.
+- The site is fully self-contained: one self-hosted variable font (Instrument Sans, SIL Open Font License) and no third-party requests; a test enforces it.
+- Data status allows FRED close series two completed sessions of delay: FRED posts a close the next day and the S&P 500 series is sometimes a day later still. The first 0.2.5 run was marked stale for SPX for this reason alone.
+
 ## [0.2.5] – 2026-10-30
 
 ### Added
