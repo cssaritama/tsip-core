@@ -37,7 +37,7 @@
     const d = digits ?? (unit === "%" ? 2 : 1);
     const sign = v > 0 ? "+" : "";
     if (unit === "bps") return `${sign}${v.toFixed(d)} bps`;
-    if (unit === "pp") return `${sign}${v.toFixed(d)} pp`;
+    if (unit === "pp") return `${sign}${v.toFixed(d)} pts`;
     return `${sign}${v.toFixed(d)}%`;
   };
   const pct = (v, d = 0) => (v === null || v === undefined ? "–" : `${v.toFixed(d)}%`);
@@ -191,6 +191,21 @@
       el("span", {}, zone[st.last_close_vs_prior_range] || ""));
   }
 
+  // "Observed against control" in plain numbers, so a difference in points is never shown alone.
+  function compareLine(card) {
+    const it = card.items[card.primary ?? 0];
+    if (!it || it.observed === null || it.observed === undefined || it.baseline === null || it.baseline === undefined) return null;
+    const contrast = card.contrast || "the control";
+    if (card.family === "volatility") {
+      const what = card.id.endsWith("hour") || card.id.endsWith("halfhour") ? "range" : "move";
+      return el("p", { class: "finding__compare" }, `${it.label}: typical ${what} ${it.observed.toFixed(2)}% against ${it.baseline.toFixed(2)}% for ${contrast}.`);
+    }
+    if (card.unit === "pp") {
+      return el("p", { class: "finding__compare" }, `${it.label}: ${it.observed.toFixed(1)}% observed against ${it.baseline.toFixed(1)}% for ${contrast}; the difference is ${fmt(it.estimate, "pp")}.`);
+    }
+    return null;
+  }
+
   function renderFinding(card, gradeLabels) {
     let visual;
     if (card.kind === "base_rate") visual = card.items.length ? baseRateBars(card.items) : null;
@@ -203,7 +218,8 @@
         el("h3", { class: "finding__title" }, card.title),
         el("p", { class: "finding__q" }, card.question),
         card.family === "map" ? stateLine(card) : null,
-        el("p", { class: "finding__headline" }, card.headline)),
+        el("p", { class: "finding__headline" }, card.headline),
+        compareLine(card)),
       el("div", { class: "finding__side" },
         gradeTag(card.grade, card.grade === "N/A" ? `${confidence(card, "N/A")}: ${num(card.items[0]?.n)} ${card.n_label}` : confidence(card, card.grade)),
         el("div", { class: "finding__visual" }, visual)),
@@ -409,7 +425,8 @@
       label = add === 0 ? "Before the open; next: today's regular session" : `Market closed; next session ${DAY_NAMES[wd]}`;
     }
     const z = zoned(day, "America/New_York");
-    return { open, session, label, weekday: DAY_NAMES[wd], month: MONTH_SHORT[z.m - 1], dom: z.d, y: z.y, m: z.m };
+    const slot = open ? `${String(t.h).padStart(2, "0")}:${t.min < 30 ? "00" : "30"} ET` : "09:30 ET";
+    return { open, session, label, slot, weekday: DAY_NAMES[wd], month: MONTH_SHORT[z.m - 1], dom: z.d, y: z.y, m: z.m };
   }
 
   const offsetMinutes = (now, tz) => {
@@ -436,6 +453,16 @@
     return { text, value: fmt(item.estimate, card.unit), grade: item.grade, href: `#${card.id.replaceAll(".", "-")}`, control: card.contrast || "control" };
   }
 
+  // How much price moves at this coordinate against the average one (volatility clock).
+  function volFact(card, item, text) {
+    if (!card || !item) return null;
+    const x = item.extra || {};
+    const typical = x.typical_move_pct ?? x.typical_range_pct;
+    const est = Math.round(item.estimate ?? 0);
+    const tail = typical !== undefined ? `; typical ${x.typical_move_pct !== undefined ? "move" : "range"} ${typical.toFixed(2)}%` : "";
+    return { text: `${text}${tail}`, value: `${est > 0 ? "+" : ""}${est === 0 ? 0 : est}%`, grade: item.grade, href: `#${card.id.replaceAll(".", "-")}` };
+  }
+
   function timeCoordinates(inst, now = new Date()) {
     const crypto = inst.instrument.calendar === "24/7";
     const clk = crypto ? cryptoClock(now) : equityClock(now);
@@ -454,10 +481,14 @@
       const ov = findCard(inst, "intraday.overnight");
       if (!clk.open) sessionFacts.push(fact(ov, findItem(ov, starts("Overnight (")), "Overnight return, prior close to open, versus zero"));
     }
+    const vh = crypto ? findCard(inst, "volatility.hour") : findCard(inst, "volatility.halfhour");
+    sessionFacts.unshift(volFact(vh, findItem(vh, (l) => l.label === (crypto ? clk.hour : clk.slot)),
+      crypto ? `Movement in the ${clk.hour} hour against the average hour` : `Movement in the ${clk.slot} half-hour against the average half-hour`));
     coords.push({ name: "Session", value: clk.session, note: clk.label, facts: sessionFacts });
     // weekday
     const wh = findCard(inst, "weekly.week_high"), wl = findCard(inst, "weekly.week_low"), wd = findCard(inst, "calendar.weekday");
     coords.push({ name: "Day of the week", value: clk.weekday, note: crypto ? "" : clk.open ? "Today" : "Next session", facts: [
+      volFact(findCard(inst, "volatility.weekday"), findItem(findCard(inst, "volatility.weekday"), (l) => l.label === clk.weekday), `Movement on ${clk.weekday}s against the average day`),
       fact(wh, findItem(wh, (l) => l.label === clk.weekday), "Week high forms on this day, against a random walk"),
       fact(wl, findItem(wl, (l) => l.label === clk.weekday), "Week low forms on this day, against a random walk"),
       fact(wd, findItem(wd, (l) => l.label === clk.weekday), `Return on ${clk.weekday}, versus ${wd?.contrast || "the other days"}`),
@@ -466,7 +497,13 @@
     const mo = findCard(inst, "calendar.month"), tom = findCard(inst, "calendar.turn_of_month");
     const lastDay = new Date(Date.UTC(clk.y, clk.m, 0)).getUTCDate();
     const inTurn = clk.dom <= 3 || clk.dom === lastDay;
-    const monthFacts = [fact(mo, findItem(mo, (l) => l.label === clk.month), `Return in ${clk.month}, versus ${mo?.contrast || "the other months"}`)];
+    const vm = findCard(inst, "volatility.month"), vw = findCard(inst, "volatility.week_of_month");
+    const wom = ["Days 1–7", "Days 8–14", "Days 15–21", "Days 22–28", "Days 29–31"][Math.min(4, Math.floor((clk.dom - 1) / 7))];
+    const monthFacts = [
+      volFact(vm, findItem(vm, (l) => l.label === clk.month), `Movement in ${clk.month} against the average day`),
+      volFact(vw, findItem(vw, (l) => l.label === wom), `Movement in ${wom.toLowerCase()} of the month`),
+      fact(mo, findItem(mo, (l) => l.label === clk.month), `Return in ${clk.month}, versus ${mo?.contrast || "the other months"}`),
+    ];
     if (tom && inTurn) monthFacts.push(fact(tom, tom.items[0], `Turn-of-month days, versus ${tom?.contrast || "the other days"}`));
     coords.push({ name: "Month", value: `${clk.month}, day ${clk.dom}`,
       note: [!clk.open && "Next session", inTurn && "inside the turn-of-month window"].filter(Boolean).join(", ").replace(/^i/, "I"), facts: monthFacts });
@@ -476,8 +513,11 @@
     const mapQ = cardsOf(inst).find((c) => c.family === "map" && c.state?.horizon === "quarter");
     const mapY = cardsOf(inst).find((c) => c.family === "map" && c.state?.horizon === "year");
     const prog = (m) => (m?.state?.typical_sessions ? `${m.state.sessions_elapsed} of about ${m.state.typical_sessions} ${m.state.session_unit || "sessions"}` : "");
+    const vq = findCard(inst, "volatility.quarter");
+    const qLabel = `Q${Math.floor((clk.m - 1) / 3) + 1}`;
+    const qFacts = [volFact(vq, findItem(vq, (l) => l.label === qLabel), `Movement in ${qLabel} against the average day`)];
     coords.push({ name: "Quarter and year", value: q?.period || "–",
-      note: [prog(mapQ) && `Quarter: ${prog(mapQ)}`, prog(mapY) && `Year ${yr?.period}: ${prog(mapY)}`].filter(Boolean).join(". "), facts: [], link: "#space" });
+      note: [prog(mapQ) && `Quarter: ${prog(mapQ)}`, prog(mapY) && `Year ${yr?.period}: ${prog(mapY)}`].filter(Boolean).join(". "), facts: qFacts, link: "#space" });
     return { clock: clk, coords };
   }
 
@@ -491,7 +531,7 @@
       c.note ? el("div", { class: "coord__note" }, c.note) : null,
       el("ul", { class: "coord__facts" }, ...c.facts.filter(Boolean).map((f) => el("li", {},
         el("a", { href: f.href }, el("span", { class: "coord__fact" }, f.text), el("span", { class: "coord__fig" }, f.value), gradeTag(f.grade, null))))),
-      !c.facts.filter(Boolean).length && c.link ? el("a", { class: "coord__more", href: c.link }, "Position against prior quarters and years") : null)));
+      c.link ? el("a", { class: "coord__more", href: c.link }, "Position against prior quarters and years") : null)));
   }
 
   // ------------------------------------------------------------------ views
@@ -535,7 +575,7 @@
     const span = [cov.daily && `Daily ${cov.daily.start} to ${cov.daily.end}`, cov.intraday && `${cov.intraday.timeframe} bars from ${cov.intraday.start}`].filter(Boolean);
     document.getElementById("index-refs").replaceChildren(...span.map((s) => el("div", {}, s)),
       el("div", {}, `Source: ${inst.sources.map((s) => s.name || s.source).join(", ")}`));
-    const AXIS = { now: "Space", levels: "Space", revisits: "Space", paths: "Space", sessions: "Time", weekly: "Time", calendar: "Time" };
+    const AXIS = { now: "Space", levels: "Space", revisits: "Space", paths: "Space", sessions: "Time", volatility: "Time", weekly: "Time", calendar: "Time" };
     const groups = ["Time", "Space"].map((axis) => [axis, inst.sections.filter((s) => (AXIS[s.id] || "Space") === axis)]).filter(([, list]) => list.length);
     index.replaceChildren(...groups.flatMap(([axis, list]) => [el("span", { class: "index__axis" }, axis),
       ...list.map((s) => el("a", { href: `#sec-${code}-${s.id}` }, s.title))]));

@@ -11,6 +11,12 @@ The page follows the time–space model (`docs/TIME_SPACE_MODEL.md`). After the 
 
 The findings index is grouped the same way: Time (sessions and intraday, weekly structure, calendar) and Space (where we are now, level memory, time to revisit, paths and entries).
 
+## Numbers a trader reads without a glossary
+
+- Differences of percentages are written as **pts** (percentage points) and always next to the two numbers they come from: "87% observed against 83% for arbitrary levels; the difference is +4.0 pts".
+- The Time panel shows the **volatility clock** for the current coordinate first ("Movement on Mondays against the average day +14%; typical move 0.92%"), because how much price moves is the most reliable time effect.
+- The method section ends with a short glossary (pts, bps, control, ATR, grade, recent check).
+
 ## Untested levels and confidence
 
 - **Untested levels** sit under the grid: a ladder (distance from the last close in ATR, highs in the time colour, lows in brass, larger dots for zones shared by several horizons) and a table with distance, ATR, how long the level has been untested, the reach odds within 5, 20 and 60 sessions and the typical time to reach.
