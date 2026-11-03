@@ -11,6 +11,11 @@ The page follows the time–space model (`docs/TIME_SPACE_MODEL.md`). After the 
 
 The findings index is grouped the same way: Time (sessions and intraday, weekly structure, calendar) and Space (where we are now, level memory, time to revisit, paths and entries).
 
+## Untested levels and confidence
+
+- **Untested levels** sit under the grid: a ladder (distance from the last close in ATR, highs in the time colour, lows in brass, larger dots for zones shared by several horizons) and a table with distance, ATR, how long the level has been untested, the reach odds within 5, 20 and 60 sessions and the typical time to reach.
+- **Confidence in plain words.** Every grade is shown with its meaning ("strong evidence", "no reliable difference from the control", "not enough history yet: 18 past quarters"). Within each group, graded findings come first and strongest first; questions without enough history are kept, collapsed at the end with the reason, so nothing is hidden and nothing ungraded is headlined. In the grid, an ungraded outcome is shown muted with its sample.
+
 ## Principles
 
 1. **Two axes, one element each.** The Time panel and the Space grid carry the identity. The grid: one row per horizon with a comparable-period analysis (week to year), with time elapsed, a range bar (the reference range is the middle half of the track and the marker is the last close), distances to the reference high and low in percent and ATR, and what followed in comparable periods. A closed period shows the next period's starting position. Below the grid, the open-levels board. Everything else is quiet.

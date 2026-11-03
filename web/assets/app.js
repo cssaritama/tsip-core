@@ -50,6 +50,12 @@
     for (let i = 0; i < 5; i++) m.append(el("i", { class: i < (SEGMENTS[grade] ?? 0) ? "on" : "" }));
     return m;
   }
+  const CONFIDENCE = {
+    edge: { A: "Strong evidence", B: "Moderate evidence", C: "Weak evidence", D: "No reliable difference from the control", F: "Contradicted by recent data", "N/A": "Not enough history yet" },
+    base_rate: { A: "High reliability", B: "Good reliability", C: "Fair reliability", D: "Wide uncertainty", "N/A": "Not enough history yet" },
+  };
+  const confidence = (card, grade) => CONFIDENCE[card.kind === "edge" ? "edge" : "base_rate"][grade] || grade;
+  const RANK = { A: 0, B: 1, C: 2, F: 3, D: 4, "N/A": 5 };
   const gradeTag = (grade, label) =>
     el("span", { class: "grade", title: label || "" }, meter(grade, label), el("span", { class: "grade__letter" }, grade), label ? el("span", {}, label) : null);
 
@@ -199,7 +205,7 @@
         card.family === "map" ? stateLine(card) : null,
         el("p", { class: "finding__headline" }, card.headline)),
       el("div", { class: "finding__side" },
-        gradeTag(card.grade, labels[card.grade] || card.grade_label),
+        gradeTag(card.grade, card.grade === "N/A" ? `${confidence(card, "N/A")}: ${num(card.items[0]?.n)} ${card.n_label}` : confidence(card, card.grade)),
         el("div", { class: "finding__visual" }, visual)),
       el("details", {},
         el("summary", {}, "Method, control and numbers"),
@@ -275,9 +281,45 @@
       el("div", {}, rangeBar(p), taken.length ? el("div", { class: "zones__note" }, capital(taken.join(", "))) : null),
       out
         ? el("div", { class: "outcome" },
-            el("div", {}, el("div", { class: "outcome__fig" }, out.fig), el("div", { class: "outcome__label" }, out.label)),
-            el("div", { class: "outcome__side" }, gradeTag(out.grade, null), el("div", { class: "outcome__n" }, out.n)))
+            el("div", {}, el("div", { class: `outcome__fig${out.grade === "N/A" ? " outcome__fig--thin" : ""}` }, out.fig), el("div", { class: "outcome__label" }, out.label)),
+            el("div", { class: "outcome__side" }, gradeTag(out.grade, null), el("div", { class: "outcome__n" }, out.grade === "N/A" ? `Not enough history yet: ${out.n}` : out.n)))
         : el("div", { class: "outcome" }, el("div", { class: "outcome__label" }, "Not enough comparable periods yet")));
+  }
+
+  // Untested levels: highs and lows of closed periods that price has not traded since. The ladder places
+  // each one by its distance from the last close (in ATR); the table gives how often price has travelled
+  // that far within 5, 20 and 60 sessions, from every past session of the same market.
+  function levelName(l) {
+    const hs = l.horizons?.length ? l.horizons : [l.horizon];
+    const names = hs.map((h) => capital(h));
+    return `${names.join(" and ")} ${l.side}`;
+  }
+
+  function ladder(levels) {
+    const w = 360, h = 300, mid = h / 2, span = 4; // ±4 ATR
+    const y = (atr) => mid - Math.max(-span, Math.min(span, atr)) * (mid - 18) / span;
+    const root = svg("svg", { viewBox: `0 0 ${w} ${h}`, class: "ladder", role: "img", "aria-label": "Untested levels by distance from the last close, in ATR" });
+    for (const t of [-3, -2, -1, 1, 2, 3]) {
+      root.append(svg("line", { x1: 46, x2: w - 8, y1: y(t), y2: y(t), class: "ladder__grid" }));
+      const lab = svg("text", { x: 40, y: y(t) + 3, "text-anchor": "end" }); lab.textContent = `${t > 0 ? "+" : ""}${t}`; root.append(lab);
+    }
+    root.append(svg("line", { x1: 46, x2: w - 8, y1: mid, y2: mid, class: "ladder__now" }));
+    const now = svg("text", { x: 40, y: mid + 3, "text-anchor": "end", class: "ladder__nowlabel" }); now.textContent = "Close"; root.append(now);
+    const unit = svg("text", { x: 46, y: 10, class: "ladder__unit" }); unit.textContent = "ATR from the last close"; root.append(unit);
+    const shown = levels.filter((l) => l.distance_atr !== null && Math.abs(l.distance_atr) <= span).slice(0, 8);
+    let lastY = -99;
+    shown.sort((a, b) => b.distance_atr - a.distance_atr).forEach((l) => {
+      const yy = y(l.distance_atr);
+      const p = l.reach?.within?.["20"]?.pct;
+      const r = 4 + Math.min(4, (l.confluence || 1) * 1.5);
+      root.append(svg("circle", { cx: 64, cy: yy, r, class: `ladder__dot ladder__dot--${l.side}` }));
+      const ty = Math.abs(yy - lastY) < 14 ? lastY + 14 : yy;
+      lastY = ty;
+      const t = svg("text", { x: 80, y: ty + 4, class: "ladder__label" });
+      t.textContent = `${levelName(l)}  ${signed(l.distance_pct)}%${p === null || p === undefined ? "" : `  ·  ${p.toFixed(0)}% within 20`}`;
+      root.append(t);
+    });
+    return root;
   }
 
   function renderOpenLevels(inst) {
@@ -285,21 +327,31 @@
     const ol = inst?.open_levels;
     if (!ol || !ol.levels?.length) { box.replaceChildren(); box.hidden = true; return; }
     box.hidden = false;
+    const unitWord = inst.instrument.calendar === "24/7" ? "days" : "sessions";
+    const odds = (l, k) => {
+      const o = l.reach?.within?.[k];
+      return o && o.pct !== null ? el("span", { title: `95% interval ${o.ci_low}–${o.ci_high}%, ${num(o.n)} past starting points` }, `${o.pct.toFixed(0)}%`) : "–";
+    };
     const rows = ol.levels.slice(0, 10).map((l) => el("tr", {},
-      el("td", {}, `${capital(l.horizon)} ${l.side}`),
-      el("td", {}, l.period),
-      el("td", {}, l.age_sessions === 0 ? "Just closed" : `${num(l.age_sessions)}`),
+      el("td", { class: "levels__name", title: l.levels?.join(", ") || l.period }, el("b", {}, levelName(l)), el("div", { class: "levels__sub" }, l.period)),
       el("td", { class: l.distance_pct >= 0 ? "up" : "down" }, `${signed(l.distance_pct)}%`),
-      el("td", {}, l.distance_atr === null ? "–" : signed(l.distance_atr, 1))));
+      el("td", {}, l.distance_atr === null ? "–" : signed(l.distance_atr, 1)),
+      el("td", {}, l.age_sessions === 0 ? "Just formed" : num(l.age_sessions)),
+      el("td", {}, odds(l, "5")), el("td", {}, odds(l, "20")), el("td", {}, odds(l, "60")),
+      el("td", {}, l.reach?.typical_sessions ? `${l.reach.typical_sessions}` : "over 120")));
     const revisit = cardsOf(inst).find((c) => c.family === "revisits");
     box.replaceChildren(
       el("div", { class: "levels__head" },
-        el("h2", {}, "Open levels"),
-        el("p", {}, `Highs and lows of closed periods not traded since, nearest first, as of ${ol.as_of}. ATR ${ol.atr_pct ? ol.atr_pct.toFixed(2) : "–"}% over 14 sessions.`),
-        revisit ? el("a", { href: `#sec-${inst.code}-revisits` }, "How soon levels are revisited") : null),
-      el("div", { class: "table-wrap" }, el("table", { class: "levels" },
-        el("thead", {}, el("tr", {}, ...["Level", "Period", "Age (sessions)", "Distance", "In ATR"].map((h) => el("th", {}, h)))),
-        el("tbody", {}, ...rows))));
+        el("h2", {}, "Untested levels"),
+        el("p", {}, `Highs and lows of closed periods that price has not traded since: the reference points a desk watches. For each one, how often price has travelled that far within 5, 20 and 60 ${unitWord}, from every past ${unitWord.slice(0, -1)} of this market at the same volatility-scaled distance, and the typical time to get there. Levels from several horizons at one price are merged. As of ${ol.as_of}; ATR ${ol.atr_pct ? ol.atr_pct.toFixed(2) : "–"}% over 14 ${unitWord}.`),
+        revisit ? el("a", { href: `#sec-${inst.code}-revisits` }, "Do real levels attract price? The evidence") : null),
+      el("div", { class: "levels__body" },
+        ladder(ol.levels),
+        el("div", { class: "table-wrap" }, el("table", { class: "levels" },
+          el("thead", {},
+            el("tr", {}, el("th", { colspan: 4 }), el("th", { colspan: 3, class: "levels__group" }, `Reached within (${unitWord})`), el("th", {})),
+            el("tr", {}, ...["Level", "Distance", "ATR", "Untested for", "5", "20", "60", "Typical time"].map((h) => el("th", {}, h)))),
+          el("tbody", {}, ...rows)))));
   }
 
   function renderGrid(inst) {
@@ -493,7 +545,21 @@
       el("section", { class: "group", id: `sec-${code}-${s.id}` },
         el("h2", { class: "group__title" }, s.title),
         el("p", { class: "group__count" }, `${s.cards.length} ${s.cards.length === 1 ? "question" : "questions"}`),
-        ...s.cards.map((c) => renderFinding(c, labels)))));
+        ...groupCards(s.cards, labels))));
+  }
+
+  // Graded findings first, strongest first; findings without enough history are grouped at the end.
+  function groupCards(cards, labels) {
+    const graded = cards.filter((c) => c.grade !== "N/A").sort((a, b) => RANK[a.grade] - RANK[b.grade]);
+    const thin = cards.filter((c) => c.grade === "N/A");
+    const out = graded.map((c) => renderFinding(c, labels));
+    if (thin.length) {
+      out.push(el("details", { class: "thin" },
+        el("summary", {}, `${thin.length} ${thin.length === 1 ? "question needs" : "questions need"} more history before they can be graded`),
+        el("p", { class: "thin__why" }, "These periods are long or recent data is short, so too few comparable cases exist. They are kept visible so nothing is hidden, and they will be graded automatically as history accumulates."),
+        ...thin.map((c) => renderFinding(c, labels))));
+    }
+    return out;
   }
 
   function renderStatus(report) {
