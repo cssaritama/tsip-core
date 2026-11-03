@@ -87,9 +87,9 @@ Control: for each event, the share of paths from all other period closes in the 
 
 Windows (sessions; calendar days for crypto): week 5/10/20, month 10/20/60, quarter 20/60/120, year 60/120/250. Only fully observed windows count. The median time to revisit is a Kaplan–Meier estimate with levels not yet revisited censored; when fewer than half are revisited within the observed span, no median is reported.
 
-### Position and open levels
+### Position
 
-The report states, for each horizon, the distance from the last close to the reference range's high and low in percent and in multiples of the 14-session average true range, and the position of the close within that range (0% at the low, 100% at the high). For a period in progress the reference is the prior complete period; once a period has ended, the reference is the period that just closed and the row describes the next period's starting position. The open-levels board lists highs and lows of recent closed periods not traded since, with age and distance. Price levels are not published.
+The report states, for each horizon, the distance from the last close to the reference range's high and low in percent and in multiples of the 14-session average true range, and the position of the close within that range (0% at the low, 100% at the high). For a period in progress the reference is the prior complete period; once a period has ended, the reference is the period that just closed and the row describes the next period's starting position. Price levels are not published.
 
 ### Untested levels and reach odds
 

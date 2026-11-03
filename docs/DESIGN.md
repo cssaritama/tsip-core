@@ -7,7 +7,7 @@ The website is a reading instrument for one question: where does price stand in 
 The page follows the time–space model (`docs/TIME_SPACE_MODEL.md`). After the title and the market switch come two panels with the same weight:
 
 - **Time**: the calendar coordinates of the current or next session (session window, day of the week, month and turn of the month, quarter and year progress), each with the graded statistics for that coordinate.
-- **Space**: the grid of horizons against their reference ranges, then the open-levels board.
+- **Space**: the grid of horizons against their reference ranges, then the untested-levels ladder and table.
 
 The findings index is grouped the same way: Time (sessions and intraday, weekly structure, calendar) and Space (where we are now, level memory, time to revisit, paths and entries).
 
@@ -18,7 +18,7 @@ The findings index is grouped the same way: Time (sessions and intraday, weekly 
 
 ## Principles
 
-1. **Two axes, one element each.** The Time panel and the Space grid carry the identity. The grid: one row per horizon with a comparable-period analysis (week to year), with time elapsed, a range bar (the reference range is the middle half of the track and the marker is the last close), distances to the reference high and low in percent and ATR, and what followed in comparable periods. A closed period shows the next period's starting position. Below the grid, the open-levels board. Everything else is quiet.
+1. **Two axes, one element each.** The Time panel and the Space grid carry the identity. The grid: one row per horizon with a comparable-period analysis (week to year), with time elapsed, a range bar (the reference range is the middle half of the track and the marker is the last close), distances to the reference high and low in percent and ATR, and what followed in comparable periods. A closed period shows the next period's starting position. Below the grid, the untested levels. Everything else is quiet.
 2. **Evidence before decoration.** Colour encodes evidence strength and data status only. No gradients, glows or ornamental colour.
 3. **Honest copy.** Plain verbs, sentence case, no claims a statistic cannot support. Grades and samples are shown next to every figure. "No signals" and "no promises" are part of the page, not fine print.
 4. **Fast by construction.** Static HTML, one stylesheet, one script, one self-hosted variable font, no framework, no third-party requests, no tracking. A test fails the build if the page references an external script, style or font.
@@ -62,7 +62,7 @@ hero     Where price stands in time.
          │ Week    │ ███████░░░   │ ─┤  ▌      ├─  Low −0.6%  High +2.3% │ 45% ▮▮▮□□ C │
          │ Month   │ …            │                              │              │
          └ instrument, last close; method note ─────────────────────────────────┘
-         Open levels: closed-period highs and lows not traded since, age, distance (% and ATR)
+         Untested levels: ladder around the last close (ATR) and table with reach odds within 5/20/60
 findings index (sticky) │ groups of findings: title, question, headline, grade, visual, details
 method   grading scales with meters · controls · what the statistics can and cannot do
 data     status per market · sources and quality checks

@@ -4,6 +4,15 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.2.10] – 2026-11-03
+
+### Added
+- Reach odds for untested levels: for each level, how often price has travelled that far within 5, 20 and 60 sessions from every past session of the same market at the same volatility-scaled distance, with a 95% interval, and the typical time to get there. Levels of several horizons at one price are merged into a single zone that lists them.
+- Website: "Untested levels" replaces "Open levels", with a ladder chart of the levels around the last close and the reach odds in the table.
+
+### Changed
+- Grades are explained in plain words with their reason. Graded findings are listed first, strongest first; findings without enough history are collapsed at the end of each group with an explanation instead of being mixed with graded ones. Ungraded outcomes in the grid are shown muted with their sample size.
+
 ## [0.2.9] – 2026-10-30
 
 ### Fixed
