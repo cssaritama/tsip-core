@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.2.11] – 2026-11-03
+
+### Added
+- Volatility clock (`tsip.studies.volatility`): how much more or less price moves in each hour or half-hour, weekday, week of the month, month and quarter than at an average coordinate, with the typical move and range. New section "Volatility clock" on the time axis, and the first facts of every coordinate in the website's Time panel.
+- Point-in-time archive: every published report is stored once, compressed and fingerprinted, on the `report-archive` branch (`tsip archive`, new `archive` job in the publication workflow); `--verify-only` re-checks every fingerprint.
+- The publication run warns when the repository has had no commit for 45 days, before GitHub's 60-day rule stops scheduled runs.
+- Website glossary: pts, bps, control, ATR, grade, recent check.
+
+### Changed
+- Differences of percentages are written as "pts" and shown next to the observed and control rates they come from.
+
 ## [0.2.10] – 2026-11-03
 
 ### Added
