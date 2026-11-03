@@ -10,6 +10,7 @@ TSIP describes a market with two kinds of coordinates and grades what has follow
 | Day of the week | Monday to Friday (Sunday for crypto) | `calendar` (weekday returns, weekend), `weekly` (where the week's high and low form) |
 | Week and turn of the month | Position in the month; last day plus first three | `calendar` (turn of the month) |
 | Month of the year | January to December | `calendar` (month-of-year returns) |
+| How much price moves at each coordinate | Hour or half-hour, weekday, week of the month, month, quarter | `volatility` (the volatility clock: movement against the average coordinate, typical move and range) |
 | Progress through a period | Sessions elapsed out of the typical count, from week to year | `level_map` (analogs at the same point of the period) |
 | Elapsed time since a level formed | Sessions since a period closed | `revisit` (time to revisit a level, untested levels) |
 

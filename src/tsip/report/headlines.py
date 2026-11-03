@@ -16,7 +16,7 @@ def _fmt(value: float | None, unit: str) -> str:
     if unit == "bps":
         return f"{value:+.1f} bps"
     if unit == "pp":
-        return f"{value:+.1f} pp"
+        return f"{value:+.1f} pts"
     return f"{value:+.2f}%"
 
 
@@ -83,6 +83,16 @@ def headline(card: EvidenceCard) -> str:
             f"{_fmt(first.estimate, '%')} per purchase versus plain DCA; the limit fills in {fill:.0f}% of months "
             f"({first.grade_label.lower()}, {first.grade})."
         )
+    if card.family == "volatility":
+        x = best.extra
+        more = "more" if (best.estimate or 0) > 0 else "less"
+        size = abs(best.estimate or 0)
+        typical = x.get("typical_move_pct", x.get("typical_range_pct"))
+        what = "typical move" if "typical_move_pct" in x else "typical range"
+        tail = f"; {what} {typical:.2f}%" if typical is not None else ""
+        if best.grade not in {"A", "B", "C"}:
+            return f"No reliable difference in how much price moves; largest: {best.label}, {size:.0f}% {more} than {card.contrast}{tail} ({grade})."
+        return f"{best.label}: price moves {size:.0f}% {more} than {card.contrast}{tail} ({grade})."
     if card.family == "revisits":
         x = best.extra
         median = x.get("median_sessions")

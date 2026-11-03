@@ -20,7 +20,16 @@ from tsip.frames import daily_from_intraday_utc, rth_daily_from_intraday
 from tsip.instruments import get_instrument
 from tsip.report.headlines import headline
 from tsip.report.publish import assert_publishable
-from tsip.studies import calendar, entry_timing, first_passage, intraday, level_map, level_memory, revisit
+from tsip.studies import (
+    calendar,
+    entry_timing,
+    first_passage,
+    intraday,
+    level_map,
+    level_memory,
+    revisit,
+    volatility,
+)
 from tsip.studies.common import StudyContext
 from tsip.studies.position import position
 
@@ -29,12 +38,13 @@ SECTIONS = [
     ("now", "Where we are now", ("map",)),
     ("levels", "Level memory", ("levels",)),
     ("sessions", "Sessions and intraday", ("sessions", "intraday")),
+    ("volatility", "Volatility clock", ("volatility",)),
     ("weekly", "Weekly structure", ("weekly",)),
     ("revisits", "Time to revisit", ("revisits",)),
     ("paths", "Paths and entries", ("paths", "entries")),
     ("calendar", "Calendar", ("calendar",)),
 ]
-STUDIES = (level_map, level_memory, revisit, intraday, first_passage, entry_timing, calendar)
+STUDIES = (level_map, level_memory, revisit, intraday, volatility, first_passage, entry_timing, calendar)
 
 
 @dataclass

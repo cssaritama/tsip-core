@@ -79,6 +79,10 @@ These are conditional base rates, not forecasts. Each card shows how many analog
 
 Index histories from the early decades often repeat the close as the day's high and low, or as the next open. A calendar month fails the range check if fewer than 95% of its days have a high above the low, and the open check if more than half of its opens equal the prior close. Level studies start after the last month that fails the range check; gap and open-based studies (first passage, entry timing, overnight returns) start after the last month that fails either check. The dates are printed with each instrument.
 
+### Volatility clock
+
+How much price moves at each time coordinate against the average one: the range of each intraday bar, `log(high / low)`, by UTC hour (crypto) or cash-session half-hour (US ETFs), and the absolute close-to-close log return by weekday, week of the month (calendar-day blocks 1–7, 8–14, 15–21, 22–28, 29–31), month and quarter. The statistic is the group mean relative to the overall mean, in percent (+25% = a quarter more movement than an average coordinate). Days are resampled in 20-session blocks, intraday units in 10-day blocks, because volatility clusters. Typical moves (and the average true range where highs and lows exist) are reported per group. Direction is not part of these studies: they inform timing and stop and position size. Under constant volatility every estimate is zero; the random-walk test (no A or B on simulated constant-volatility data) is part of the test suite.
+
 ### Time to revisit a level
 
 Event: a calendar period (week, month, quarter, year) closes; its high and low become reference levels, frozen at its last close. The clock starts at the next session, and a level is revisited when a later session trades at or beyond it. Distance is measured in units of the 60-session volatility of daily log returns known at the close.
