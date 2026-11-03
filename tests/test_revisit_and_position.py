@@ -105,3 +105,20 @@ def test_close_only_series_publish_cleanly():
     json.dumps(report, allow_nan=False)  # must not raise
     inst = report["instruments"][0]
     assert inst["open_levels"] == {} and inst["position"] == {}
+
+
+def test_reach_odds_rise_with_time_and_fall_with_distance():
+    curves = revisit.reach_curves(random_walk_daily(n=1500), crypto=False)
+    near = revisit.reach_odds(curves, "low", 0.5)["within"]
+    far = revisit.reach_odds(curves, "low", 3.0)["within"]
+    assert near["5"]["pct"] < near["20"]["pct"] < near["60"]["pct"]
+    assert far["20"]["pct"] < near["20"]["pct"]
+    assert near["20"]["ci_low"] <= near["20"]["pct"] <= near["20"]["ci_high"]
+
+
+def test_levels_at_one_price_are_merged():
+    board = revisit.open_levels(random_walk_daily(n=900), crypto=False)
+    for zone in board["levels"]:
+        assert zone["confluence"] == len(zone["levels"]) >= 1
+    sides = [(z["side"], z["distance_pct"]) for z in board["levels"]]
+    assert len(sides) == len(set(sides))  # no two zones at the same price on the same side

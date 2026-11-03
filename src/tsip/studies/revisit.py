@@ -253,8 +253,78 @@ def revisit_card(ctx: StudyContext, horizon: str) -> EvidenceCard | None:
     )
 
 
+ODDS_WINDOWS = (5, 20, 60)
+ODDS_CURVE = 120  # longest window for the typical time to reach
+CONFLUENCE_ATR = 0.10  # levels closer than this are one price zone
+
+
+def reach_curves(daily: pd.DataFrame, *, crypto: bool, kmax: int = ODDS_CURVE) -> dict | None:
+    """Running maximum excursion above and below every session's close, in units of the volatility then.
+
+    Each historical session is a starting point; nothing after the last bar is used. Windows that run past
+    the data or cross a gap are left unobserved (NaN).
+    """
+    close = daily["close"].to_numpy(float)
+    sigma = _sigma(close)
+    starts = np.arange(VOL_WINDOW + 1, len(daily) - 1)
+    starts = starts[np.isfinite(sigma[starts - 1]) & (sigma[starts - 1] > 0)]
+    if len(starts) < 200:
+        return None
+    up, down = excursions(daily, starts, sigma, kmax)
+    gaps = ~consecutive_mask(daily.index, crypto=crypto)
+    for i, st in enumerate(starts):
+        span = gaps[st + 1 : st + kmax]
+        if span.any():
+            cut = int(np.argmax(span)) + 1
+            up[i, cut:] = np.nan
+            down[i, cut:] = np.nan
+    return {"up": up, "down": down, "sigma_now": float(sigma[-1])}
+
+
+def _wilson(hits: int, n: int) -> tuple[float, float]:
+    if n == 0:
+        return (float("nan"), float("nan"))
+    z = 1.96
+    p = hits / n
+    centre = (p + z * z / (2 * n)) / (1 + z * z / n)
+    half = z * np.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / (1 + z * z / n)
+    return (centre - half, centre + half)
+
+
+def reach_odds(curves: dict, side: str, z: float) -> dict:
+    """Share of past starting points that travelled at least ``z`` volatilities on ``side`` within each window."""
+    path = curves["up" if side == "high" else "down"]
+    odds = {}
+    for k in ODDS_WINDOWS:
+        col = path[:, k - 1]
+        seen = col[np.isfinite(col)]
+        hits = int((seen >= z).sum())
+        lo, hi = _wilson(hits, len(seen))
+        odds[str(k)] = {
+            "pct": round(hits / len(seen) * PP, 1) if len(seen) else None,
+            "ci_low": round(lo * PP, 1),
+            "ci_high": round(hi * PP, 1),
+            "n": int(len(seen)),
+        }
+    typical = None
+    for k in range(1, path.shape[1] + 1):
+        col = path[:, k - 1]
+        seen = col[np.isfinite(col)]
+        if len(seen) and (seen >= z).mean() >= 0.5:
+            typical = k
+            break
+    return {"within": odds, "typical_sessions": typical}
+
+
 def open_levels(daily: pd.DataFrame, *, crypto: bool) -> dict:
-    """Closed periods whose high or low has not been traded since, with age and distance."""
+    """Untested levels: closed periods' highs and lows not traded since, with age, distance and reach odds.
+
+    Levels from different horizons that sit within ``CONFLUENCE_ATR`` of each other are merged into one
+    price zone (for example a week low that is also the month low). Reach odds are base rates from every
+    past session of the same instrument at the same volatility-scaled distance: they describe how often
+    price travelled that far, not whether this particular level attracts price (the time-to-revisit study
+    answers that).
+    """
     if daily is None or len(daily) < ATR_WINDOW + 2:
         return {}
     if daily.attrs.get("close_only") or daily[["high", "low"]].isna().any().any():
@@ -265,34 +335,65 @@ def open_levels(daily: pd.DataFrame, *, crypto: bool) -> dict:
     h = daily["high"].to_numpy(float)
     lo = daily["low"].to_numpy(float)
     n = len(daily)
-    board = []
+    raw = []
     for horizon, keep in OPEN_LEVEL_PERIODS.items():
         bars = horizon_bars(daily, horizon, crypto=crypto)
         for key, row in bars.tail(keep).iterrows():
             last = int(position[pd.Timestamp(row["last_day"])])
-            after_h = h[last + 1 :]
-            after_l = lo[last + 1 :]
             for side, level, untouched in (
-                ("high", row["high"], not (after_h >= row["high"]).any()),
-                ("low", row["low"], not (after_l <= row["low"]).any()),
+                ("high", row["high"], not (h[last + 1 :] >= row["high"]).any()),
+                ("low", row["low"], not (lo[last + 1 :] <= row["low"]).any()),
             ):
-                if not untouched:
-                    continue
                 dist = (level / close - 1.0) * PP
-                if not np.isfinite(dist):
-                    continue
-                board.append(
-                    {
-                        "horizon": HORIZON_NAMES[horizon],
-                        "period": period_label(int(key), horizon),
-                        "side": side,
-                        "age_sessions": int(n - 1 - last),
-                        "distance_pct": round(float(dist), 3),
-                        "distance_atr": None if not atr else round(float(dist / atr), 2),
-                    }
-                )
-    board.sort(key=lambda r: abs(r["distance_pct"]))
-    return {"as_of": str(pd.Timestamp(daily.index[-1]).date()), "atr_pct": atr, "levels": board}
+                if untouched and np.isfinite(dist):
+                    raw.append(
+                        {
+                            "horizon": HORIZON_NAMES[horizon],
+                            "period": period_label(int(key), horizon),
+                            "side": side,
+                            "age_sessions": int(n - 1 - last),
+                            "dist": float(dist),
+                            "level": float(level),
+                        }
+                    )
+    raw.sort(key=lambda r: abs(r["dist"]))
+    zones: list[dict] = []
+    for r in raw:  # merge levels of the same side that form one price zone
+        tol = (atr or 0.0) * CONFLUENCE_ATR
+        match = next(
+            (z for z in zones if z["side"] == r["side"] and abs(z["dist"] - r["dist"]) <= max(tol, 1e-9)), None
+        )
+        if match:
+            match["members"].append(r)
+        else:
+            zones.append({"side": r["side"], "dist": r["dist"], "members": [r]})
+    curves = reach_curves(daily, crypto=crypto)
+    board = []
+    for zone in zones:
+        first = zone["members"][0]
+        dist = zone["dist"]
+        entry = {
+            "side": zone["side"],
+            "horizon": first["horizon"],
+            "period": first["period"],
+            "levels": [f"{m['period']} {m['side']}" for m in zone["members"]],
+            "horizons": sorted({m["horizon"] for m in zone["members"]}, key=list(HORIZON_NAMES.values()).index),
+            "confluence": len(zone["members"]),
+            "age_sessions": max(m["age_sessions"] for m in zone["members"]),
+            "distance_pct": round(dist, 3),
+            "distance_atr": None if not atr else round(dist / atr, 2),
+        }
+        if curves and curves["sigma_now"] > 0:
+            z = abs(np.log(1 + dist / PP)) / curves["sigma_now"]
+            entry["distance_sigma"] = round(float(z), 2)
+            entry["reach"] = reach_odds(curves, zone["side"], z)
+        board.append(entry)
+    return {
+        "as_of": str(pd.Timestamp(daily.index[-1]).date()),
+        "atr_pct": atr,
+        "odds_windows": list(ODDS_WINDOWS),
+        "levels": board,
+    }
 
 
 def run(ctx: StudyContext) -> list[EvidenceCard]:

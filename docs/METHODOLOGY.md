@@ -91,6 +91,12 @@ Windows (sessions; calendar days for crypto): week 5/10/20, month 10/20/60, quar
 
 The report states, for each horizon, the distance from the last close to the reference range's high and low in percent and in multiples of the 14-session average true range, and the position of the close within that range (0% at the low, 100% at the high). For a period in progress the reference is the prior complete period; once a period has ended, the reference is the period that just closed and the row describes the next period's starting position. The open-levels board lists highs and lows of recent closed periods not traded since, with age and distance. Price levels are not published.
 
+### Untested levels and reach odds
+
+An untested level is the high or low of a recent closed period (week, month, quarter, year) that price has not traded since. Levels of the same side closer than 0.1 ATR are merged into one price zone, and the zone lists every horizon it belongs to (for example "week and month low").
+
+For each zone the report gives **reach odds**: the share of all past sessions of the same market from which price travelled at least the zone's distance, measured in units of the 60-session volatility at that session, within 5, 20 and 60 sessions (calendar days for crypto), with a 95% Wilson interval and the number of starting points, and the **typical time to reach**: the first window in which at least half of those paths had travelled that far (not reported beyond 120). These are base rates of distance and volatility, not a claim that the level itself attracts price; whether real levels are revisited sooner than equally distant arbitrary levels is the time-to-revisit study above.
+
 ### Entry timing
 
 The baseline buys at the first session's open every month. The rule places a limit order at the prior month's low at the start of the month. It fills at the limit, or at the open if the session opens below it. If it never fills, it buys at the month's last close. Only information available before the order is used.
