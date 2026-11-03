@@ -69,6 +69,19 @@ jobs:
 
       - name: Build report
         run: tsip report --out site/data/report.json
+      - name: Keep the report for the point-in-time archive
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: report
+          path: site/data/report.json
+          retention-days: 7
+      - name: Repository activity (scheduled runs stop after 60 days without it)
+        run: |
+          days=$(( ( $(date +%s) - $(git log -1 --format=%ct) ) / 86400 ))
+          echo "Last commit on main: $days days ago" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$days" -ge 45 ]; then
+            echo "::warning::No commit on main for $days days. GitHub disables scheduled workflows in public repositories after 60 days without activity: publish any change, or re-enable the workflow from the Actions tab."
+          fi
       - name: Data status (every market present and up to date)
         id: freshness
         # Publication goes ahead either way; the status job below turns the run red when data is stale or missing.
@@ -111,15 +124,60 @@ jobs:
       - id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
 
+  archive:
+    # Every published report is stored once, compressed and fingerprinted, on the report-archive branch,
+    # so what TSIP said on any past date can be reconstructed and checked (point-in-time record).
+    needs: [build, deploy]
+    if: needs.build.result == 'success' && needs.deploy.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Install
+        run: python -m pip install -e .
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: report
+          path: incoming
+      - name: Add the report to the archive branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          remote="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git ls-remote --exit-code --heads "$remote" report-archive > /dev/null 2>&1; then
+            git clone --quiet --depth 1 --branch report-archive "$remote" archive
+          else
+            git init --quiet archive
+            git -C archive checkout --quiet --orphan report-archive
+            git -C archive remote add origin "$remote"
+            printf '%s\n' "# Report archive" "" "Every report published by TSIP, compressed and fingerprinted. \`index.csv\` lists them; \`tsip archive --dir <this folder> --verify-only\` re-checks every fingerprint." > archive/README.md
+          fi
+          tsip archive --report incoming/report.json --dir archive
+          cd archive
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then echo "Report already archived"; exit 0; fi
+          git commit --quiet -m "archive: report $(python -c "import json; print(json.load(open('../incoming/report.json'))['generated_at'])")"
+          git push --quiet origin report-archive
+
   status:
     # A green run must mean fresh data: this job fails when a market is stale or missing, so GitHub notifies the owner.
-    needs: [build, deploy]
+    needs: [build, deploy, archive]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Fail when data is stale or missing
         run: |
-          echo "build=${{ needs.build.result }} deploy=${{ needs.deploy.result }} freshness=${{ needs.build.outputs.freshness }}"
+          echo "build=${{ needs.build.result }} deploy=${{ needs.deploy.result }} archive=${{ needs.archive.result }} freshness=${{ needs.build.outputs.freshness }}"
           test "${{ needs.build.result }}" = "success"
           test "${{ needs.deploy.result }}" = "success"
+          test "${{ needs.archive.result }}" = "success"
           test "${{ needs.build.outputs.freshness }}" = "success"

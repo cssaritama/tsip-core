@@ -7,6 +7,7 @@ tsip fetch nasdaq100 [--source alpaca|stooq|fred] [--start 2016-01-01]
 tsip report [--out site/data/report.json]
 tsip site   [--report site/data/report.json] [--out dist]
 tsip check  [--report site/data/report.json] [--summary FILE]   exit 1 if a market is stale or missing
+tsip archive --report site/data/report.json --dir ARCHIVE [--verify-only]   add to or re-check the archive
 """
 
 from __future__ import annotations
@@ -82,6 +83,15 @@ def _cmd_check(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_archive(args: argparse.Namespace) -> int:
+    from tsip.report.archive import archive_report, verify_archive
+
+    result = {} if args.verify_only else archive_report(args.report, args.dir)
+    problems = verify_archive(args.dir)
+    print(json.dumps({**result, "verified": not problems, "problems": problems}, indent=2))
+    return 1 if problems else 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="tsip", description="Evidence-graded market statistics.")
     parser.add_argument("--version", action="version", version=f"tsip {__version__}")
@@ -113,6 +123,12 @@ def main(argv: list[str] | None = None) -> int:
     check.add_argument("--report", default=DEFAULT_REPORT)
     check.add_argument("--summary", default=None, help="append a Markdown status table to this file")
     check.set_defaults(func=_cmd_check)
+
+    archive = sub.add_parser("archive", help="add a report to the point-in-time archive and verify it")
+    archive.add_argument("--report", default=DEFAULT_REPORT)
+    archive.add_argument("--dir", required=True)
+    archive.add_argument("--verify-only", action="store_true", help="only re-check every archived fingerprint")
+    archive.set_defaults(func=_cmd_archive)
 
     args = parser.parse_args(argv)
     return int(args.func(args))

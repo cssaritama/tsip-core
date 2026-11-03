@@ -46,6 +46,10 @@ Every report carries a `data_status` section, shown as a strip at the top of the
 
 The scheduled job runs twice a day (after the Asian session and, on weekdays, after the US close). Each provider may fail without stopping the others, so publication always goes ahead, but the run is marked as failed whenever a market is stale or missing, and its summary lists the status of every market. `tsip check --report site/data/report.json` gives the same answer locally.
 
+## Point-in-time archive
+
+Every published report is stored once on the `report-archive` branch of this repository: compressed (`reports/YYYY/MM/<timestamp>Z.json.gz`) and listed in `index.csv` with its version, rules version, data status and the SHA-256 of the exact JSON that was published. `tsip archive --dir <archive> --verify-only` re-checks every fingerprint. The archive lets anyone reconstruct what TSIP published on any past date and verify that it was not changed afterwards; it contains derived statistics only.
+
 ## Terms of use
 
 Each provider's terms govern the use of its data. Before any commercial use, review the current terms of every source and keep a dated copy. Statistics derived from the data do not transfer any right to the underlying data. This document is not legal advice.
