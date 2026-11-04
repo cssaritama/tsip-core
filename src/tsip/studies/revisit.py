@@ -164,6 +164,27 @@ def _statistic(u: dict) -> np.ndarray:
         return np.nanmean(u["obs"], axis=0) - np.nanmean(u["base"], axis=0)
 
 
+def revisit_curves(ev: dict, kmax: int, points: int = 40) -> dict:
+    """Share revisited within k sessions for real levels and for the distance control, k = 1..kmax.
+
+    Only fully observed windows count at each k, as in the cards. At most ``points`` values of k are
+    kept (evenly spaced) so the published curve stays small.
+    """
+    ks = sorted({int(round(k)) for k in np.linspace(1, kmax, min(points, kmax))})
+    units = outcome_arrays(ev, tuple(ks))
+    out = {}
+    with np.errstate(invalid="ignore"):
+        obs = np.nanmean(units["obs"], axis=0) * PP
+        base = np.nanmean(units["base"], axis=0) * PP
+    for side, offset in (("high", 0), ("low", len(ks))):
+        out[side] = {
+            "sessions": ks,
+            "real_pct": [round(float(v), 1) for v in obs[offset : offset + len(ks)]],
+            "control_pct": [round(float(v), 1) for v in base[offset : offset + len(ks)]],
+        }
+    return out
+
+
 def kaplan_meier_median(path: np.ndarray, z: np.ndarray) -> float | None:
     """Median sessions to revisit with levels not yet revisited treated as censored."""
     times, events = [], []
@@ -212,6 +233,7 @@ def revisit_card(ctx: StudyContext, horizon: str) -> EvidenceCard | None:
     items = items_from_evaluation(labels, result, scale=PP, observed=observed, baseline=baseline, n_per_item=counts)
     med_up = kaplan_meier_median(ev["up"], ev["z_up"])
     med_down = kaplan_meier_median(ev["down"], ev["z_down"])
+    curves = revisit_curves(ev, max(windows))
     for j, item in enumerate(items):
         side_up = j < len(windows)
         item.extra = {
@@ -221,6 +243,8 @@ def revisit_card(ctx: StudyContext, horizon: str) -> EvidenceCard | None:
             "median_distance_sigma": float(np.median(ev["z_up"] if side_up else ev["z_down"])),
             "unit_word": unit_word,
         }
+        if j in (0, len(windows)):  # one curve per side, on the side's first item
+            item.extra["curve"] = curves["high" if side_up else "low"]
     name = HORIZON_NAMES[horizon]
     return EvidenceCard(
         id=f"{ctx.instrument.code}.revisits.{horizon}",

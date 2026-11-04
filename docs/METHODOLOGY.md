@@ -91,15 +91,23 @@ Control: for each event, the share of paths from all other period closes in the 
 
 Windows (sessions; calendar days for crypto): week 5/10/20, month 10/20/60, quarter 20/60/120, year 60/120/250. Only fully observed windows count. The median time to revisit is a Kaplan–Meier estimate with levels not yet revisited censored; when fewer than half are revisited within the observed span, no median is reported.
 
+**Revisit curves.** Each card also carries, on the first item of each side, the full curve behind the graded windows: the share of real levels revisited within k sessions and the share for the control, for k = 1 up to the longest window (at most 40 evenly spaced values of k). At each k only fully observed windows count, exactly as in the graded items, so the curve passes through the graded points. The curve is descriptive: grades apply to the listed windows only, not to every point of the curve.
+
 ### Position
 
 The report states, for each horizon, the distance from the last close to the reference range's high and low in percent and in multiples of the 14-session average true range, and the position of the close within that range (0% at the low, 100% at the high). For a period in progress the reference is the prior complete period; once a period has ended, the reference is the period that just closed and the row describes the next period's starting position. Price levels are not published.
+
+**Volatility regime.** The 14-session ATR, as a percentage of each session's close, is computed for every past session of the instrument; the report gives the percentile of today's value in that history (`atr_percentile`: 80 means today's ATR is higher than on 80% of past sessions), the median ATR and the first date of the history. Only past and present bars enter each value. At least 250 sessions are required; close-only series have no ATR and no regime. The percentile describes the current regime for stop and position sizing; it is not graded, because it is a description of today, not an effect.
 
 ### Untested levels and reach odds
 
 An untested level is the high or low of a recent closed period (week, month, quarter, year) that price has not traded since. Levels of the same side closer than 0.1 ATR are merged into one price zone, and the zone lists every horizon it belongs to (for example "week and month low").
 
 For each zone the report gives **reach odds**: the share of all past sessions of the same market from which price travelled at least the zone's distance, measured in units of the 60-session volatility at that session, within 5, 20 and 60 sessions (calendar days for crypto), with a 95% Wilson interval and the number of starting points, and the **typical time to reach**: the first window in which at least half of those paths had travelled that far (not reported beyond 120). These are base rates of distance and volatility, not a claim that the level itself attracts price; whether real levels are revisited sooner than equally distant arbitrary levels is the time-to-revisit study above.
+
+### Figures derived on the page
+
+The "At a glance" board on the website derives a few figures from the report without new statistics. The **average day, high to low** is the mean true range across all sessions, obtained by weighting each weekday's mean true range by its number of sessions; the **average day, close to close** is the mean absolute daily change; the **average and busiest half-hour (hour for crypto)** are the mean bar ranges from the volatility clock. "Calmer" or "more volatile than the average day" compares today's ATR with that mean true range. The **strongest effects** shown are the A- and B-graded edge cards that have an observed value and a control, at most one per family (volatility, sessions, revisits, weekly structure, paths), ordered by grade and then by relative size. The **effect count** counts every edge item in the market's report by grade.
 
 ### Entry timing
 

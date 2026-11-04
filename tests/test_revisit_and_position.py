@@ -122,3 +122,23 @@ def test_levels_at_one_price_are_merged():
         assert zone["confluence"] == len(zone["levels"]) >= 1
     sides = [(z["side"], z["distance_pct"]) for z in board["levels"]]
     assert len(sides) == len(set(sides))  # no two zones at the same price on the same side
+
+
+def test_revisit_curves_rise_and_stay_in_range():
+    ev = revisit.build_events(random_walk_daily(n=1500), "week", crypto=False)
+    curves = revisit.revisit_curves(ev, 20)
+    high = curves["high"]
+    assert high["sessions"][0] == 1 and high["sessions"][-1] == 20
+    assert high["real_pct"][-1] >= high["real_pct"][0]
+    assert all(0 <= v <= 100 for v in high["real_pct"] + high["control_pct"])
+
+
+def test_volatility_regime_percentile():
+    from tsip.studies.position import volatility_regime
+
+    d = random_walk_daily(n=800)
+    calm = volatility_regime(d)
+    assert 0 <= calm["atr_percentile"] <= 100 and calm["atr_median_pct"] > 0
+    wild = d.copy()
+    wild.iloc[-14:, wild.columns.get_loc("high")] *= 1.05  # the last two weeks swing far more
+    assert volatility_regime(wild)["atr_percentile"] > 95

@@ -61,7 +61,28 @@ def position(daily: pd.DataFrame | None, *, crypto: bool) -> dict:
         "as_of": str(pd.Timestamp(daily.index[-1]).date()),
         "atr_pct": None if atr is None else round(atr, 3),
         "atr_sessions": 14,
+        **volatility_regime(daily),
         "horizons": [r for r in rows if r is not None],
+    }
+
+
+def volatility_regime(daily: pd.DataFrame, window: int = 14) -> dict:
+    """Where today's 14-session ATR (as % of price) ranks in the instrument's own history.
+
+    A percentile of 80 means volatility is higher today than on 80% of past sessions: wider stops and
+    smaller positions for the same risk. Uses only past and present bars.
+    """
+    h, lo, c = (daily[col].astype(float) for col in ("high", "low", "close"))
+    prev = c.shift(1)
+    tr = pd.concat([h - lo, (h - prev).abs(), (lo - prev).abs()], axis=1).max(axis=1)
+    atr = (tr.rolling(window, min_periods=window).mean() / c * PP).dropna()
+    if len(atr) < 250:
+        return {}
+    today = float(atr.iloc[-1])
+    return {
+        "atr_percentile": round(float((atr < today).mean() * PP), 1),
+        "atr_median_pct": round(float(atr.median()), 3),
+        "atr_history_from": str(pd.Timestamp(atr.index[0]).date()),
     }
 
 
