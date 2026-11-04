@@ -73,7 +73,8 @@
       t.textContent = fmt(v, unit, Math.abs(v) >= 100 ? 0 : 1).replace(" bps", "").replace(" pp", "");
       root.append(t);
     }
-    const every = items.length > 14 ? 3 : 1;
+    const longest = Math.max(...items.map((i) => shortLabel(i.label).length));
+    const every = Math.max(1, Math.ceil((longest * 6 + 6) / band));  // labels never touch
     items.forEach((item, i) => {
       const x = padL + i * band + band * 0.16;
       const bw = band * 0.68;
@@ -311,30 +312,60 @@
     return `${names.join(" and ")} ${l.side}`;
   }
 
+  // Labels never overlap: highs are laid out above the close line and lows below it, at least 16 px
+  // apart; a label moved away from its dot is joined to it by a leader line, and dots that would
+  // touch are shifted sideways.
+  function spread(ys, gap, lo, hi) {
+    const out = [...ys];
+    for (let i = 1; i < out.length; i++) out[i] = Math.max(out[i], out[i - 1] + gap);
+    if (out.length && out[out.length - 1] > hi) {
+      out[out.length - 1] = hi;
+      for (let i = out.length - 2; i >= 0; i--) out[i] = Math.min(out[i], out[i + 1] - gap);
+    }
+    if (out.length && out[0] < lo) {
+      out[0] = lo;
+      for (let i = 1; i < out.length; i++) out[i] = Math.max(out[i], out[i - 1] + gap);
+    }
+    return out;
+  }
+
   function ladder(levels) {
-    const w = 360, h = 300, mid = h / 2, span = 4; // ±4 ATR
-    const y = (atr) => mid - Math.max(-span, Math.min(span, atr)) * (mid - 18) / span;
+    const span = 4, gap = 16, dotX = 58, textX = 104;
+    const shown = levels.filter((l) => l.distance_atr !== null && Math.abs(l.distance_atr) <= span).slice(0, 10);
+    const highs = shown.filter((l) => l.distance_atr > 0).sort((a, b) => b.distance_atr - a.distance_atr);
+    const lows = shown.filter((l) => l.distance_atr <= 0).sort((a, b) => b.distance_atr - a.distance_atr);
+    const half = Math.max(132, (Math.max(highs.length, lows.length) + 1) * gap);
+    const w = 380, h = 2 * half + 36, mid = 18 + half;
+    const y = (atr) => mid - Math.max(-span, Math.min(span, atr)) * (half - 10) / span;
     const root = svg("svg", { viewBox: `0 0 ${w} ${h}`, class: "ladder", role: "img", "aria-label": "Untested levels by distance from the last close, in ATR" });
     for (const t of [-3, -2, -1, 1, 2, 3]) {
-      root.append(svg("line", { x1: 46, x2: w - 8, y1: y(t), y2: y(t), class: "ladder__grid" }));
-      const lab = svg("text", { x: 40, y: y(t) + 3, "text-anchor": "end" }); lab.textContent = `${t > 0 ? "+" : ""}${t}`; root.append(lab);
+      root.append(svg("line", { x1: 40, x2: w - 8, y1: y(t), y2: y(t), class: "ladder__grid" }));
+      const lab = svg("text", { x: 34, y: y(t) + 3, "text-anchor": "end" }); lab.textContent = `${t > 0 ? "+" : ""}${t}`; root.append(lab);
     }
-    root.append(svg("line", { x1: 46, x2: w - 8, y1: mid, y2: mid, class: "ladder__now" }));
-    const now = svg("text", { x: 40, y: mid + 3, "text-anchor": "end", class: "ladder__nowlabel" }); now.textContent = "Close"; root.append(now);
-    const unit = svg("text", { x: 46, y: 10, class: "ladder__unit" }); unit.textContent = "ATR from the last close"; root.append(unit);
-    const shown = levels.filter((l) => l.distance_atr !== null && Math.abs(l.distance_atr) <= span).slice(0, 8);
-    let lastY = -99;
-    shown.sort((a, b) => b.distance_atr - a.distance_atr).forEach((l) => {
-      const yy = y(l.distance_atr);
-      const p = l.reach?.within?.["20"]?.pct;
-      const r = 4 + Math.min(4, (l.confluence || 1) * 1.5);
-      root.append(svg("circle", { cx: 64, cy: yy, r, class: `ladder__dot ladder__dot--${l.side}` }));
-      const ty = Math.abs(yy - lastY) < 14 ? lastY + 14 : yy;
-      lastY = ty;
-      const t = svg("text", { x: 80, y: ty + 4, class: "ladder__label" });
-      t.textContent = `${levelName(l)}  ${signed(l.distance_pct)}%${p === null || p === undefined ? "" : `  ·  ${p.toFixed(0)}% within 20`}`;
-      root.append(t);
-    });
+    root.append(svg("line", { x1: 40, x2: w - 8, y1: mid, y2: mid, class: "ladder__now" }));
+    const now = svg("text", { x: 34, y: mid + 3, "text-anchor": "end", class: "ladder__nowlabel" }); now.textContent = "Close"; root.append(now);
+    const unit = svg("text", { x: 40, y: 11, class: "ladder__unit" }); unit.textContent = "ATR from the last close"; root.append(unit);
+    const draw = (group, lo, hi) => {
+      const dotY = group.map((l) => y(l.distance_atr));
+      const textY = spread(dotY, gap, lo, hi);
+      let prevY = -99, shift = 0;
+      group.forEach((l, i) => {
+        const r = 4 + Math.min(3, ((l.confluence || 1) - 1) * 1.5);
+        shift = Math.abs(dotY[i] - prevY) < 2 * r + 2 ? Math.min(shift + 1, 2) : 0;
+        prevY = dotY[i];
+        const cx = dotX + shift * 13;
+        if (Math.abs(textY[i] - dotY[i]) > 1 || shift) {
+          root.append(svg("path", { d: `M${cx + r + 2},${dotY[i].toFixed(1)} L${textX - 6},${textY[i].toFixed(1)}`, class: "ladder__leader" }));
+        }
+        root.append(svg("circle", { cx, cy: dotY[i], r, class: `ladder__dot ladder__dot--${l.side}` }));
+        const p = l.reach?.within?.["20"]?.pct;
+        const t = svg("text", { x: textX, y: textY[i] + 4, class: "ladder__label" });
+        t.textContent = `${levelName(l)}  ${signed(l.distance_pct)}%${p === null || p === undefined ? "" : `  ·  ${p.toFixed(0)}% in 20`}`;
+        root.append(t);
+      });
+    };
+    draw(highs, 22, mid - 10);
+    draw(lows, mid + 12, h - 8);
     return root;
   }
 
@@ -611,9 +642,11 @@
       }
     });
     if (now) {
-      const v = now.estimate ?? 0;
       const cx = Math.max(16, Math.min(w - 16, highlight * band + band / 2));
-      const t = svg("text", { x: cx, y: (v >= 0 ? y(v) : y(0)) - 6, "text-anchor": "middle", class: "profile__value" });
+      const reach = Math.ceil(16 / band);  // neighbours under the label's width
+      const near = items.slice(Math.max(0, highlight - reach), highlight + reach + 1).map((i) => Math.max(0, i.estimate ?? 0));
+      const t = svg("text", { x: cx, y: Math.max(11, y(Math.max(...near, 0)) - 6), "text-anchor": "middle", class: "profile__value" });
+      const v = now.estimate ?? 0;
       t.textContent = rel(v);
       root.append(t);
     }
@@ -630,7 +663,7 @@
 
   const shortContrast = (c) => (c || "control").replace(/^(the|a|an) /, "").replace(/^equally distant /, "");
 
-  function evidenceBullet(card, item, { title, href } = {}) {
+  function evidenceBullet(card, item, { title, href, control } = {}) {
     if (!item || item.observed === null || item.observed === undefined || item.baseline === null || item.baseline === undefined) return null;
     const vol = card.family === "volatility";
     const max = vol ? Math.max(item.observed, item.baseline) * 1.25 : 100;
@@ -642,7 +675,7 @@
       bullet(item.observed, item.baseline, max, item.grade),
       el("div", { class: "ev__vals" },
         el("span", {}, el("b", {}, f(item.observed)), " observed"),
-        el("span", {}, `${f(item.baseline)} ${shortContrast(card.contrast)}`))];
+        el("span", {}, `${f(item.baseline)} ${control || shortContrast(card.contrast)}`))];
     return href ? el("a", { class: "ev", href }, ...body) : el("div", { class: "ev" }, ...body);
   }
 
@@ -727,6 +760,7 @@
     }
     if (card.family === "sessions" && /day_(high|low)$/.test(id)) return `Day ${id.endsWith("high") ? "high" : "low"} forms ${sessionPhrase(item.label)}`;
     if (card.family === "weekly") return `Week ${id.endsWith("high") ? "high" : "low"} forms on ${label}`;
+    if (card.family === "money") return `${capital(card.state?.horizon || "period")}: ${(MONEY_TITLES[item.extra?.outcome] || label).toLowerCase()}`;
     if (card.family === "revisits") {
       const h = id.split(".").pop();
       return `Prior ${h}'s ${label.charAt(0).toLowerCase()}${label.slice(1)}`;
@@ -781,10 +815,10 @@
 
   function levelMap(levels, atr) {
     const small = narrow();
-    const w = small ? 360 : 720, h = 76, padL = 14, padR = 14, axis = 44, span = 4;
+    const w = small ? 360 : 720, h = 98, padL = 14, padR = 14, axis = 40, span = 4;
     const x = (a) => padL + ((Math.max(-span, Math.min(span, a)) + span) / (2 * span)) * (w - padL - padR);
     const root = svg("svg", { viewBox: `0 0 ${w} ${h}`, class: "lmap", role: "img", "aria-label": "Untested levels by distance from the last close, in ATR" });
-    root.append(svg("rect", { x: x(-1), y: axis - 14, width: x(1) - x(-1), height: 28, rx: 3, class: "lmap__day" }));
+    root.append(svg("rect", { x: x(-1), y: axis - 34, width: x(1) - x(-1), height: 68, rx: 3, class: "lmap__day" }));
     root.append(svg("line", { x1: padL, x2: w - padR, y1: axis, y2: axis, class: "lmap__axis" }));
     for (let t = -3; t <= 3; t++) {
       root.append(svg("line", { x1: x(t), x2: x(t), y1: axis - 3, y2: axis + 3, class: "lmap__tick" }));
@@ -792,23 +826,29 @@
       lab.textContent = t === 0 ? "Close" : `${t > 0 ? "+" : ""}${t}${small ? "" : " ATR"}`;
       root.append(lab);
     }
-    root.append(svg("line", { x1: x(0), x2: x(0), y1: axis - 18, y2: axis + 18, class: "lmap__close" }));
-    const day = svg("text", { x: x(0), y: 12, "text-anchor": "middle", class: "lmap__note" });
-    day.textContent = small ? `Shaded: ±1 ATR, one normal day` : `Shaded: one normal day, ±1 ATR${atr ? ` (±${atr.toFixed(2)}%)` : ""}`;
-    root.append(day);
-    const inside = levels.filter((l) => l.distance_atr !== null && Math.abs(l.distance_atr) <= span);
+    root.append(svg("line", { x1: x(0), x2: x(0), y1: axis - 34, y2: axis + 34, class: "lmap__close" }));
+
+    const inside = levels.filter((l) => l.distance_atr !== null && Math.abs(l.distance_atr) <= span)
+      .sort((p, q) => Math.abs(p.distance_atr) - Math.abs(q.distance_atr));
+    const placed = { high: [], low: [] };
     for (const l of inside) {
-      const c = svg("circle", { cx: x(l.distance_atr), cy: axis, r: 4 + Math.min(3, ((l.confluence || 1) - 1) * 1.5), class: `lmap__dot lmap__dot--${l.side}` });
+      const r = 4 + Math.min(3, ((l.confluence || 1) - 1) * 1.5);
+      const cx = x(l.distance_atr);
+      const side = l.side === "high" ? "high" : "low";
+      let level = 0;
+      while (placed[side].some((p) => p.level === level && Math.abs(p.cx - cx) < p.r + r + 2) && level < 2) level += 1;
+      placed[side].push({ cx, r, level });
+      const cy = side === "high" ? axis - 9 - level * 11 : axis + 9 + level * 11;
+      const c = svg("circle", { cx, cy, r, class: `lmap__dot lmap__dot--${l.side}` });
       const t = svg("title");
       t.textContent = `${levelName(l)}, ${l.period}: ${signed(l.distance_pct)}% (${signed(l.distance_atr, 1)} ATR); reached within 20 in ${l.reach?.within?.["20"]?.pct ?? "–"}% of past cases`;
       c.append(t);
       root.append(c);
     }
-    const beyondUp = levels.filter((l) => l.distance_atr > span).length;
-    const beyondDown = levels.filter((l) => l.distance_atr < -span).length;
-    if (beyondUp) { const t = svg("text", { x: w - padR, y: axis - 12, "text-anchor": "end", class: "lmap__note" }); t.textContent = `${beyondUp} more above`; root.append(t); }
-    if (beyondDown) { const t = svg("text", { x: padL, y: axis - 12, "text-anchor": "start", class: "lmap__note" }); t.textContent = `${beyondDown} more below`; root.append(t); }
-    return root;
+    const beyond = levels.filter((l) => l.distance_atr !== null && Math.abs(l.distance_atr) > span).length;
+    return el("figure", { class: "lmap-wrap" }, root,
+      el("figcaption", { class: "tile__line" },
+        `Highs above the line, lows below; larger dots are levels shared by several horizons. Shaded: one normal day, ±1 ATR${atr ? ` (±${atr.toFixed(2)}%)` : ""}.${beyond ? ` ${beyond} more ${beyond === 1 ? "level lies" : "levels lie"} beyond ±4 ATR.` : ""}`));
   }
 
   function tileLevels(inst, unit) {
@@ -840,6 +880,80 @@
       el("a", { class: "tile__more", href: "#open-levels" }, "All untested levels"));
   }
 
+  // Typical move from here to the period's end: median excursion below (left) and above (right) the
+  // close, interquartile whiskers, and the other periods' medians as thin control lines.
+  function moneyFan(same, others, atr) {
+    const small = narrow();
+    const w = small ? 340 : 560, h = 92, mid = w / 2, bar = 14, cy = 44;
+    const val = (g, k, q = "median") => g?.[k]?.[q];
+    const span = Math.max(2, val(same, "up_atr", "q3") ?? 0, val(same, "down_atr", "q3") ?? 0) * 1.12;
+    const x = (a) => mid + (a / span) * (mid - 12);
+    const root = svg("svg", { viewBox: `0 0 ${w} ${h}`, class: "fan", role: "img",
+      "aria-label": `Median move above the close ${val(same, "up_atr")?.toFixed(1)} ATR, below ${val(same, "down_atr")?.toFixed(1)} ATR` });
+    for (let t = -Math.floor(span); t <= Math.floor(span); t++) {
+      root.append(svg("line", { x1: x(t), x2: x(t), y1: cy - 22, y2: cy + 22, class: t === 0 ? "fan__close" : "fan__grid" }));
+      const lab = svg("text", { x: x(t), y: h - 6, "text-anchor": "middle" });
+      lab.textContent = t === 0 ? "Close" : `${t > 0 ? "+" : "−"}${Math.abs(t)}${small ? "" : " ATR"}`;
+      root.append(lab);
+    }
+    for (const [side, key, sign] of [["up", "up_atr", 1], ["down", "down_atr", -1]]) {
+      const m = val(same, key);
+      if (m === undefined || m === null) continue;
+      const x0 = x(0), x1 = x(sign * m);
+      root.append(svg("rect", { x: Math.min(x0, x1), y: cy - bar / 2, width: Math.abs(x1 - x0), height: bar, rx: 2, class: `fan__bar fan__bar--${side}` }));
+      const q1 = val(same, key, "q1"), q3 = val(same, key, "q3");
+      if (q1 !== undefined && q3 !== undefined) {
+        root.append(svg("line", { x1: x(sign * q1), x2: x(sign * q3), y1: cy, y2: cy, class: "fan__whisker" }));
+        for (const q of [q1, q3]) root.append(svg("line", { x1: x(sign * q), x2: x(sign * q), y1: cy - 5, y2: cy + 5, class: "fan__whisker" }));
+      }
+      const o = val(others, key);
+      if (o !== undefined && o !== null) root.append(svg("line", { x1: x(sign * o), x2: x(sign * o), y1: cy - bar / 2 - 5, y2: cy + bar / 2 + 5, class: "fan__ctl" }));
+      const lab = svg("text", { x: x(sign * Math.max(m, q3 ?? m)) + sign * 6, y: cy + 4, "text-anchor": sign > 0 ? "start" : "end", class: "fan__value" });
+      lab.textContent = `${sign > 0 ? "+" : "−"}${m.toFixed(1)}${atr ? ` (${(m * atr).toFixed(2)}%)` : ""}`;
+      if (x(sign * Math.max(m, q3 ?? m)) + sign * 70 > 0 && x(sign * Math.max(m, q3 ?? m)) + sign * 70 < w) root.append(lab);
+    }
+    return root;
+  }
+
+  const MONEY_TITLES = {
+    up_1: "Reached 1 ATR above", down_1: "Reached 1 ATR below", up_2: "Reached 2 ATR above", down_2: "Reached 2 ATR below",
+    end_up: "Ended above, after costs", end_down: "Ended below, after costs",
+  };
+
+  function tileMoney(inst, unit) {
+    const cards = ["week", "month", "quarter"].map((h) => findCard(inst, `money.${h}`)).filter((c) => c && c.items.length);
+    if (!cards.length) return null;
+    const box = el("div", { class: "money" });
+    const show = (card) => {
+      const st = card.state || {};
+      const same = st.excursions?.same || {}, others = st.excursions?.others || {};
+      const up = same.up_atr?.median, down = same.down_atr?.median;
+      const h = st.horizon;
+      const href = `#${card.id.replaceAll(".", "-")}`;
+      const byKey = Object.fromEntries(card.items.map((it) => [it.extra?.outcome, it]));
+      const bullets = ["up_1", "down_1", "up_2", "down_2", "end_up", "end_down"].map((k) => byKey[k])
+        .filter(Boolean).map((it) => evidenceBullet(card, it, { title: MONEY_TITLES[it.extra.outcome], href, control: `other ${h}s` }));
+      box.replaceChildren(
+        cards.length > 1 ? el("div", { class: "seg", role: "tablist", "aria-label": "Horizon" }, ...cards.map((c) => {
+          const b = el("button", { class: "seg__opt", type: "button", role: "tab", "aria-selected": String(c === card) }, capital(c.state.horizon));
+          b.addEventListener("click", () => show(c));
+          return b;
+        })) : null,
+        el("div", { class: "money__body" },
+          el("div", { class: "money__main" },
+            figure(up === undefined || down === undefined ? "–" : `+${up.toFixed(1)} / −${down.toFixed(1)}`,
+              `ATR: the median move above and below the last close before the ${h} ended, in ${num(st.analogs)} past ${h}s in the same position after ${st.sessions_elapsed} ${st.sessions_elapsed === 1 ? st.session_unit.slice(0, -1) : st.session_unit}. 1 ATR at the start of the ${h} = ${st.atr_start_pct?.toFixed(2)}%.`),
+            moneyFan(same, others, st.atr_start_pct),
+            el("p", { class: "tile__line" }, `Bars: median move; whiskers: middle half of past ${h}s; thin lines: other ${h}s at the same point (${num(st.others)}).`)),
+          el("div", { class: "money__odds" },
+            el("p", { class: "tile__line" }, `Share of past ${h}s (bar) against other ${h}s at the same point (line). Costs ${st.cost_pct?.toFixed(2)}% per round trip, assumed.`),
+            el("div", { class: "money__grid" }, ...bullets),
+            el("a", { class: "tile__more", href }, "Method, numbers and the other horizons"))));
+    };
+    show(cards[0]);
+    return tile("tile--money", "What can be made or lost from here?", box);
+  }
+
   function edgeCounts(inst) {
     const counts = { A: 0, B: 0, C: 0, D: 0, F: 0, "N/A": 0 };
     for (const c of cardsOf(inst)) if (c.kind === "edge") for (const it of c.items) counts[it.grade] = (counts[it.grade] || 0) + 1;
@@ -859,7 +973,7 @@
 
   // Strongest graded effects with a measurable control, one per family, timing families first.
   function strongest(inst, n = 3) {
-    const order = ["volatility", "sessions", "revisits", "weekly", "paths"];
+    const order = ["volatility", "sessions", "money", "revisits", "weekly", "paths"];
     const pool = cardsOf(inst).filter((c) => c.kind === "edge" && ["A", "B"].includes(c.grade));
     const strength = (c) => {
       const it = c.items[c.primary ?? 0];
@@ -908,7 +1022,7 @@
     const when = closeOnly ? `close-only index reference, last close ${dayLabel(lastDay)}`
       : crypto ? `last full day ${dayLabel(lastDay)}; trading around the clock`
       : clk.open ? `${clk.label}` : `last close ${dayLabel(lastDay)}; next session ${clk.weekday} ${clk.dom} ${clk.month}, 09:30 New York`;
-    const tiles = [tileMove(inst, clk, unit, crypto), tileWhen(inst, clk, crypto), tilePosition(inst, unit), tileLevels(inst, unit), tileEvidence(inst)].filter(Boolean);
+    const tiles = [tileMove(inst, clk, unit, crypto), tileWhen(inst, clk, crypto), tilePosition(inst, unit), tileLevels(inst, unit), tileMoney(inst, unit), tileEvidence(inst)].filter(Boolean);
     box.replaceChildren(
       el("div", { class: "board__head" },
         el("h2", { id: "board-title" }, "At a glance"),
@@ -1025,7 +1139,7 @@
     const span = [cov.daily && `Daily ${cov.daily.start} to ${cov.daily.end}`, cov.intraday && `${cov.intraday.timeframe} bars from ${cov.intraday.start}`].filter(Boolean);
     document.getElementById("index-refs").replaceChildren(...span.map((s) => el("div", {}, s)),
       el("div", {}, `Source: ${inst.sources.map((s) => s.name || s.source).join(", ")}`));
-    const AXIS = { now: "Space", levels: "Space", revisits: "Space", paths: "Space", sessions: "Time", volatility: "Time", weekly: "Time", calendar: "Time" };
+    const AXIS = { now: "Space", money: "Space", levels: "Space", revisits: "Space", paths: "Space", sessions: "Time", volatility: "Time", weekly: "Time", calendar: "Time" };
     const groups = ["Time", "Space"].map((axis) => [axis, inst.sections.filter((s) => (AXIS[s.id] || "Space") === axis)]).filter(([, list]) => list.length);
     index.replaceChildren(...groups.flatMap(([axis, list]) => [el("span", { class: "index__axis" }, axis),
       ...list.map((s) => el("a", { href: `#sec-${code}-${s.id}` }, s.title))]));

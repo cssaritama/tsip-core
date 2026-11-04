@@ -27,17 +27,19 @@ The same encodings are used everywhere, so a reader learns them once:
 | Range track with a middle band | The prior period's range is the middle half of the track; the marker is the last close |
 | Axis in ATR with a shaded band | Untested levels by distance from the last close; the band is one normal day (±1 ATR) |
 | Gauge with a middle band | Percentile of today's ATR in the instrument's own history; the band is the middle half of history |
+| Bars left and right of a close line, with whiskers | Median move below and above the close to the period's end; whiskers are the middle half of past periods; thin lines are the other periods' medians |
 | Highlighted bar or label | The current (or next) coordinate in time |
 
 ## Structure
 
 After the title, a one-sentence lede and the market switch:
 
-1. **At a glance** (the decision board): five tiles.
+1. **At a glance** (the decision board): six tiles.
    - *How far does it move?* ATR now, its percentile in the instrument's history (gauge), and a ladder of magnitudes on one scale: average bar, busiest bar, average day close to close, ATR now, average day high to low.
    - *When does it move?* The intraday volatility profile with the current or next slot highlighted, and where the day's high and low form in the current window against a random walk.
    - *Where does it stand?* Range tracks for the week, month and quarter, with distances in ATR.
-   - *Which levels are in reach?* All untested levels on one ATR axis, and the nearest high above and low below with reach odds within 5, 20 and 60 sessions.
+   - *Which levels are in reach?* All untested levels on one ATR axis (highs above the line, lows below), and the nearest high above and low below with reach odds within 5, 20 and 60 sessions.
+   - *What can be made or lost from here?* For the week, month or quarter in progress (a switch), the median move above and below the close to the period's end in ATR and percent, and six graded shares (1 and 2 ATR above and below, ended above or below after costs) against other periods at the same point.
    - *What does the evidence support?* How many of the market's effects tested against a control are graded A or B, the distribution of grades, and the three strongest effects with their controls.
 2. **Time**: the calendar coordinates of the current or next session (session window, day of the week, month, quarter and year), each with a small profile chart (current coordinate highlighted) and the graded facts for that coordinate.
 3. **Space**: the grid of horizons against their reference ranges, the untested-levels ladder and table, and the revisit curves (how soon prior highs and lows are traded again, against arbitrary levels).
@@ -52,6 +54,10 @@ A close-only index reference (SPX, NDX) shows only the evidence tile and a note 
 - Volatility effects are shown as relative movement ("+44% against the average half-hour") and as typical ranges in percent of price.
 - Distances are in percent of the last close and in ATR. Price levels are never shown (`docs/DATA_POLICY.md`).
 - The method section ends with a short glossary (pts, bps, control, ATR, grade, recent check).
+
+## Readable charts
+
+No chart text may overlap other text or a dot, at any width from 360 to 1920 px (`specs/0002-readable-charts.md`). Labels are laid out with at least 16 px between them; a label moved away from its point is joined to it by a leader line; dots that would touch are stacked; notes that do not belong to a single mark are written as captions under the chart, not inside it. Axis labels are thinned until they no longer touch. `tools/render_check.py` measures every chart on the rendered page and fails on any overlap.
 
 ## Confidence
 
@@ -105,6 +111,8 @@ board    At a glance · market, last close, next session              market dat
          │ 1.13% · gauge · ladder │ +44% · intraday profile · day high/low    │
          ├ Where does it stand?  ┼ Which levels are in reach? (two columns)  ┤
          │ week, month, quarter  │ ATR axis · nearest high and low · odds    │
+         ├ What can be made or lost from here? (full width, week/month/quarter) ┤
+         │ +0.9 / −0.9 ATR · fan chart  │ six shares, bar and control line   │
          ├ What does the evidence support? (full width)                      ┤
          │ 25 of 111 · grade bar │ three strongest effects, bar and control  │
          └────────────────────────────────────────────────────────────────────┘
@@ -123,5 +131,5 @@ ADR 0049 (with Ether added by ADR 0056): SPY, QQQ, Bitcoin and Ether are the pri
 ## Checking a change
 
 1. `tsip report` on a data store (or a synthetic one), then `tsip site --report <report.json> --out dist`. Check with the latest published report too (from the `report-archive` branch), so real values are reviewed, and with a report built by the current code, so new fields are reviewed.
-2. Serve `dist/` and review desktop (1440 px) and phone (390 px) widths in both colour schemes, for an equity, a crypto market and a close-only index; check there is no horizontal scroll and no console error.
+2. Run `python tools/render_check.py --site dist` (390 to 1920 px, both colour schemes, an equity, a crypto market and a close-only index): it fails on console errors, horizontal scroll and overlapping chart text. Then look at desktop (1440 px) and phone (390 px) yourself.
 3. `pytest` includes the self-contained site test and the board structure test.
