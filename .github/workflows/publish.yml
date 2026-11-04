@@ -123,6 +123,10 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+        with:
+          # GitHub Pages sometimes needs more than the default 10 minutes to finish a deployment
+          # (run #27 on 2026-11-04 timed out after a successful build); allow 20.
+          timeout: 1200000
 
   archive:
     # Every published report is stored once, compressed and fingerprinted, on the report-archive branch,
