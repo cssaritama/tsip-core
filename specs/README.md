@@ -48,3 +48,4 @@ R1. When ..., the report (or page) shall ...
 |---|---|---|
 | [0001](0001-money-terms.md) | Money terms: from here to the end of the period | shipped (0.2.13) |
 | [0002](0002-readable-charts.md) | Readable charts and the render check | shipped (0.2.13) |
+| [0003](0003-money-terms-all-horizons-and-costs.md) | Money terms: all horizons side by side, gross grades and cost profiles | draft, for approval |
