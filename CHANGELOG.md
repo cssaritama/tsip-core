@@ -4,6 +4,14 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.2.14] – 2026-11-04
+
+### Fixed
+- Publication: the GitHub Pages deployment may take up to 20 minutes instead of 10. Run #27 (0.2.13) built the report correctly but the deployment step stopped with "Timeout reached, aborting!" while GitHub Pages was still deploying, so the site stayed at 0.2.12 and the report was not archived.
+
+### Added
+- Specification 0003 (draft, for approval): money terms on all horizons side by side, graded items without cost assumptions, sourced cost profiles.
+
 ## [0.2.13] – 2026-11-04
 
 ### Added
