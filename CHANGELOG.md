@@ -4,6 +4,11 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.2.15] – 2026-11-04
+
+### Fixed
+- Publication: before deploying, the workflow cancels any earlier GitHub Pages deployment that GitHub still reports as unfinished. Run #28 (0.2.14) was refused with "Deployment request failed ... due to in progress deployment" because the deployment of run #27 never finished on GitHub's side. The step cannot block the deployment.
+
 ## [0.2.14] – 2026-11-04
 
 ### Fixed
