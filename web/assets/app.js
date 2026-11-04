@@ -463,6 +463,37 @@
     return { text: `${text}${tail}`, value: `${est > 0 ? "+" : ""}${est === 0 ? 0 : est}%`, grade: item.grade, href: `#${card.id.replaceAll(".", "-")}` };
   }
 
+  // Where the day's high and low form, by session window: bars are observed shares, the line across
+  // each bar is the random-walk control. The current (or next) window is marked.
+  function extremesChart(hi, lo, current, { w = 260, h = 96 } = {}) {
+    if (!hi?.items?.length || !lo?.items?.length) return null;
+    const groups = hi.items.map((it, i) => ({ label: it.label, high: it, low: lo.items[i] })).filter((g) => g.low);
+    const vals = groups.flatMap((g) => [g.high.observed, g.high.baseline, g.low.observed, g.low.baseline]).filter((v) => v !== null && v !== undefined);
+    if (!vals.length) return null;
+    const max = Math.max(...vals) * 1.15;
+    const padT = 14, padB = 18;
+    const y = (v) => padT + (1 - v / max) * (h - padT - padB);
+    const band = w / groups.length;
+    const bw = Math.min(16, band * 0.24);
+    const root = svg("svg", { viewBox: `0 0 ${w} ${h}`, class: "extremes", role: "img", "aria-label": "Share of days whose high (H) and low (L) form in each session window, against a random walk" });
+    root.append(svg("line", { x1: 0, x2: w, y1: y(0), y2: y(0), class: "profile__zero" }));
+    groups.forEach((g, i) => {
+      const now = g.label.startsWith(current);
+      const cx = i * band + band / 2;
+      [["H", g.high], ["L", g.low]].forEach(([k, it], j) => {
+        if (it.observed === null || it.observed === undefined) return;
+        const x = cx + (j === 0 ? -bw - 3 : 3);
+        const r = svg("rect", { x, y: y(it.observed), width: bw, height: Math.max(1, y(0) - y(it.observed)), rx: 1, fill: gradeFill(it.grade), class: now ? "is-now" : "" });
+        const t = svg("title"); t.textContent = `${k === "H" ? "Day high" : "Day low"} in ${it.label}: ${it.observed.toFixed(0)}% of days against ${it.baseline?.toFixed(0)}% in a random walk, grade ${it.grade}`; r.append(t);
+        root.append(r);
+        if (it.baseline !== null && it.baseline !== undefined) root.append(svg("line", { x1: x - 3, x2: x + bw + 3, y1: y(it.baseline), y2: y(it.baseline), class: "extremes__ctl" }));
+        const lab = svg("text", { x: x + bw / 2, y: y(Math.max(it.observed, it.baseline ?? 0)) - 4, "text-anchor": "middle", class: "extremes__k" }); lab.textContent = k; root.append(lab);
+      });
+      const lab = svg("text", { x: cx, y: h - 5, "text-anchor": "middle", class: now ? "is-now" : "" }); lab.textContent = shortLabel(g.label); root.append(lab);
+    });
+    return root;
+  }
+
   function timeCoordinates(inst, now = new Date()) {
     const crypto = inst.instrument.calendar === "24/7";
     const clk = crypto ? cryptoClock(now) : equityClock(now);
@@ -484,10 +515,13 @@
     const vh = crypto ? findCard(inst, "volatility.hour") : findCard(inst, "volatility.halfhour");
     sessionFacts.unshift(volFact(vh, findItem(vh, (l) => l.label === (crypto ? clk.hour : clk.slot)),
       crypto ? `Movement in the ${clk.hour} hour against the average hour` : `Movement in the ${clk.slot} half-hour against the average half-hour`));
-    coords.push({ name: "Session", value: clk.session, note: clk.label, facts: sessionFacts });
+    coords.push({ name: "Session", value: clk.session, note: clk.label, facts: sessionFacts, chart: extremesChart(hi, lo, clk.session) });
     // weekday
     const wh = findCard(inst, "weekly.week_high"), wl = findCard(inst, "weekly.week_low"), wd = findCard(inst, "calendar.weekday");
-    coords.push({ name: "Day of the week", value: clk.weekday, note: crypto ? "" : clk.open ? "Today" : "Next session", facts: [
+    const small = (card, key, opts = {}) => (card?.items?.length
+      ? profileChart(card.items, { highlight: card.items.findIndex((l) => l.label === key), w: 260, h: 84, ...opts }) : null);
+    coords.push({ name: "Day of the week", value: clk.weekday, note: crypto ? "" : clk.open ? "Today" : "Next session",
+      chart: small(findCard(inst, "volatility.weekday"), clk.weekday, { name: "day" }), facts: [
       volFact(findCard(inst, "volatility.weekday"), findItem(findCard(inst, "volatility.weekday"), (l) => l.label === clk.weekday), `Movement on ${clk.weekday}s against the average day`),
       fact(wh, findItem(wh, (l) => l.label === clk.weekday), "Week high forms on this day, against a random walk"),
       fact(wl, findItem(wl, (l) => l.label === clk.weekday), "Week low forms on this day, against a random walk"),
@@ -506,7 +540,8 @@
     ];
     if (tom && inTurn) monthFacts.push(fact(tom, tom.items[0], `Turn-of-month days, versus ${tom?.contrast || "the other days"}`));
     coords.push({ name: "Month", value: `${clk.month}, day ${clk.dom}`,
-      note: [!clk.open && "Next session", inTurn && "inside the turn-of-month window"].filter(Boolean).join(", ").replace(/^i/, "I"), facts: monthFacts });
+      note: [!clk.open && "Next session", inTurn && "inside the turn-of-month window"].filter(Boolean).join(", ").replace(/^i/, "I"), facts: monthFacts,
+      chart: small(vm, clk.month, { name: "month", label: (l) => l.charAt(0) }) });
     // quarter and year progress from the position block
     const q = (inst.position?.horizons || []).find((p) => p.horizon === "quarter");
     const yr = (inst.position?.horizons || []).find((p) => p.horizon === "year");
@@ -517,7 +552,8 @@
     const qLabel = `Q${Math.floor((clk.m - 1) / 3) + 1}`;
     const qFacts = [volFact(vq, findItem(vq, (l) => l.label === qLabel), `Movement in ${qLabel} against the average day`)];
     coords.push({ name: "Quarter and year", value: q?.period || "–",
-      note: [prog(mapQ) && `Quarter: ${prog(mapQ)}`, prog(mapY) && `Year ${yr?.period}: ${prog(mapY)}`].filter(Boolean).join(". "), facts: qFacts, link: "#space" });
+      note: [prog(mapQ) && `Quarter: ${prog(mapQ)}`, prog(mapY) && `Year ${yr?.period}: ${prog(mapY)}`].filter(Boolean).join(". "), facts: qFacts, link: "#space",
+      chart: small(vq, qLabel, { name: "quarter" }) });
     return { clock: clk, coords };
   }
 
@@ -529,9 +565,421 @@
       el("div", { class: "coord__name" }, c.name),
       el("div", { class: "coord__value" }, c.value),
       c.note ? el("div", { class: "coord__note" }, c.note) : null,
-      el("ul", { class: "coord__facts" }, ...c.facts.filter(Boolean).map((f) => el("li", {},
+      c.chart ? el("div", { class: "coord__chart" }, c.chart) : null,
+      el("ul", { class: "coord__facts" }, ...c.facts.filter(Boolean).map((f) => el("li", { class: f.grade === "N/A" ? "is-thin" : "" },
         el("a", { href: f.href }, el("span", { class: "coord__fact" }, f.text), el("span", { class: "coord__fig" }, f.value), gradeTag(f.grade, null))))),
       c.link ? el("a", { class: "coord__more", href: c.link }, "Position against prior quarters and years") : null)));
+  }
+
+  // ------------------------------------------------------------------ at a glance
+  // Five questions a trader asks before acting, each answered with one figure, one visual and its
+  // grade. Observed values are drawn as bars and their control as a thin line, everywhere.
+  const gradeFill = (g) => `var(--${gradeClass(g)})`;
+  const rel = (v) => (v === null || v === undefined ? "–" : `${Math.round(v) > 0 ? "+" : ""}${Math.round(v)}%`);
+  const WEEKDAY_SHORT = { Sunday: "Sun", Monday: "Mon", Tuesday: "Tue", Wednesday: "Wed", Thursday: "Thu", Friday: "Fri", Saturday: "Sat" };
+  const dayLabel = (iso) => {
+    if (!iso) return "–";
+    const d = new Date(`${iso}T12:00:00Z`);
+    return `${WEEKDAY_SHORT[DAY_NAMES[d.getUTCDay()]]} ${d.getUTCDate()} ${MONTH_SHORT[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+  };
+
+  // Movement by slot against the average slot: the zero line is the control.
+  function profileChart(items, { highlight = -1, every = 1, w = 340, h = 120, label = shortLabel, name = "slot" } = {}) {
+    const padT = 20, padB = 20;
+    const max = Math.max(10, ...items.map((i) => Math.abs(i.estimate ?? 0))) * 1.12;
+    const y = (v) => padT + ((max - v) / (2 * max)) * (h - padT - padB);
+    const band = w / items.length;
+    const bw = Math.max(2, band * 0.68);
+    const now = items[highlight];
+    const root = svg("svg", { viewBox: `0 0 ${w} ${h}`, class: "profile", role: "img",
+      "aria-label": `Movement by ${name} against the average ${name}${now ? `; ${now.label} ${rel(now.estimate)}` : ""}` });
+    root.append(svg("line", { x1: 0, x2: w, y1: y(0), y2: y(0), class: "profile__zero" }));
+    items.forEach((it, i) => {
+      const v = it.estimate ?? 0;
+      const x = i * band + (band - bw) / 2;
+      const top = y(Math.max(0, v)), bottom = y(Math.min(0, v));
+      const r = svg("rect", { x, y: top, width: bw, height: Math.max(1, bottom - top), rx: 1, fill: gradeFill(it.grade), class: i === highlight ? "is-now" : "" });
+      const t = svg("title");
+      t.textContent = `${it.label}: ${rel(v)} against the average ${name}, grade ${it.grade}`;
+      r.append(t);
+      root.append(r);
+      const crowded = i !== highlight && highlight >= 0 && Math.abs(i - highlight) < every;
+      if (i === highlight || (i % every === 0 && !crowded)) {
+        const lab = svg("text", { x: x + bw / 2, y: h - 5, "text-anchor": "middle", class: i === highlight ? "is-now" : "" });
+        lab.textContent = label(it.label);
+        root.append(lab);
+      }
+    });
+    if (now) {
+      const v = now.estimate ?? 0;
+      const cx = Math.max(16, Math.min(w - 16, highlight * band + band / 2));
+      const t = svg("text", { x: cx, y: (v >= 0 ? y(v) : y(0)) - 6, "text-anchor": "middle", class: "profile__value" });
+      t.textContent = rel(v);
+      root.append(t);
+    }
+    return root;
+  }
+
+  // Observed value as a bar, control as a thin line across it.
+  function bullet(observed, control, max, grade) {
+    const at = (v) => `${Math.max(0, Math.min(100, (v / max) * 100)).toFixed(1)}%`;
+    return el("div", { class: "bullet", "aria-hidden": "true" },
+      el("span", { class: "bullet__bar", style: `width:${at(observed)};background:${gradeFill(grade)}` }),
+      control === null || control === undefined ? null : el("span", { class: "bullet__tick", style: `left:${at(control)}` }));
+  }
+
+  const shortContrast = (c) => (c || "control").replace(/^(the|a|an) /, "").replace(/^equally distant /, "");
+
+  function evidenceBullet(card, item, { title, href } = {}) {
+    if (!item || item.observed === null || item.observed === undefined || item.baseline === null || item.baseline === undefined) return null;
+    const vol = card.family === "volatility";
+    const max = vol ? Math.max(item.observed, item.baseline) * 1.25 : 100;
+    const f = (v) => (vol ? `${v.toFixed(2)}%` : `${v.toFixed(0)}%`);
+    const body = [
+      el("div", { class: "ev__top" },
+        el("span", { class: "ev__title" }, title || item.label),
+        el("span", { class: "ev__grade" }, meter(item.grade, confidence(card, item.grade)), item.grade)),
+      bullet(item.observed, item.baseline, max, item.grade),
+      el("div", { class: "ev__vals" },
+        el("span", {}, el("b", {}, f(item.observed)), " observed"),
+        el("span", {}, `${f(item.baseline)} ${shortContrast(card.contrast)}`))];
+    return href ? el("a", { class: "ev", href }, ...body) : el("div", { class: "ev" }, ...body);
+  }
+
+  function gauge(p) {
+    return el("div", { class: "gauge-wrap" },
+      el("div", { class: "gauge", role: "img", "aria-label": `Higher than ${p.toFixed(0)}% of past sessions` },
+        el("span", { class: "gauge__normal" }),
+        el("span", { class: "gauge__mark", style: `left:${Math.max(0, Math.min(100, p)).toFixed(1)}%` })),
+      el("div", { class: "gauge__scale" }, el("span", {}, "Calmer"), el("span", {}, "Middle half of history"), el("span", {}, "More volatile")));
+  }
+
+  const tile = (cls, question, ...children) => el("article", { class: `tile ${cls}` }, el("h3", { class: "tile__q" }, question), ...children);
+  const figure = (value, sub, extra = null) =>
+    el("div", { class: "tile__head" }, el("div", { class: "tile__fig" }, value), el("div", { class: "tile__sub" }, sub), extra);
+
+  // Magnitudes on one scale: the size of a normal bar, of the busiest bar, of a normal day, and today's ATR.
+  function moveLadder(rows) {
+    const max = Math.max(...rows.map((r) => r.value)) * 1.04;
+    return el("div", { class: "ladder-rows" }, ...rows.sort((a, b) => a.value - b.value).map((r) =>
+      el("div", { class: `mrow${r.now ? " mrow--now" : ""}`, title: r.title || "" },
+        el("span", { class: "mrow__label" }, r.label),
+        el("span", { class: "mrow__track" }, el("span", { class: "mrow__fill", style: `width:${((r.value / max) * 100).toFixed(1)}%` })),
+        el("span", { class: "mrow__v" }, `${r.value.toFixed(2)}%`))));
+  }
+
+  function tileMove(inst, clk, unit, crypto) {
+    const p = inst.position || {};
+    if (p.atr_pct === null || p.atr_pct === undefined) return null;
+    const vw = findCard(inst, "volatility.weekday");
+    const vc = crypto ? findCard(inst, "volatility.hour") : findCard(inst, "volatility.halfhour");
+    const since = String(inst.coverage?.daily?.start || inst.coverage?.intraday?.start || p.atr_history_from || "").slice(0, 4);
+    const rows = [{ label: `ATR now, 14 ${unit}`, value: p.atr_pct, now: true }];
+    if (vw?.items?.length) {
+      const n = vw.items.reduce((s, i) => s + (i.n || 0), 0);
+      const avgRange = vw.items.reduce((s, i) => s + (i.extra?.typical_range_pct ?? 0) * (i.n || 0), 0) / (n || 1);
+      const avgMove = vw.items[0].extra?.average_move_pct;
+      if (avgRange > 0) rows.push({ label: "Average day, high to low", value: avgRange, key: "range", title: `Mean true range since ${since}, including gaps` });
+      if (avgMove) rows.push({ label: "Average day, close to close", value: avgMove, title: `Mean absolute daily change since ${since}` });
+    }
+    if (vc?.items?.length) {
+      const slot = crypto ? "hour" : "half-hour";
+      const busiest = [...vc.items].sort((a, b) => b.estimate - a.estimate)[0];
+      rows.push({ label: `Average ${slot}`, value: vc.items[0].extra?.average_range_pct ?? vc.items[0].baseline, title: `Mean high-to-low range of a ${slot}` });
+      rows.push({ label: `${busiest.label}, busiest`, value: busiest.extra?.typical_range_pct ?? busiest.observed, title: `Mean high-to-low range of the ${busiest.label} ${slot}` });
+    }
+    const pctl = p.atr_percentile;
+    const avg = rows.find((r) => r.key === "range");
+    const regime = pctl !== null && pctl !== undefined
+      ? `Higher than ${pctl.toFixed(0)}% of ${unit} since ${String(p.atr_history_from).slice(0, 4)}; the median is ${p.atr_median_pct.toFixed(2)}%.`
+      : avg ? `${p.atr_pct < avg.value ? "Calmer" : "More volatile"} than the average day since ${since}: ${p.atr_pct.toFixed(2)}% against ${avg.value.toFixed(2)}%.` : null;
+    const day = findItem(vw, (l) => l.label === clk.weekday);
+    const dayFact = day && ["A", "B"].includes(day.grade)
+      ? el("a", { class: "tile__fact", href: `#${vw.id.replaceAll(".", "-")}` },
+          el("span", {}, `${clk.weekday}s move ${rel(day.estimate)} against the average day`),
+          el("span", { class: "tile__factfig" }, `${day.extra?.typical_move_pct?.toFixed(2)}%`), gradeTag(day.grade, confidence(vw, day.grade)))
+      : null;
+    return tile("tile--move", "How far does it move?",
+      figure(`${p.atr_pct.toFixed(2)}%`, `Average daily range over the last 14 ${unit} (ATR)`),
+      pctl === null || pctl === undefined ? null : gauge(pctl),
+      regime ? el("p", { class: "tile__line tile__line--strong" }, regime) : null,
+      moveLadder(rows.filter((r) => r.value > 0)),
+      dayFact);
+  }
+
+  const sessionPhrase = (label) => {
+    const name = label.replace(/\s*\(.*\)$/, "");
+    if (name === "Midday") return "at midday";
+    if (/hour$/.test(name)) return `in the ${name.toLowerCase()}`;
+    return `in the ${name} session`;
+  };
+
+  // A short, plain title for a graded effect, built from its card and item.
+  function effectTitle(card, item) {
+    const label = item.label.replace(/\s*\(.*\)$/, "");
+    const id = card.id;
+    if (card.family === "volatility") {
+      if (id.endsWith(".halfhour")) return `Range in the ${label} half-hour`;
+      if (id.endsWith(".hour")) return `Range in the ${label} hour`;
+      if (id.endsWith(".weekday")) return `Daily move on ${label}s`;
+      if (id.endsWith(".week_of_month")) return `Daily move on ${label.toLowerCase()} of the month`;
+      return `Daily move in ${label}`;
+    }
+    if (card.family === "sessions" && /day_(high|low)$/.test(id)) return `Day ${id.endsWith("high") ? "high" : "low"} forms ${sessionPhrase(item.label)}`;
+    if (card.family === "weekly") return `Week ${id.endsWith("high") ? "high" : "low"} forms on ${label}`;
+    if (card.family === "revisits") {
+      const h = id.split(".").pop();
+      return `Prior ${h}'s ${label.charAt(0).toLowerCase()}${label.slice(1)}`;
+    }
+    return `${card.title}: ${label}`;
+  }
+
+  function tileWhen(inst, clk, crypto) {
+    const vc = crypto ? findCard(inst, "volatility.hour") : findCard(inst, "volatility.halfhour");
+    if (!vc || !vc.items.length) return null;
+    const key = crypto ? clk.hour : clk.slot;
+    const k = vc.items.findIndex((i) => i.label === key);
+    const now = vc.items[k];
+    const sorted = [...vc.items].sort((a, b) => b.estimate - a.estimate);
+    const hi = findCard(inst, "sessions.day_high"), lo = findCard(inst, "sessions.day_low");
+    const win = (card) => findItem(card, (l) => l.label.startsWith(clk.session));
+    const when = crypto ? "now" : clk.open ? "now" : "when the next session opens";
+    const slot = crypto ? "hour" : "half-hour";
+    const pair = [[hi, win(hi)], [lo, win(lo)]].map(([c, it]) => (c && it ? evidenceBullet(c, it, { title: effectTitle(c, it), href: `#${c.id.replaceAll(".", "-")}` }) : null)).filter(Boolean);
+    return tile("tile--when tile--wide", "When does it move?",
+      el("div", { class: "when" },
+        figure(now ? rel(now.estimate) : "–", now ? `Range in the ${now.label} ${slot}, ${when}, against the average ${slot}` : "",
+          now ? gradeTag(now.grade, confidence(vc, now.grade)) : null),
+        el("div", { class: "when__chart" },
+          profileChart(vc.items, { highlight: k, every: crypto ? (narrow() ? 4 : 3) : narrow() ? 3 : 2, w: narrow() ? 340 : 480, h: 132, name: slot }),
+          el("p", { class: "tile__line" }, `Busiest ${sorted[0].label} (${rel(sorted[0].estimate)}), quietest ${sorted.at(-1).label} (${rel(sorted.at(-1).estimate)}). Each bar: range against the average ${slot}, coloured by grade.`))),
+      pair.length ? el("div", { class: "tile__pair" }, ...pair) : null);
+  }
+
+  function tilePosition(inst, unit) {
+    const rows = (inst.position?.horizons || []).filter((p) => ["week", "month", "quarter"].includes(p.horizon));
+    if (!rows.length) return null;
+    return tile("tile--stand", "Where does it stand?",
+      el("div", { class: "pos" }, ...rows.map((p) => {
+        const pos = p.range_position_pct;
+        const x = pos === null || pos === undefined ? null : Math.max(-45, Math.min(145, pos));
+        const zone = x === null ? "" : pos > 100 ? "above" : pos < 0 ? "below" : "inside";
+        return el("div", { class: "pos__row" },
+          el("div", { class: "pos__h" }, el("b", {}, capital(p.horizon)), el("span", {}, p.status === "closed" ? "next, against the one just closed" : `against ${p.reference}`)),
+          el("div", { class: `range range--${zone}`, role: "img", "aria-label": `Last close at ${pos === null ? "an unknown point" : `${pos.toFixed(0)}%`} of the ${p.reference} range` },
+            el("span", { class: "range__band" }), el("span", { class: "range__edge range__edge--low" }), el("span", { class: "range__edge range__edge--high" }),
+            x === null ? null : el("span", { class: "range__mark", style: `left:${(25 + x * 0.5).toFixed(1)}%` })),
+          el("div", { class: "pos__v" }, pos === null || pos === undefined ? "–" : `${pos.toFixed(0)}%`),
+          el("div", { class: "pos__atr" }, `Low ${signed(p.to_reference_low_atr, 1)} ATR`, el("span", {}, `High ${signed(p.to_reference_high_atr, 1)} ATR`)));
+      })),
+      el("p", { class: "tile__line" }, `Last close within each prior range: 0% at its low, 100% at its high. Distances in ATR, the average daily range.`),
+      el("a", { class: "tile__more", href: "#space" }, "All horizons and what followed"));
+  }
+
+  // Every untested level on one axis, in ATR from the last close; the shaded band is one normal day.
+  const narrow = () => window.matchMedia("(max-width: 720px)").matches;
+
+  function levelMap(levels, atr) {
+    const small = narrow();
+    const w = small ? 360 : 720, h = 76, padL = 14, padR = 14, axis = 44, span = 4;
+    const x = (a) => padL + ((Math.max(-span, Math.min(span, a)) + span) / (2 * span)) * (w - padL - padR);
+    const root = svg("svg", { viewBox: `0 0 ${w} ${h}`, class: "lmap", role: "img", "aria-label": "Untested levels by distance from the last close, in ATR" });
+    root.append(svg("rect", { x: x(-1), y: axis - 14, width: x(1) - x(-1), height: 28, rx: 3, class: "lmap__day" }));
+    root.append(svg("line", { x1: padL, x2: w - padR, y1: axis, y2: axis, class: "lmap__axis" }));
+    for (let t = -3; t <= 3; t++) {
+      root.append(svg("line", { x1: x(t), x2: x(t), y1: axis - 3, y2: axis + 3, class: "lmap__tick" }));
+      const lab = svg("text", { x: x(t), y: h - 6, "text-anchor": "middle" });
+      lab.textContent = t === 0 ? "Close" : `${t > 0 ? "+" : ""}${t}${small ? "" : " ATR"}`;
+      root.append(lab);
+    }
+    root.append(svg("line", { x1: x(0), x2: x(0), y1: axis - 18, y2: axis + 18, class: "lmap__close" }));
+    const day = svg("text", { x: x(0), y: 12, "text-anchor": "middle", class: "lmap__note" });
+    day.textContent = small ? `Shaded: ±1 ATR, one normal day` : `Shaded: one normal day, ±1 ATR${atr ? ` (±${atr.toFixed(2)}%)` : ""}`;
+    root.append(day);
+    const inside = levels.filter((l) => l.distance_atr !== null && Math.abs(l.distance_atr) <= span);
+    for (const l of inside) {
+      const c = svg("circle", { cx: x(l.distance_atr), cy: axis, r: 4 + Math.min(3, ((l.confluence || 1) - 1) * 1.5), class: `lmap__dot lmap__dot--${l.side}` });
+      const t = svg("title");
+      t.textContent = `${levelName(l)}, ${l.period}: ${signed(l.distance_pct)}% (${signed(l.distance_atr, 1)} ATR); reached within 20 in ${l.reach?.within?.["20"]?.pct ?? "–"}% of past cases`;
+      c.append(t);
+      root.append(c);
+    }
+    const beyondUp = levels.filter((l) => l.distance_atr > span).length;
+    const beyondDown = levels.filter((l) => l.distance_atr < -span).length;
+    if (beyondUp) { const t = svg("text", { x: w - padR, y: axis - 12, "text-anchor": "end", class: "lmap__note" }); t.textContent = `${beyondUp} more above`; root.append(t); }
+    if (beyondDown) { const t = svg("text", { x: padL, y: axis - 12, "text-anchor": "start", class: "lmap__note" }); t.textContent = `${beyondDown} more below`; root.append(t); }
+    return root;
+  }
+
+  function tileLevels(inst, unit) {
+    const levels = inst.open_levels?.levels || [];
+    if (!levels.length) return null;
+    const above = levels.find((l) => l.distance_pct > 0);
+    const below = levels.find((l) => l.distance_pct < 0);
+    const block = (l, word) => {
+      if (!l) return el("div", { class: "lvl lvl--none" }, `No untested ${word} in the published range.`);
+      const half = l.reach?.typical_sessions;
+      return el("div", { class: `lvl lvl--${l.side}` },
+        el("div", { class: "lvl__top" },
+          el("b", {}, levelName(l)),
+          el("span", { class: "lvl__dist" }, `${signed(l.distance_pct)}%`, el("span", {}, `${signed(l.distance_atr, 1)} ATR`))),
+        el("div", { class: "lvl__sub" }, `${l.period}, untested for ${l.age_sessions === 0 ? "less than a day" : `${num(l.age_sessions)} ${l.age_sessions === 1 ? unit.slice(0, -1) : unit}`}`),
+        el("div", { class: "odds" }, ...["5", "20", "60"].map((k) => {
+          const o = l.reach?.within?.[k];
+          return el("div", { class: "odds__cell", title: o ? `95% interval ${o.ci_low}–${o.ci_high}%, ${num(o.n)} past starting points` : "" },
+            el("span", { class: "odds__k" }, `${k} ${unit}`),
+            el("span", { class: "odds__track" }, el("span", { class: "odds__fill", style: `width:${o?.pct ?? 0}%` })),
+            el("span", { class: "odds__v" }, o?.pct === null || o?.pct === undefined ? "–" : `${o.pct.toFixed(0)}%`));
+        })),
+        el("div", { class: "lvl__note" }, half ? `Half of past cases got there within ${half} ${half === 1 ? unit.slice(0, -1) : unit}.` : `Fewer than half of past cases got there within 120 ${unit}.`));
+    };
+    return tile("tile--levels", "Which levels are in reach?",
+      levelMap(levels, inst.open_levels?.atr_pct),
+      el("div", { class: "lvl-pair" }, block(above, "high above"), block(below, "low below")),
+      el("p", { class: "tile__line" }, `How often price has travelled that far within 5, 20 and 60 ${unit}, from every past ${unit.slice(0, -1)} at the same volatility-scaled distance.`),
+      el("a", { class: "tile__more", href: "#open-levels" }, "All untested levels"));
+  }
+
+  function edgeCounts(inst) {
+    const counts = { A: 0, B: 0, C: 0, D: 0, F: 0, "N/A": 0 };
+    for (const c of cardsOf(inst)) if (c.kind === "edge") for (const it of c.items) counts[it.grade] = (counts[it.grade] || 0) + 1;
+    return counts;
+  }
+
+  function scoreBar(counts) {
+    const total = Object.values(counts).reduce((a, b) => a + b, 0);
+    const order = ["A", "B", "C", "D", "F", "N/A"];
+    const name = { A: "A strong", B: "B moderate", C: "C weak", D: "D no difference", F: "F contradicted", "N/A": "Too little history" };
+    return el("div", { class: "score" },
+      el("div", { class: "score__bar", role: "img", "aria-label": order.map((g) => `${name[g]} ${counts[g]}`).join(", ") },
+        ...order.filter((g) => counts[g]).map((g) => el("span", { class: `score__seg ${gradeClass(g)}`, style: `flex:${counts[g]} 1 0`, title: `${name[g]}: ${counts[g]} of ${total}` }))),
+      el("div", { class: "score__legend" }, ...order.filter((g) => counts[g]).map((g) =>
+        el("span", {}, el("i", { class: `score__key ${gradeClass(g)}` }), `${name[g]} `, el("b", {}, counts[g])))));
+  }
+
+  // Strongest graded effects with a measurable control, one per family, timing families first.
+  function strongest(inst, n = 3) {
+    const order = ["volatility", "sessions", "revisits", "weekly", "paths"];
+    const pool = cardsOf(inst).filter((c) => c.kind === "edge" && ["A", "B"].includes(c.grade));
+    const strength = (c) => {
+      const it = c.items[c.primary ?? 0];
+      return it?.baseline ? Math.abs((it.observed - it.baseline) / it.baseline) : 0;
+    };
+    const out = [];
+    for (const fam of order) {
+      const best = pool.filter((c) => c.family === fam && c.items[c.primary ?? 0]?.baseline != null)
+        .sort((a, b) => RANK[a.grade] - RANK[b.grade] || strength(b) - strength(a))[0];
+      if (best) out.push(best);
+      if (out.length === n) break;
+    }
+    return out;
+  }
+
+  function tileEvidence(inst) {
+    const counts = edgeCounts(inst);
+    const total = Object.values(counts).reduce((a, b) => a + b, 0);
+    if (!total) return null;
+    const lines = strongest(inst).map((c) => evidenceBullet(c, c.items[c.primary ?? 0],
+      { title: effectTitle(c, c.items[c.primary ?? 0]), href: `#${c.id.replaceAll(".", "-")}` }));
+    return tile("tile--evidence", "What does the evidence support?",
+      el("div", { class: "evidence" },
+        el("div", { class: "evidence__score" },
+          figure(`${counts.A + counts.B}`, counts.A + counts.B
+            ? `of ${total} effects tested against a control are strong or moderate. Most patterns fail; these survive.`
+            : `of ${total} effects tested against a control are strong or moderate so far. None is shown as evidence until it is.`),
+          scoreBar(counts)),
+        el("div", { class: "evidence__lines" },
+          lines.length ? el("p", { class: "tile__line" }, "Strongest effects with a measurable control. Bar: observed; line: control.") : null,
+          el("div", { class: "ev-list" }, ...lines),
+          el("a", { class: "tile__more", href: "#markets" }, "Every finding, with method and numbers"))));
+  }
+
+  function renderBoard(inst) {
+    const box = document.getElementById("board");
+    if (!inst || inst.status !== "ok") { box.replaceChildren(); box.hidden = true; return; }
+    box.hidden = false;
+    const crypto = inst.instrument.calendar === "24/7";
+    const clk = crypto ? cryptoClock(new Date()) : equityClock(new Date());
+    const unit = crypto ? "days" : "sessions";
+    const st = (state.report.data_status?.instruments || []).find((r) => r.code === inst.code);
+    const word = { fresh: "Data up to date", degraded: "Data current, fallback source", stale: "Data out of date" };
+    const closeOnly = !inst.position?.horizons?.length;
+    const lastDay = inst.position?.as_of || String(inst.coverage?.daily?.end || "").slice(0, 10);
+    const when = closeOnly ? `close-only index reference, last close ${dayLabel(lastDay)}`
+      : crypto ? `last full day ${dayLabel(lastDay)}; trading around the clock`
+      : clk.open ? `${clk.label}` : `last close ${dayLabel(lastDay)}; next session ${clk.weekday} ${clk.dom} ${clk.month}, 09:30 New York`;
+    const tiles = [tileMove(inst, clk, unit, crypto), tileWhen(inst, clk, crypto), tilePosition(inst, unit), tileLevels(inst, unit), tileEvidence(inst)].filter(Boolean);
+    box.replaceChildren(
+      el("div", { class: "board__head" },
+        el("h2", { id: "board-title" }, "At a glance"),
+        el("p", {}, `${marketName(inst.code)}, ${inst.code}: ${when}`),
+        st ? el("span", { class: "board__status" }, el("span", { class: `dot dot--${st.status}` }), word[st.status] || st.status) : null),
+      el("div", { class: "board__grid" }, ...tiles),
+      el("p", { class: "board__foot" }, closeOnly
+        ? `${marketName(inst.code)} is published as closes only, so positions, levels and intraday timing are shown for the tradable funds (SPY, QQQ); its long-history statistics are listed below.`
+        : "Every figure is measured on this market's own history and graded against a control. It describes what has happened; it is not a signal or a forecast."));
+  }
+
+  // ------------------------------------------------------------------ time to revisit
+  // Share of past periods whose high or low was traded again within k sessions (solid), against
+  // arbitrary levels at the same volatility-scaled distance (dashed). Dots mark the graded windows.
+  function curveOf(card, side) {
+    const items = card.items.filter((it) => it.label.startsWith(side === "high" ? "High" : "Low"));
+    const windows = items.map((it) => Number(it.label.match(/within (\d+)/)?.[1]));
+    const c = items[0]?.extra?.curve;
+    if (c?.sessions?.length) return { k: [0, ...c.sessions], real: [0, ...c.real_pct], control: [0, ...c.control_pct], items, windows };
+    return { k: [0, ...windows], real: [0, ...items.map((i) => i.observed)], control: [0, ...items.map((i) => i.baseline)], items, windows };
+  }
+
+  function revisitChart(card, unit) {
+    const w = 300, h = 178, padL = 34, padR = 10, padT = 12, padB = 26;
+    const sides = [["high", curveOf(card, "high")], ["low", curveOf(card, "low")]];
+    const kmax = Math.max(...sides.flatMap(([, s]) => s.k));
+    const x = (k) => padL + (k / kmax) * (w - padL - padR);
+    const y = (v) => padT + (1 - v / 100) * (h - padT - padB);
+    const root = svg("svg", { viewBox: `0 0 ${w} ${h}`, class: "curves", role: "img", "aria-label": `${card.title}: share revisited by ${unit}, real levels against arbitrary levels` });
+    for (const v of [0, 50, 100]) {
+      root.append(svg("line", { x1: padL, x2: w - padR, y1: y(v), y2: y(v), class: "curves__grid" }));
+      const t = svg("text", { x: padL - 6, y: y(v) + 3, "text-anchor": "end" }); t.textContent = `${v}%`; root.append(t);
+    }
+    for (const k of [0, Math.round(kmax / 2), kmax]) {
+      const t = svg("text", { x: x(k), y: h - 8, "text-anchor": k === 0 ? "start" : k === kmax ? "end" : "middle" });
+      t.textContent = k === kmax ? `${k} ${unit}` : `${k}`;
+      root.append(t);
+    }
+    const line = (ks, vs) => ks.map((k, i) => (vs[i] === null || vs[i] === undefined ? null : `${i ? "L" : "M"}${x(k).toFixed(1)},${y(vs[i]).toFixed(1)}`)).filter(Boolean).join(" ");
+    for (const [side, s] of sides) {
+      root.append(svg("path", { d: line(s.k, s.control), class: `curves__line curves__line--control curves__line--${side}` }));
+      root.append(svg("path", { d: line(s.k, s.real), class: `curves__line curves__line--${side}` }));
+      s.items.forEach((it, i) => {
+        const dot = svg("circle", { cx: x(s.windows[i]), cy: y(it.observed), r: 3.2, class: `curves__dot curves__dot--${side}` });
+        const t = svg("title"); t.textContent = `${it.label}: ${it.observed.toFixed(0)}% against ${it.baseline.toFixed(0)}%, grade ${it.grade}`; dot.append(t);
+        root.append(dot);
+      });
+    }
+    return root;
+  }
+
+  function renderCurves(inst) {
+    const box = document.getElementById("revisit-curves");
+    const cards = cardsOf(inst || {}).filter((c) => c.family === "revisits" && c.items.length);
+    if (!inst || inst.status !== "ok" || !cards.length) { box.replaceChildren(); box.hidden = true; return; }
+    box.hidden = false;
+    const unit = inst.instrument.calendar === "24/7" ? "days" : "sessions";
+    const best = (card, side) => card.items.filter((it) => it.label.startsWith(side)).sort((a, b) => RANK[a.grade] - RANK[b.grade])[0];
+    box.replaceChildren(
+      el("div", { class: "levels__head" },
+        el("h2", {}, "How soon are highs and lows revisited?"),
+        el("p", {}, `Share of past periods whose high or low traded again within each number of ${unit} (solid), against arbitrary levels at the same volatility-scaled distance (dashed). The gap between the lines is what the real level adds.`)),
+      el("div", { class: "curves-grid" }, ...cards.map((c) => {
+        const hi = best(c, "High"), lo = best(c, "Low");
+        const line = (it, side) => it ? el("li", { class: `curves__key curves__key--${side}` },
+          el("span", {}, `${it.label.replace(" revisited", "")}`), el("b", {}, `${it.observed.toFixed(0)}%`), el("span", { class: "curves__vs" }, `vs ${it.baseline.toFixed(0)}%`), gradeTag(it.grade, null)) : null;
+        return el("a", { class: "curves-card", href: `#${c.id.replaceAll(".", "-")}` },
+          el("h3", {}, c.title.replace("Time to revisit the prior ", "Prior ").replace("'s high and low", "")),
+          revisitChart(c, unit),
+          el("ul", {}, line(hi, "high"), line(lo, "low")));
+      })));
   }
 
   // ------------------------------------------------------------------ views
@@ -561,8 +1009,10 @@
     state.active = code;
     for (const b of document.querySelectorAll(".switch__opt")) b.setAttribute("aria-selected", String(b.dataset.code === code));
     const inst = state.report.instruments.find((i) => i.code === code);
+    renderBoard(inst);
     renderTime(inst);
     renderGrid(inst);
+    renderCurves(inst);
     const panel = document.getElementById("market-panel");
     const index = document.getElementById("section-index");
     document.getElementById("index-market").textContent = `${marketName(code)}, ${code}`;
@@ -677,6 +1127,7 @@
 
   async function init() {
     fillStaticMeters();
+    window.matchMedia("(max-width: 720px)").addEventListener("change", () => { if (state.active) selectMarket(state.active); });
     try {
       const res = await fetch("data/report.json", { cache: "no-store" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);

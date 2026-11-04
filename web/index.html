@@ -38,9 +38,11 @@
     <section class="hero" id="top">
       <div class="wrap">
         <h1 class="hero__title">Time–Space Intelligence</h1>
-        <p class="hero__lede">Markets move through time and through price. <b>Time</b> is where we are in the calendar: session, day, week, month, quarter and year. <b>Space</b> is where price stands against the levels those periods left behind. For every coordinate, the page shows what has followed in the past and how strong the evidence is.</p>
+        <p class="hero__lede">Where each market stands in <b>time</b> and in <b>price</b>, what has followed from the same place before, and how strong the evidence is.</p>
 
         <div class="switch" role="tablist" id="market-switch" aria-label="Market"></div>
+
+        <section class="board" id="board" aria-labelledby="board-title" aria-live="polite"></section>
 
         <section class="axis" id="time" aria-labelledby="time-title">
           <div class="axis__head">
@@ -64,6 +66,7 @@
         </figure>
 
         <section class="open-levels" id="open-levels" hidden></section>
+        <section class="open-levels revisit-curves" id="revisit-curves" hidden></section>
         </section>
       </div>
     </section>

@@ -140,3 +140,28 @@ def test_non_finite_values_never_reach_the_report():
         "a": [1.0, None, {"b": None}],
         "c": "x",
     }
+
+
+def test_report_carries_regime_and_revisit_curves(report):
+    inst = next(i for i in report["instruments"] if i["code"] == "BTC-USD")
+    pos = inst["position"]
+    assert 0 <= pos["atr_percentile"] <= 100 and pos["atr_median_pct"] > 0
+    card = next(c for s in inst["sections"] for c in s["cards"] if c["family"] == "revisits")
+    curves = [it["extra"]["curve"] for it in card["items"] if "curve" in it["extra"]]
+    assert len(curves) == 2  # one per side
+    for curve in curves:
+        assert curve["sessions"] == sorted(curve["sessions"]) and curve["sessions"][0] == 1
+        values = [v for v in curve["real_pct"] + curve["control_pct"] if v is not None]
+        assert values and all(0 <= v <= 100 for v in values)
+
+
+def test_site_has_the_decision_board(tmp_path, report):
+    path = tmp_path / "r.json"
+    path.write_text(json.dumps(report))
+    out = build_site(path, tmp_path / "site")
+    html = (out / "index.html").read_text(encoding="utf-8")
+    script = (out / "assets" / "app.js").read_text(encoding="utf-8")
+    for anchor in ('id="board"', 'id="time"', 'id="space"', 'id="revisit-curves"'):
+        assert anchor in html
+    for name in ("renderBoard", "renderCurves", "tileMove", "tileWhen", "tilePosition", "tileLevels", "tileEvidence"):
+        assert f"function {name}(" in script

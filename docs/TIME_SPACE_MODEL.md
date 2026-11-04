@@ -35,4 +35,4 @@ A time–space state is a point on both axes: for example, "week of 2026-11-02, 
 
 1. Every coordinate is computed from data available at that moment; nothing after it.
 2. Every statistic is compared with a control that removes what chance, drift or geometry alone would produce (`docs/METHODOLOGY.md`).
-3. Exchange-traded instruments use their own calendar and time zone; crypto uses UTC days and the three regional sessions. Exchange holidays are not modelled on the website's Time panel yet.
+3. Exchange-traded instruments use their own calendar and time zone; crypto uses UTC days and the three regional sessions. Exchange holidays are not modelled on the website's Time panel and board yet.
