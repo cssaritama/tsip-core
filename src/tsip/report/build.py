@@ -27,6 +27,7 @@ from tsip.studies import (
     intraday,
     level_map,
     level_memory,
+    money,
     revisit,
     volatility,
 )
@@ -36,6 +37,7 @@ from tsip.studies.position import position
 SCHEMA = "tsip.report/1"
 SECTIONS = [
     ("now", "Where we are now", ("map",)),
+    ("money", "From here to the period's end", ("money",)),
     ("levels", "Level memory", ("levels",)),
     ("sessions", "Sessions and intraday", ("sessions", "intraday")),
     ("volatility", "Volatility clock", ("volatility",)),
@@ -44,7 +46,7 @@ SECTIONS = [
     ("paths", "Paths and entries", ("paths", "entries")),
     ("calendar", "Calendar", ("calendar",)),
 ]
-STUDIES = (level_map, level_memory, revisit, intraday, volatility, first_passage, entry_timing, calendar)
+STUDIES = (level_map, money, level_memory, revisit, intraday, volatility, first_passage, entry_timing, calendar)
 
 
 @dataclass

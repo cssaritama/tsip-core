@@ -11,7 +11,7 @@ TSIP describes a market with two kinds of coordinates and grades what has follow
 | Week and turn of the month | Position in the month; last day plus first three | `calendar` (turn of the month) |
 | Month of the year | January to December | `calendar` (month-of-year returns) |
 | How much price moves at each coordinate | Hour or half-hour, weekday, week of the month, month, quarter | `volatility` (the volatility clock: movement against the average coordinate, typical move and range) |
-| Progress through a period | Sessions elapsed out of the typical count, from week to year | `level_map` (analogs at the same point of the period) |
+| Progress through a period | Sessions elapsed out of the typical count, from week to year | `level_map` (analogs at the same point of the period), `money` (excursions and change from the same point to the period's end) |
 | Elapsed time since a level formed | Sessions since a period closed | `revisit` (time to revisit a level, untested levels) |
 
 ## Space: where price stands against its levels
@@ -19,7 +19,7 @@ TSIP describes a market with two kinds of coordinates and grades what has follow
 | Coordinate | Values | Studies |
 |---|---|---|
 | Reference range | The prior (or just-closed) day, week, month, quarter, half-year and year: high, low, open, close | `level_memory` (break and hold rates), `position` (distances in % and ATR, position within the range) |
-| Zone | Below, inside or above the reference range; extremes already taken | `level_map` |
+| Zone | Below, inside or above the reference range; extremes already taken | `level_map`, `money` (the same states, with what followed in ATR) |
 | Untested levels | Highs and lows of closed periods not traded since, merged into price zones, with reach odds | `revisit` (report key `open_levels`) |
 | First passage | Which side of a range is reached first | `first_passage` (against geometry-matched bands) |
 
@@ -28,6 +28,7 @@ TSIP describes a market with two kinds of coordinates and grades what has follow
 A time–space state is a point on both axes: for example, "week of 2026-11-02, second session, below last week's low, last month's low still untested 1.2 ATR away". The questions TSIP answers are always of the form *what has followed from states like this one, and how strong is that evidence?*
 
 - `level_map`: same point in time **and** same zone in space.
+- `money`: from the same point in time and the same zone, how far price travelled in space before the period ended.
 - `revisit`: time **to** a point in space.
 - `sessions` and `weekly`: **when** in time the period's extremes in space form.
 

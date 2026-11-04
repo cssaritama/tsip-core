@@ -75,6 +75,12 @@ For each horizon, the period in progress (if any) is described by its state afte
 
 These are conditional base rates, not forecasts. Each card shows how many analogs exist; long horizons often have too few to grade.
 
+### Money terms: from here to the period's end
+
+Specification: `specs/0001-money-terms.md`. For each period in progress (week, month, quarter) after *k* sessions, the analogs are past complete periods, each following a complete period, observed after the same *k* sessions. From the session after *k* to the period's last session the study measures the highest high and the lowest low against the close of session *k* (the excursion above and below) and the last close against it (the change), in percent and in multiples of the 14-session ATR at the last session of the prior period. The yardstick is fixed at the start of the period because the state itself depends on the period's ranges: dividing by today's ATR would shrink the excursions of periods that have already moved a lot and fake an effect.
+
+Six shares are graded as edges: reached 1 ATR above, 1 ATR below, 2 ATR above and 2 ATR below the close before the period ended, and ended more than one round-trip cost above or below it. Each share for the periods in the same state as today is compared with the share for periods at the same point in a different state; the difference is resampled in blocks of periods (week 8, month 6, quarter 4) with the most recent 30% held out, and graded with every other edge of the report. The median and quartiles of the excursions and the change are published for both groups. Round-trip costs are an assumption, published with every card: 0.02% for ETFs and 0.20% for crypto; financing, taxes and slippage beyond that are not included. Under a random walk every difference is zero; the random-walk test is part of the test suite.
+
 ### Long daily histories
 
 Index histories from the early decades often repeat the close as the day's high and low, or as the next open. A calendar month fails the range check if fewer than 95% of its days have a high above the low, and the open check if more than half of its opens equal the prior close. Level studies start after the last month that fails the range check; gap and open-based studies (first passage, entry timing, overnight returns) start after the last month that fails either check. The dates are printed with each instrument.
@@ -107,7 +113,7 @@ For each zone the report gives **reach odds**: the share of all past sessions of
 
 ### Figures derived on the page
 
-The "At a glance" board on the website derives a few figures from the report without new statistics. The **average day, high to low** is the mean true range across all sessions, obtained by weighting each weekday's mean true range by its number of sessions; the **average day, close to close** is the mean absolute daily change; the **average and busiest half-hour (hour for crypto)** are the mean bar ranges from the volatility clock. "Calmer" or "more volatile than the average day" compares today's ATR with that mean true range. The **strongest effects** shown are the A- and B-graded edge cards that have an observed value and a control, at most one per family (volatility, sessions, revisits, weekly structure, paths), ordered by grade and then by relative size. The **effect count** counts every edge item in the market's report by grade.
+The "At a glance" board on the website derives a few figures from the report without new statistics. The **average day, high to low** is the mean true range across all sessions, obtained by weighting each weekday's mean true range by its number of sessions; the **average day, close to close** is the mean absolute daily change; the **average and busiest half-hour (hour for crypto)** are the mean bar ranges from the volatility clock. "Calmer" or "more volatile than the average day" compares today's ATR with that mean true range. The **strongest effects** shown are the A- and B-graded edge cards that have an observed value and a control, at most one per family (volatility, sessions, money terms, revisits, weekly structure, paths), ordered by grade and then by relative size. The **effect count** counts every edge item in the market's report by grade.
 
 ### Entry timing
 

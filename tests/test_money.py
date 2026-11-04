@@ -1,0 +1,106 @@
+import json
+
+import numpy as np
+import pandas as pd
+import pytest
+
+from tsip.report import InstrumentInput, build_report
+from tsip.studies.money import money_events
+
+
+def _flat_week_days(weeks=8):
+    idx = pd.bdate_range("2026-01-05", periods=weeks * 5)
+    frame = pd.DataFrame({"open": 100.0, "high": 101.0, "low": 99.0, "close": 100.0, "volume": 1.0}, index=idx)
+    return frame
+
+
+def test_money_events_use_only_the_forward_window():
+    d = _flat_week_days()
+    week = d.index[25:30]  # sixth week, Monday to Friday
+    d.loc[week[1], "high"] = 110.0  # observation session (k = 2): must not count as a forward excursion
+    d.loc[week[3], "high"] = 104.0  # after the observation point: counts
+    events = money_events(d, "week", crypto=False, sessions=2, cost_pct=0.02)
+    row = events[events["start"] == week[0]].iloc[0]
+    assert row["broke_high_so_far"] and not row["broke_low_so_far"]
+    assert row["up_pct"] == pytest.approx(4.0)  # 104 against the close of session 2, not 110
+    assert row["up_atr"] == pytest.approx(2.0)  # yardstick: ATR of 2% at the prior week's last session
+    assert row["down_atr"] == pytest.approx(0.5)
+    assert row["up_1"] == 1.0 and row["up_2"] == 1.0 and row["down_1"] == 0.0
+    assert row["end_up"] == 0.0 and row["end_down"] == 0.0  # flat close, inside the cost band
+    # the spike widens the ATR only from the next week on
+    later = events[events["start"] == d.index[30]].iloc[0]
+    assert later["up_atr"] < 0.5
+
+
+def _random_walk(days, *, crypto, seed, vol):
+    rng = np.random.default_rng(seed)
+    if crypto:
+        idx = pd.date_range("2016-01-01", periods=days, freq="D")
+    else:
+        idx = pd.bdate_range(end="2026-11-04", periods=days)
+    r = rng.normal(0.0, vol, days)
+    close = 100 * np.exp(np.cumsum(r))
+    open_ = np.concatenate([[100.0], close[:-1]])
+    wick = np.abs(rng.normal(0, vol / 2, days))
+    frame = pd.DataFrame(
+        {
+            "open": open_,
+            "high": np.maximum(open_, close) * (1 + wick),
+            "low": np.minimum(open_, close) * (1 - wick),
+            "close": close,
+            "volume": 1.0,
+        },
+        index=idx,
+    )
+    frame.index.name = "timestamp"
+    return frame
+
+
+@pytest.fixture(scope="module")
+def rw_report():
+    spy = _random_walk(2600, crypto=False, seed=11, vol=0.011)
+    btc = _random_walk(3600, crypto=True, seed=12, vol=0.035)
+    inputs = [InstrumentInput("SPY", "us_rth", daily=spy), InstrumentInput("BTC-USD", "crypto", daily=btc)]
+    return build_report(inputs, reps=200)
+
+
+def _money_cards(report):
+    return [
+        c for i in report["instruments"] for s in i.get("sections", []) for c in s["cards"] if c["family"] == "money"
+    ]
+
+
+def test_money_random_walk_has_no_edge(rw_report):
+    cards = _money_cards(rw_report)
+    assert cards, "money cards are produced for periods in progress"
+    grades = [it["grade"] for c in cards for it in c["items"]]
+    assert not any(g in {"A", "B"} for g in grades), grades
+
+
+def test_money_card_for_the_current_period(rw_report):
+    card = next(c for c in _money_cards(rw_report) if c["id"] == "SPY.money.week")
+    assert [it["extra"]["outcome"] for it in card["items"]] == [
+        "up_1",
+        "down_1",
+        "up_2",
+        "down_2",
+        "end_up",
+        "end_down",
+    ]
+    for it in card["items"]:
+        assert 0 <= it["observed"] <= 100 and 0 <= it["baseline"] <= 100
+    st = card["state"]
+    assert st["cost_pct"] == 0.02 and st["atr_start_pct"] > 0 and st["analogs"] > 30 and st["others"] > 30
+    for group in ("same", "others"):
+        med = st["excursions"][group]["up_atr"]
+        assert med["q1"] <= med["median"] <= med["q3"]
+    json.dumps(rw_report, allow_nan=False)
+
+
+def test_money_skips_close_only_series():
+    d = _random_walk(2600, crypto=False, seed=3, vol=0.011)
+    d[["open", "high", "low"]] = float("nan")
+    d.attrs["close_only"] = True
+    report = build_report([InstrumentInput("SPX", "us_rth", daily=d)], reps=50)
+    assert _money_cards(report) == []
+    json.dumps(report, allow_nan=False)

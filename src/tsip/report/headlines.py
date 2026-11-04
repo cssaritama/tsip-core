@@ -93,6 +93,21 @@ def headline(card: EvidenceCard) -> str:
         if best.grade not in {"A", "B", "C"}:
             return f"No reliable difference in how much price moves; largest: {best.label}, {size:.0f}% {more} than {card.contrast}{tail} ({grade})."
         return f"{best.label}: price moves {size:.0f}% {more} than {card.contrast}{tail} ({grade})."
+    if card.family == "money":
+        h = card.state.get("horizon", "period")
+        same = card.state.get("excursions", {}).get("same", {})
+        up, down = same.get("up_atr", {}).get("median"), same.get("down_atr", {}).get("median")
+        typical = (
+            f"typical move from here {up:.1f} ATR above and {down:.1f} ATR below the close"
+            if up is not None and down is not None
+            else "no typical move yet"
+        )
+        if best.grade in {"A", "B", "C"}:
+            return (
+                f"{best.label}: {best.observed:.0f}% of past {h}s in the same position, against {best.baseline:.0f}% "
+                f"for {card.contrast}; {typical} ({grade})."
+            )
+        return f"Past {h}s in the same position: {typical}; no reliable difference from {card.contrast} ({grade})."
     if card.family == "revisits":
         x = best.extra
         median = x.get("median_sessions")
