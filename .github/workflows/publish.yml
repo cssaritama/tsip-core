@@ -117,10 +117,30 @@ jobs:
     permissions:
       pages: write
       id-token: write
+      deployments: read
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - name: Clear a stuck Pages deployment
+        # A Pages deployment that never finishes blocks every later one with "in progress deployment"
+        # (runs #27 and #28 on 2026-11-04). Cancel any earlier deployment that GitHub Pages still reports
+        # as unfinished. This step never blocks the deployment below.
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          CURRENT: ${{ github.sha }}
+        run: |
+          for sha in $(gh api "repos/$REPO/deployments?environment=github-pages&per_page=10" --jq '.[].sha' | sort -u); do
+            [ "$sha" = "$CURRENT" ] && continue
+            status=$(gh api "repos/$REPO/pages/deployments/$sha" --jq '.status' 2>/dev/null || true)
+            case "$status" in
+              ""|succeed|deployment_failed|deployment_cancelled|deployment_content_failed|deployment_attempt_error|deployment_lost) ;;
+              *) echo "Cancelling unfinished Pages deployment $sha ($status)"
+                 gh api -X POST "repos/$REPO/pages/deployments/$sha/cancel" && sleep 10 ;;
+            esac
+          done
       - id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
         with:
