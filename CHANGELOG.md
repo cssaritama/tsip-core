@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.2.13] – 2026-11-04
+
+### Added
+- **Money terms** (`tsip.studies.money`, specification `specs/0001-money-terms.md`): for the week, month and quarter in progress, how far price travelled above and below the close, and where it ended, in past periods in the same position at the same point, in ATR at the start of the period and in percent. Six graded shares (1 and 2 ATR above and below, ended above or below after a round-trip cost) against other periods at the same point, with the medians and quartiles of the moves. New section "From here to the period's end".
+- Website: sixth board tile, "What can be made or lost from here?", with a week, month and quarter switch.
+- Specifications in `specs/`: every feature or study starts from a specification with acceptance criteria and how each is verified (`specs/README.md`).
+- `tools/render_check.py`: opens the built website in a headless browser at 390 to 1920 px, in both colour schemes, and fails on console errors, horizontal scroll and overlapping chart text (`specs/0002-readable-charts.md`). Ruff now also checks `tools/`.
+
+### Fixed
+- Charts no longer overlap: untested-level labels are laid out at least 16 px apart with leader lines and stacked dots; the board's level map places highs above and lows below its axis with its notes as a caption; axis labels of the findings charts are thinned until they no longer touch; the highlighted value of a profile chart sits above its neighbours.
+
 ## [0.2.12] – 2026-11-04
 
 ### Added
