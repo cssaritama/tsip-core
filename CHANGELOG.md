@@ -4,6 +4,19 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.2.12] – 2026-11-04
+
+### Added
+- Website: **At a glance**, a decision board at the top of the page with five questions, each answered with one figure, one visual against its control and its grade: how far the market moves (ATR now, its percentile in the instrument's history, and a ladder of typical magnitudes), when it moves (intraday volatility profile with the current or next slot, and where the day's high and low form against a random walk), where it stands (week, month and quarter ranges in ATR), which levels are in reach (every untested level on one ATR axis, the nearest high and low with reach odds) and what the evidence supports (grade distribution of every effect tested against a control, and the three strongest effects).
+- Website: revisit curves in the Space panel, the share of prior highs and lows traded again within each number of sessions against arbitrary levels at the same distance; profile charts in every coordinate of the Time panel.
+- Report: volatility regime in each instrument's position (`atr_percentile`, `atr_median_pct`, `atr_history_from`), the percentile of today's 14-session ATR in the instrument's own history.
+- Report: revisit curves on the time-to-revisit cards (`extra.curve` on the first item of each side: sessions, real and control shares), computed with the same fully-observed-window rule as the graded items.
+
+### Changed
+- Shorter hero text; the design reference (`docs/DESIGN.md`) now states the decision standard and the visual language used everywhere: bar for the observed value, line for its control.
+- Facts without enough history are shown muted in the Time panel.
+- Development tool Ruff 0.17.3, the update proposed by the dependency pull request of 2026-11-01.
+
 ## [0.2.11] – 2026-11-03
 
 ### Added
