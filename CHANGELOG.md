@@ -4,6 +4,11 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.2.21] – 2026-11-05
+
+### Fixed
+- Publication: run #36 failed because the Pages deployment of run #35 (`a015c9a`) was still "in progress" and blocked the new one; the clearing step had skipped it, since it cancelled only deployments whose status it could read. Every earlier Pages deployment is now cancelled unconditionally before deploying and again before the retry (cancelling a finished one is harmless).
+
 ## [0.2.20] – 2026-11-05
 
 ### Fixed

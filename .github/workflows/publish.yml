@@ -132,15 +132,16 @@ jobs:
           REPO: ${{ github.repository }}
           CURRENT: ${{ github.sha }}
         run: |
+          # Cancel every earlier Pages deployment unconditionally: cancelling a finished one only returns an
+          # error, while reading its status can fail silently and leave a blocker in place (run #36: the
+          # status of a015c9a could not be read, so it was skipped, and it still blocked the deployment).
           for sha in $(gh api "repos/$REPO/deployments?environment=github-pages&per_page=10" --jq '.[].sha' | sort -u); do
             [ "$sha" = "$CURRENT" ] && continue
-            status=$(gh api "repos/$REPO/pages/deployments/$sha" --jq '.status' 2>/dev/null || true)
-            case "$status" in
-              ""|succeed|deployment_failed|deployment_cancelled|deployment_content_failed|deployment_attempt_error|deployment_lost) ;;
-              *) echo "Cancelling unfinished Pages deployment $sha ($status)"
-                 gh api -X POST "repos/$REPO/pages/deployments/$sha/cancel" && sleep 10 ;;
-            esac
+            status=$(gh api "repos/$REPO/pages/deployments/$sha" --jq '.status' 2>&1 || true)
+            echo "Pages deployment $sha: ${status:-no status}"
+            gh api -X POST "repos/$REPO/pages/deployments/$sha/cancel" > /dev/null 2>&1 && echo "  cancelled" || echo "  nothing to cancel"
           done
+          sleep 15
       - id: first
         # The action's maximum wait is 10 minutes (600000 ms); a larger value is cut to it (run #35 on
         # 2026-11-05 warned and timed out). When GitHub Pages is slow, one more attempt follows.
@@ -156,9 +157,9 @@ jobs:
           REPO: ${{ github.repository }}
           CURRENT: ${{ github.sha }}
         run: |
-          status=$(gh api "repos/$REPO/pages/deployments/$CURRENT" --jq '.status' 2>/dev/null || true)
-          echo "First attempt status: ${status:-unknown}"
-          gh api -X POST "repos/$REPO/pages/deployments/$CURRENT/cancel" || true
+          for sha in $(gh api "repos/$REPO/deployments?environment=github-pages&per_page=10" --jq '.[].sha' | sort -u); do
+            gh api -X POST "repos/$REPO/pages/deployments/$sha/cancel" > /dev/null 2>&1 && echo "Cancelled $sha" || true
+          done
           sleep 30
       - id: second
         if: steps.first.outcome == 'failure'
