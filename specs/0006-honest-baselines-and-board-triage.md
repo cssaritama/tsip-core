@@ -47,6 +47,7 @@ Money card `state`: new `all_periods` (count), `excursions.all`, `net_thresholds
 
 - **Control:** all periods at the same point (previously: the complement). Statistic: share in the state minus share over all periods. Testing the state against the complement and against the pooled periods examines the same null hypothesis (the state carries no information); the estimate shrinks by the share of the complement in the pool, which is what a reader should see.
 - **Random-walk expectation:** zero for every item; unchanged.
+- **Grades:** the hypothesis is the same, but the resampled statistic is not identical (the share of the state in the pool varies between resamples), so items at a grade limit can move. In the first report with the new control (2026-11-05 10:06 UTC), SPY's week kept its two A grades at 1 ATR; "2 ATR below" (holdout p 0.102 against the 0.10 limit) and "ended above" (q 0.058 against 0.05) became B.
 
 ## Tasks
 
