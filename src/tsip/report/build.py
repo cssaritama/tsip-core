@@ -15,6 +15,7 @@ import pandas as pd
 
 from tsip import __version__
 from tsip.data import freshness
+from tsip.data.sessions import upcoming_sessions
 from tsip.evidence.grading import GRADE_LABELS, RULES_VERSION, finalize_grades
 from tsip.frames import daily_from_intraday_utc, rth_daily_from_intraday
 from tsip.instruments import get_instrument
@@ -206,6 +207,10 @@ def build_report(
         "hypotheses": load_hypotheses(hypotheses_path),
     }
     report["data_status"] = freshness.assess(report)
+    for inst in report["instruments"]:
+        cal = inst.get("instrument", {}).get("calendar")
+        if cal and cal != "24/7":
+            inst["sessions_ahead"] = _safe(upcoming_sessions, calendar=cal)
     report = _finite(report)
     assert_publishable(report)
     return report
