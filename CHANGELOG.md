@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.2.17] – 2026-11-05
+
+### Changed
+- Money terms compare the periods in today's state with all past periods at the same point, whatever their state, instead of the periods in the other states (specification 0006). Both comparisons test the same hypothesis, but the old one made every difference look larger by the share of the other states in the pool: for SPY on 2026-11-05, ended the week above the close was 63.8% against 52.4% for the other weeks, and is 63.8% against 58.2% for all weeks. The report adds the count of all periods and their excursions and cost thresholds.
+- The board opens with a Today panel: at most three facts that apply to the current position, each linked to its tile. Only strong evidence (grade A) leads; the ATR is shown as a measurement.
+- In the money table, horizons after the first with no item graded A, B or C are folded into one line with the reason ("no reliable difference", "too little history to grade") and a control to show them. The two cost rows appear only once a cost is chosen.
+
+### Added
+- Specification 0005, trade plan from here (approved, not yet run on real data), and the pre-registered hypotheses H-2026-007 and H-2026-008 for SPY, evaluated only on weeks from 2026-11-09.
+
 ## [0.2.16] – 2026-11-05
 
 ### Changed
