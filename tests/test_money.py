@@ -94,14 +94,21 @@ def test_money_card_for_the_current_period(rw_report):
     assert st["atr_start_pct"] > 0 and st["analogs"] > 30 and st["others"] > 30
     nt = st["net_thresholds"]
     assert nt["atr"] == list(NET_THRESHOLDS_ATR) and nt["atr"][0] == 0.0 and nt["atr"] == sorted(nt["atr"])
-    for group in ("same", "others"):
+    for group in ("same", "others", "all"):
         for side in ("above", "below"):
             values = nt[group][side]
             assert len(values) == len(nt["atr"]) and values == sorted(values, reverse=True)
     by_outcome = {it["extra"]["outcome"]: it for it in card["items"]}
     assert nt["same"]["above"][0] == pytest.approx(by_outcome["end_up"]["observed"], abs=0.05)
-    assert nt["others"]["below"][0] == pytest.approx(by_outcome["end_down"]["baseline"], abs=0.05)
-    for group in ("same", "others"):
+    # the comparison is all periods at the same point (specification 0006), not the other states
+    n_same, n_others, n_all = st["analogs"], st["others"], st["all_periods"]
+    assert n_all == n_same + n_others and card["contrast"].startswith("all ")
+    assert nt["all"]["below"][0] == pytest.approx(by_outcome["end_down"]["baseline"], abs=0.05)
+    pooled = (n_same * nt["same"]["above"][0] + n_others * nt["others"]["above"][0]) / n_all
+    assert by_outcome["end_up"]["baseline"] == pytest.approx(pooled, abs=0.1)
+    for it in card["items"]:
+        assert it["estimate"] == pytest.approx(it["observed"] - it["baseline"], abs=0.01)
+    for group in ("same", "others", "all"):
         med = st["excursions"][group]["up_atr"]
         assert med["q1"] <= med["median"] <= med["q3"]
     json.dumps(rw_report, allow_nan=False)

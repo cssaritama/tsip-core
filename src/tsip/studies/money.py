@@ -9,6 +9,10 @@ ended, in multiples of the 14-session ATR known at the start of the period. Spec
 The yardstick is fixed at the start of the period on purpose: the state (prior high or low already
 traded) depends on the current period's own ranges, so scaling by today's ATR would shrink the
 excursions of wide periods mechanically. Under a random walk every graded difference is zero.
+
+The control is every past period at the same point (specification 0006): the comparison a trader makes is
+with what happens anyway, not with the periods in the opposite state, which would make every difference look
+larger by the share of the other states in the pool.
 """
 
 from __future__ import annotations
@@ -154,7 +158,7 @@ def money_card(ctx: StudyContext, horizon: str) -> EvidenceCard | None:
         inside, outside = u["s"] == 1.0, u["s"] == 0.0
         if not inside.any() or not outside.any():
             return np.full(len(cols), np.nan)
-        return np.array([u[c][inside].mean() - u[c][outside].mean() for c in cols], dtype=float)
+        return np.array([u[c][inside].mean() - u[c].mean() for c in cols], dtype=float)  # state against all periods
 
     items = []
     if len(same) and len(others):
@@ -164,7 +168,7 @@ def money_card(ctx: StudyContext, horizon: str) -> EvidenceCard | None:
             result,
             scale=PP,
             observed=np.array([same[c].mean() for c in cols]),
-            baseline=np.array([others[c].mean() for c in cols]),
+            baseline=np.array([events[c].mean() for c in cols]),
             n_per_item=[len(same)] * len(cols),
         )
         for item, col in zip(items, cols, strict=True):
@@ -186,12 +190,14 @@ def money_card(ctx: StudyContext, horizon: str) -> EvidenceCard | None:
         "atr_start_pct": round(float(yardstick), 3) if np.isfinite(yardstick) else None,
         "analogs": int(len(same)),
         "others": int(len(others)),
+        "all_periods": int(len(events)),
         "as_of": str(state["as_of"].date()),
-        "excursions": {"same": _summary(same), "others": _summary(others)},
+        "excursions": {"same": _summary(same), "others": _summary(others), "all": _summary(events)},
         "net_thresholds": {
             "atr": list(NET_THRESHOLDS_ATR),
             "same": _net_thresholds(same),
             "others": _net_thresholds(others),
+            "all": _net_thresholds(events),
         },
     }
     situation = (
@@ -215,13 +221,14 @@ def money_card(ctx: StudyContext, horizon: str) -> EvidenceCard | None:
             f"Analogs are past complete {name}s, each after a complete {name}, observed after the same "
             f"{state['sessions']} {unit_word} and in the same state. From the next session to the {name}'s last "
             f"session: highest high and lowest low against the close at the observation point, and the last close, "
-            f"in multiples of the 14-session ATR at the start of the {name}. Each share is compared with the {name}s "
-            f"at the same point in a different state; circular block bootstrap over {name}s ({BLOCK[horizon]}-{name} "
-            f"blocks), most recent 30% held out. All figures are gross; the share of past {name}s that ended beyond "
-            f"each of several thresholds is published so that any trading cost can be applied."
+            f"in multiples of the 14-session ATR at the start of the {name}. Each share is compared with all past "
+            f"{name}s at the same point, whatever their state; circular block bootstrap over {name}s "
+            f"({BLOCK[horizon]}-{name} blocks), most recent 30% held out. All figures are gross; the share of past "
+            f"{name}s that ended beyond each of several thresholds in ATR is published so that any trading cost can "
+            f"be applied."
         ),
-        control=f"{name.capitalize()}s at the same point in a different state",
-        contrast=f"other {name}s at the same point",
+        control=f"All past {name}s at the same point, in any state",
+        contrast=f"all {name}s at the same point",
         n_label=f"{name}s",
         items=items,
         period=period_of(pd.DatetimeIndex(same["start"]) if len(same) else pd.DatetimeIndex([])),

@@ -1,6 +1,6 @@
 # 0001 Money terms: from here to the end of the period
 
-**Status:** shipped (0.2.13); items 5 and 6, the cost assumption and the horizon switch superseded by `0003` in 0.2.16
+**Status:** shipped (0.2.13); items 5 and 6, the cost assumption and the horizon switch superseded by `0003` in 0.2.16; the control (the complement) superseded by `0006` in 0.2.17
 **Level:** 2 study · **Open work:** W-07, W-43 · **Decisions:** ADR 0064 (way of working)
 
 ## Problem and decision supported
