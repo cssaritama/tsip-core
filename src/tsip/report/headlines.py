@@ -17,6 +17,8 @@ def _fmt(value: float | None, unit: str) -> str:
         return f"{value:+.1f} bps"
     if unit == "pp":
         return f"{value:+.1f} pts"
+    if unit == "ATR":
+        return f"{value:+.2f} ATR"
     return f"{value:+.2f}%"
 
 
@@ -108,6 +110,18 @@ def headline(card: EvidenceCard) -> str:
                 f"for {card.contrast}; {typical} ({grade})."
             )
         return f"Past {h}s in the same position: {typical}; no reliable difference from {card.contrast} ({grade})."
+    if card.family == "plan":
+        h = card.state.get("horizon", "period")
+        if best.grade in {"A", "B", "C"}:
+            return (
+                f"{best.label}: on average {best.observed:+.2f} ATR in past {h}s in the same position, against "
+                f"{best.baseline:+.2f} ATR for {card.contrast} ({grade})."
+            )
+        hold = card.items[0]
+        return (
+            f"No plan differs reliably from {card.contrast}; a long held to the {h}'s end returned "
+            f"{hold.observed:+.2f} ATR on average, against {hold.baseline:+.2f} ATR ({grade})."
+        )
     if card.family == "revisits":
         x = best.extra
         median = x.get("median_sessions")

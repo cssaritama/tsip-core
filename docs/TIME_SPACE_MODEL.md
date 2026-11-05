@@ -29,6 +29,7 @@ A time–space state is a point on both axes: for example, "week of 2026-11-02, 
 
 - `level_map`: same point in time **and** same zone in space.
 - `money`: from the same point in time and the same zone, how far price travelled in space before the period ended.
+- `plan`: from the same point in time and the same zone, which level in space came first (a stop or a target in ATR) and what a simple plan returned by the period's end.
 - `revisit`: time **to** a point in space.
 - `sessions` and `weekly`: **when** in time the period's extremes in space form.
 

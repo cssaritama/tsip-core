@@ -21,6 +21,7 @@ class StudyContext:
     session_model: str  # "crypto" (24/7) or "us_rth" (US cash session)
     intraday: pd.DataFrame | None = None  # crypto: UTC hourly bars
     rth_bars: pd.DataFrame | None = None  # us_rth: RTH bars with date/slot columns
+    path_bars: pd.DataFrame | None = None  # us_rth: RTH bars of every session, early closes included (paths)
     reps: int = 1000
     seed: int = 20261026
     sources: dict = field(default_factory=dict)

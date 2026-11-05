@@ -29,6 +29,7 @@ from tsip.studies import (
     level_map,
     level_memory,
     money,
+    plan,
     revisit,
     volatility,
 )
@@ -39,6 +40,7 @@ SCHEMA = "tsip.report/1"
 SECTIONS = [
     ("now", "Where we are now", ("map",)),
     ("money", "From here to the period's end", ("money",)),
+    ("plan", "Trade plan from here", ("plan",)),
     ("levels", "Level memory", ("levels",)),
     ("sessions", "Sessions and intraday", ("sessions", "intraday")),
     ("volatility", "Volatility clock", ("volatility",)),
@@ -47,7 +49,7 @@ SECTIONS = [
     ("paths", "Paths and entries", ("paths", "entries")),
     ("calendar", "Calendar", ("calendar",)),
 ]
-STUDIES = (level_map, money, level_memory, revisit, intraday, volatility, first_passage, entry_timing, calendar)
+STUDIES = (level_map, money, plan, level_memory, revisit, intraday, volatility, first_passage, entry_timing, calendar)
 
 
 @dataclass
@@ -75,7 +77,7 @@ def _coverage(frame: pd.DataFrame | None) -> dict | None:
 
 def prepare_context(inp: InstrumentInput, *, reps: int, seed: int) -> StudyContext:
     instrument = get_instrument(inp.code)
-    daily, rth_bars = inp.daily, None
+    daily, rth_bars, path_bars = inp.daily, None, None
     if inp.intraday is not None and len(inp.intraday):
         if inp.session_model == "crypto":
             daily = daily_from_intraday_utc(inp.intraday, bars_per_day=24)
@@ -83,12 +85,14 @@ def prepare_context(inp: InstrumentInput, *, reps: int, seed: int) -> StudyConte
             daily, rth = rth_daily_from_intraday(inp.intraday)
             full_days = daily.index[daily["full_day"]]
             rth_bars = rth[rth["date"].isin(full_days)]
+            path_bars = rth
     return StudyContext(
         instrument=instrument,
         daily=daily,
         session_model=inp.session_model,
         intraday=inp.intraday if inp.session_model == "crypto" else None,
         rth_bars=rth_bars,
+        path_bars=path_bars,
         reps=reps,
         seed=seed,
         open_reliable_from=pd.Timestamp(inp.open_from) if inp.open_from else None,

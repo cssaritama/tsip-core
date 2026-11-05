@@ -50,5 +50,5 @@ R1. When ..., the report (or page) shall ...
 | [0002](0002-readable-charts.md) | Readable charts and the render check | shipped (0.2.13) |
 | [0003](0003-money-terms-all-horizons-and-costs.md) | Money terms: all horizons side by side, gross grades and cost profiles | shipped (0.2.16) |
 | [0004](0004-exchange-sessions.md) | Exchange sessions, holidays and early closes in the report | shipped (0.2.16) |
-| [0005](0005-trade-plan-from-here.md) | Trade plan from here: stop, target and expected result against all periods | approved; not yet run on real data |
+| [0005](0005-trade-plan-from-here.md) | Trade plan from here: stop, target and expected result against all periods | shipped (0.2.18) |
 | [0006](0006-honest-baselines-and-board-triage.md) | Honest baselines and board triage | shipped (0.2.17) |
