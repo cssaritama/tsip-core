@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.2.18] – 2026-11-05
+
+### Added
+- Trade plan from here (specification 0005): for the week and the month in progress, six plans from the latest close, long and short, held to the period's end or with a 1 ATR stop and a 1 or 2 ATR target, followed on intraday bars (a bar that reaches both levels counts as the stop; a gap exits at the open). The report gives each plan's average result in ATR in today's state against all periods at the same point, graded, and how often the target or the stop came first. On the board, a new tile shows the results with the reader's cost subtracted; the Today panel leads with a plan graded A when there is one.
+
+### Changed
+- The trading cost is chosen once, at the top of the board, and applies to the trade plan and to the money table's cost rows.
+- Figures that round to zero are shown as 0.00, not -0.00.
+- Specification 0006 records that two SPY week items at the A limits became B in the first report with the all-period baseline; the hypothesis tested is the same.
+
 ## [0.2.17] – 2026-11-05
 
 ### Changed
