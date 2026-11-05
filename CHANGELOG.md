@@ -4,6 +4,15 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.2.16] – 2026-11-05
+
+### Changed
+- Money terms (specification 0003, approved by the founder): the board shows week, month and quarter side by side in one table, each with the number of past periods it rests on, instead of a switch. The graded items no longer use any cost: "ended above the close" and "ended below the close" replace the cost-based items. The report publishes the share of past periods that ended beyond 37 thresholds in ATR at the start of each period (0 to 3 ATR), and the page converts the reader's trading cost into ATR of each period, from sourced profiles (Binance, Coinbase Advanced, Kraken Pro, EU brokers at EUR 1 per order) or a custom figure, remembered in the browser and shown as descriptive. Thresholds in percent would overstate the share beyond a cost when the past was more volatile than the present. Each column shows its yardstick ("1 ATR = x%"), ATR multiples carry two decimals so that they match the percentages, and the row labels stay in view when the table scrolls sideways on a phone.
+
+### Added
+- Exchange sessions in the report (`sessions_ahead`, specification 0004): the current and next sessions of each exchange-traded instrument from the exchange calendar, with early closes. The page's clock uses them, so Thanksgiving (26 November 2026) is skipped and the early close of the next day is announced.
+- Render check: fails when a tile's content is wider than the tile (clipped content), which the page-scroll check could not see.
+
 ## [0.2.15] – 2026-11-04
 
 ### Fixed
