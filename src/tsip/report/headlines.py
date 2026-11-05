@@ -110,7 +110,7 @@ def headline(card: EvidenceCard) -> str:
                 f"for {card.contrast}; {typical} ({grade})."
             )
         return f"Past {h}s in the same position: {typical}; no reliable difference from {card.contrast} ({grade})."
-    if card.family == "plan":
+    if card.family in ("plan", "plan_regime"):
         h = card.state.get("horizon", "period")
         if best.grade in {"A", "B", "C"}:
             return (

@@ -797,6 +797,7 @@
     if (card.family === "sessions" && /day_(high|low)$/.test(id)) return `Day ${id.endsWith("high") ? "high" : "low"} forms ${sessionPhrase(item.label)}`;
     if (card.family === "weekly") return `Week ${id.endsWith("high") ? "high" : "low"} forms on ${label}`;
     if (card.family === "money") return `${capital(card.state?.horizon || "period")}: ${(MONEY_TITLES[item.extra?.outcome] || label).toLowerCase()}`;
+    if (card.family === "plan_regime") return `${capital(card.state?.horizon || "period")} started ${card.state?.regime}: ${(PLAN_ROWS.find(([k]) => k === item.extra?.plan)?.[1] || label).toLowerCase()}`;
     if (card.family === "plan") return `${capital(card.state?.horizon || "period")}: ${(PLAN_ROWS.find(([k]) => k === item.extra?.plan)?.[1] || label).toLowerCase()}`;
     if (card.family === "revisits") {
       const h = id.split(".").pop();
@@ -1133,6 +1134,11 @@
       control === null || control === undefined ? null : el("span", { class: "dbar__tick", style: `left:${at(control).toFixed(1)}%` }));
   }
 
+  const ordinal = (v) => {
+    const n = Math.round(v), t = n % 100;
+    return `${n}${t >= 11 && t <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] || "th"}`;
+  };
+
   const PLAN_ROWS = [
     ["long_hold", "Long, held to the end"], ["long_1_1", "Long, stop 1, target 1"], ["long_1_2", "Long, stop 1, target 2"],
     ["short_hold", "Short, held to the end"], ["short_1_1", "Short, stop 1, target 1"], ["short_1_2", "Short, stop 1, target 2"],
@@ -1191,6 +1197,13 @@
       foldLine.hidden = !folded.length;
     };
     renderTable();
+    const rc = findCard(inst, `plan_regime.${st0.horizon}`);
+    const rbest = rc?.items?.length ? [...rc.items].sort((a, b) => RANK[a.grade] - RANK[b.grade])[0] : null;
+    const regimeLine = rbest
+      ? el("div", { class: "tile__fact" },
+          el("span", {}, `Volatility regime: this ${st0.horizon} started ${rc.state.regime} (ATR at the ${ordinal(rc.state.atr_start_percentile)} percentile of all earlier ${rc.state.session_unit}). In ${num(rc.state.analogs)} past ${st0.horizon}s that started ${rc.state.regime}, ${(PLAN_ROWS.find(([k]) => k === rbest.extra?.plan)?.[1] || rbest.label).toLowerCase()}: ${signed(rbest.observed, 2)} ATR against ${signed(rbest.baseline, 2)} ATR in all ${st0.horizon}s.`),
+          gradeTag(rbest.grade, confidence(rc, rbest.grade)))
+      : null;
     const costNote = cost.pct > 0
       ? `Your cost: ${cost.pct.toFixed(2)}% per round trip, ${cards.map((c) => `${costAtr(c).toFixed(2)} ATR of the ${c.state.horizon}`).join(" and ")}${cost.source ? `. Source: ${cost.source}` : ""}.`
       : "No cost applied. Set your trading cost at the top of the board to see each result after it.";
@@ -1205,6 +1218,7 @@
         el("div", { class: "money__odds" },
           wrap,
           foldLine,
+          regimeLine,
           el("p", { class: "tile__line" }, costNote),
           el("p", { class: "tile__line" }, "Plans start at the last close: held to the period's last close, or with a stop 1 ATR away and a target 1 or 2 ATR away. A bar that reaches both counts as the stop. Results are averages in ATR at the start of each period. The grade says whether today's position differs from all periods at the same point, not whether a plan pays."),
           el("a", { class: "tile__more", href: `#${first.id.replaceAll(".", "-")}` }, "Method and numbers for every plan"))));
@@ -1229,7 +1243,7 @@
 
   // Strongest graded effects with a measurable control, one per family, timing families first.
   function strongest(inst, n = 3) {
-    const order = ["volatility", "sessions", "money", "plan", "revisits", "weekly", "paths"];
+    const order = ["volatility", "sessions", "money", "plan", "plan_regime", "revisits", "weekly", "paths"];
     const pool = cardsOf(inst).filter((c) => c.kind === "edge" && ["A", "B"].includes(c.grade));
     const strength = (c) => {
       const it = c.items[c.primary ?? 0];
@@ -1275,14 +1289,14 @@
 
   function todayPanel(inst, clk, crypto, unit) {
     const facts = [];
-    for (const h of ["week", "month"]) {
-      const c = findCard(inst, `plan.${h}`);
+    for (const [fam, h] of [["plan", "week"], ["plan_regime", "week"], ["plan", "month"], ["plan_regime", "month"]]) {
+      const c = findCard(inst, `${fam}.${h}`);
       const best = (c?.items || []).filter((i) => i.grade === "A" && i.observed !== null && i.baseline !== null)
         .sort((a, b) => Math.abs(b.estimate) - Math.abs(a.estimate))[0];
       if (!best) continue;
       const name = (PLAN_ROWS.find(([k]) => k === best.extra?.plan)?.[1] || best.label).toLowerCase();
       facts.push({ fig: `${signed(best.observed, 2)} ATR`, grade: best.grade, card: c, href: "#tile-plan",
-        text: `average result of a ${name.replace("held to the end", `held to the ${h}'s end`)} from the last close, in past ${h}s in today's position, against ${signed(best.baseline, 2)} ATR in all ${h}s (gross)` });
+        text: `average result of a ${name.replace("held to the end", `held to the ${h}'s end`)} from the last close, in past ${h}s ${fam === "plan_regime" ? `that started ${c.state.regime}, as this one did` : "in today's position"}, against ${signed(best.baseline, 2)} ATR in all ${h}s (gross)` });
       break;
     }
     for (const h of ["week", "month", "quarter"]) {

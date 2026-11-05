@@ -80,6 +80,30 @@ def path_arrays(ctx: StudyContext):
     return (np.asarray(dates.values, dtype="datetime64[ns]")[order], *cols)
 
 
+MIN_HISTORY = 250
+REGIMES = (("calm", 0.0, 100 / 3), ("normal", 100 / 3, 200 / 3), ("volatile", 200 / 3, 100.0001))
+
+
+def atr_percentiles(atr: np.ndarray, min_history: int = MIN_HISTORY) -> np.ndarray:
+    """Percentile of each session's ATR among the ATR values of all earlier sessions (NaN without enough)."""
+    import bisect
+
+    out = np.full(len(atr), np.nan)
+    seen: list[float] = []
+    for i, value in enumerate(atr):
+        if np.isfinite(value):
+            if len(seen) >= min_history:
+                out[i] = 100.0 * bisect.bisect_left(seen, value) / len(seen)
+            bisect.insort(seen, float(value))
+    return out
+
+
+def regime_of(percentile: float) -> str | None:
+    if not np.isfinite(percentile):
+        return None
+    return next(name for name, lo, hi in REGIMES if lo <= percentile < hi)
+
+
 def plan_events(daily: pd.DataFrame, path, horizon: str, *, crypto: bool, sessions: int) -> pd.DataFrame:
     """One row per complete past period, after a complete period, lasting longer than ``sessions``, whose
     every remaining session has intraday bars: its state after ``sessions`` sessions and each plan's result."""
@@ -87,6 +111,7 @@ def plan_events(daily: pd.DataFrame, path, horizon: str, *, crypto: bool, sessio
     keys = period_key(daily.index, horizon)
     high, low, close = (daily[col].to_numpy(float) for col in ("high", "low", "close"))
     atr = atr_percent(daily)
+    ranks = atr_percentiles(atr)
     days = np.asarray(pd.DatetimeIndex(daily.index).values, dtype="datetime64[ns]")
     pdates, po, ph, pl = path
     complete = {int(k) for k in bars.index}
@@ -111,6 +136,7 @@ def plan_events(daily: pd.DataFrame, path, horizon: str, *, crypto: bool, sessio
         row = {
             "key": key,
             "start": daily.index[start],
+            "atr_percentile": float(ranks[start - 1]),
             "broke_high_so_far": bool(high[start:entry].max() > float(prior["high"])),
             "broke_low_so_far": bool(low[start:entry].min() < float(prior["low"])),
         }
@@ -140,6 +166,35 @@ def _summary(frame: pd.DataFrame, code: str) -> dict:
     }
 
 
+def _graded_items(ctx: StudyContext, events: pd.DataFrame, same_mask: pd.Series, horizon: str, seed: int) -> list:
+    same = events[same_mask]
+    name = HORIZON_NAMES[horizon]
+    cols = [code for code, *_ in PLANS]
+    labels = [label.format(h=name) for _, label, _, _ in PLANS]
+    units = {"s": same_mask.to_numpy(float), **{c: events[c].to_numpy(float) for c in cols}}
+
+    def statistic(u: dict) -> np.ndarray:
+        inside = u["s"] == 1.0
+        if not inside.any() or inside.all():
+            return np.full(len(cols), np.nan)
+        return np.array([u[c][inside].mean() - u[c].mean() for c in cols], dtype=float)  # state against all
+
+    if not 0 < len(same) < len(events):
+        return []
+    result = evaluate(units, statistic, block=BLOCK[horizon], reps=ctx.reps, seed=ctx.seed + seed)
+    items = items_from_evaluation(
+        labels,
+        result,
+        scale=1.0,
+        observed=np.array([same[c].mean() for c in cols]),
+        baseline=np.array([events[c].mean() for c in cols]),
+        n_per_item=[len(same)] * len(cols),
+    )
+    for item, code in zip(items, cols, strict=True):
+        item.extra = {"plan": code, "same": _summary(same, code), "all": _summary(events, code)}
+    return items
+
+
 def plan_card(ctx: StudyContext, horizon: str) -> EvidenceCard | None:
     if not ctx.has_daily_ohlc or ctx.daily.attrs.get("close_only"):
         return None
@@ -159,29 +214,7 @@ def plan_card(ctx: StudyContext, horizon: str) -> EvidenceCard | None:
     )
     same = events[same_mask]
     name = HORIZON_NAMES[horizon]
-    cols = [code for code, *_ in PLANS]
-    labels = [label.format(h=name) for _, label, _, _ in PLANS]
-    units = {"s": same_mask.to_numpy(float), **{c: events[c].to_numpy(float) for c in cols}}
-
-    def statistic(u: dict) -> np.ndarray:
-        inside = u["s"] == 1.0
-        if not inside.any() or inside.all():
-            return np.full(len(cols), np.nan)
-        return np.array([u[c][inside].mean() - u[c].mean() for c in cols], dtype=float)  # state against all
-
-    items = []
-    if 0 < len(same) < len(events):
-        result = evaluate(units, statistic, block=BLOCK[horizon], reps=ctx.reps, seed=ctx.seed + 37)
-        items = items_from_evaluation(
-            labels,
-            result,
-            scale=1.0,
-            observed=np.array([same[c].mean() for c in cols]),
-            baseline=np.array([events[c].mean() for c in cols]),
-            n_per_item=[len(same)] * len(cols),
-        )
-        for item, code in zip(items, cols, strict=True):
-            item.extra = {"plan": code, "same": _summary(same, code), "all": _summary(events, code)}
+    items = _graded_items(ctx, events, same_mask, horizon, 37)
     keys = period_key(d.index, horizon)
     first = int(np.flatnonzero(keys == state["key"])[0])
     yardstick = atr_percent(d)[first - 1] if first > 0 else float("nan")
@@ -245,9 +278,91 @@ def plan_card(ctx: StudyContext, horizon: str) -> EvidenceCard | None:
     )
 
 
+def regime_card(ctx: StudyContext, horizon: str) -> EvidenceCard | None:
+    """The six plans in past periods that started in today's volatility regime (specification 0007)."""
+    if not ctx.has_daily_ohlc or ctx.daily.attrs.get("close_only"):
+        return None
+    path = path_arrays(ctx)
+    if path is None:
+        return None
+    d = ctx.daily
+    state = current_state(d, horizon, crypto=ctx.is_crypto)
+    if state is None:
+        return None
+    atr = atr_percent(d)
+    keys = period_key(d.index, horizon)
+    first = int(np.flatnonzero(keys == state["key"])[0])
+    if first == 0:
+        return None
+    today_pct = atr_percentiles(atr)[first - 1]
+    regime = regime_of(today_pct)
+    if regime is None:
+        return None
+    events = plan_events(d, path, horizon, crypto=ctx.is_crypto, sessions=state["sessions"])
+    if len(events) == 0:
+        return None
+    events = events[(events["key"] != state["key"]) & np.isfinite(events["atr_percentile"])]
+    same_mask = events["atr_percentile"].map(regime_of) == regime
+    items = _graded_items(ctx, events, same_mask, horizon, 41)
+    name = HORIZON_NAMES[horizon]
+    unit_word = "days" if ctx.is_crypto else "sessions"
+    bar_word = "hourly" if ctx.is_crypto else "30-minute"
+    card_state = {
+        "horizon": name,
+        "period": period_label(state["key"], horizon),
+        "sessions_elapsed": state["sessions"],
+        "session_unit": unit_word,
+        "regime": regime,
+        "atr_start_pct": round(float(atr[first - 1]), 3),
+        "atr_start_percentile": round(float(today_pct), 1),
+        "analogs": int(same_mask.sum()),
+        "all_periods": int(len(events)),
+        "path_from": str(pd.Timestamp(path[0][0]).date()),
+        "as_of": str(state["as_of"].date()),
+    }
+    return EvidenceCard(
+        id=f"{ctx.instrument.code}.plan_regime.{name}",
+        instrument=ctx.instrument.code,
+        family="plan_regime",
+        kind="edge",
+        title=f"A simple plan from here to the end of the {name}, by volatility regime",
+        question=(
+            f"{card_state['period'].capitalize()} started {regime} (ATR at the {today_pct:.0f}th percentile of all "
+            f"earlier {unit_word}): after {state['sessions']} {unit_word}, what did a long or a short taken at the "
+            f"close return by the end of the {name} in past {name}s that started {regime}?"
+        ),
+        unit="ATR",
+        method=(
+            f"Each past {name} is classed by the percentile of its starting ATR (the last session of the prior "
+            f"{name}) among all earlier {unit_word}: calm below the 33rd, volatile from the 67th, normal between; at "
+            f"least {MIN_HISTORY} earlier {unit_word} are required. The six plans of the trade plan study are "
+            f"followed on {bar_word} bars from the close after the same {state['sessions']} {unit_word}; each plan's "
+            f"average result in today's regime is compared with all {name}s at the same point; circular block "
+            f"bootstrap over {name}s ({BLOCK[horizon]}-{name} blocks), most recent 30% held out."
+        ),
+        control=f"All past {name}s at the same point, in any regime",
+        contrast=f"all {name}s at the same point",
+        n_label=f"{name}s",
+        items=items,
+        period=period_of(pd.DatetimeIndex(events.loc[same_mask, "start"]) if same_mask.any() else pd.DatetimeIndex([])),
+        notes=["Results are gross. The regime uses only volatility known before the period started."],
+        state=card_state,
+    )
+
+
 def run(ctx: StudyContext) -> list[EvidenceCard]:
-    cards = [plan_card(ctx, h) for h in HORIZONS]
+    cards = [plan_card(ctx, h) for h in HORIZONS] + [regime_card(ctx, h) for h in HORIZONS]
     return [c for c in cards if c is not None and c.items]
 
 
-__all__ = ["bracket", "plan_events", "plan_card", "path_arrays", "run", "PLANS"]
+__all__ = [
+    "bracket",
+    "plan_events",
+    "plan_card",
+    "regime_card",
+    "atr_percentiles",
+    "regime_of",
+    "path_arrays",
+    "run",
+    "PLANS",
+]

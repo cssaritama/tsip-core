@@ -94,5 +94,29 @@
     "evaluation_start": "2026-11-09",
     "evaluation_end": "2027-11-05",
     "status": "open"
+  },
+  {
+    "id": "H-2026-009",
+    "instrument": "SPY",
+    "statement": "Weeks that start in SPY's most volatile third (starting ATR at or above the 67th percentile of all earlier sessions) return more, from the third session's close to the week's last close, than all weeks at the same point.",
+    "metric": "Average change from the third session's close to the week's last close, in ATR at the start of the week, in volatile-start weeks minus all weeks (trade plans by volatility regime, long held).",
+    "criterion": "Estimate above zero over the weeks of the evaluation window.",
+    "basis": "Author's thesis that equity returns are higher after volatile periods (risk premium and rebounds); registered before any real-data result of the regime study (specification 0007) was seen.",
+    "registered": "2026-11-05",
+    "evaluation_start": "2026-11-09",
+    "evaluation_end": "2027-11-05",
+    "status": "open"
+  },
+  {
+    "id": "H-2026-010",
+    "instrument": "BTC-USD",
+    "statement": "In weeks that start in Bitcoin's calmest third (starting ATR below the 33rd percentile of all earlier days), a long held from the third day's close to the week's last close returns no more than in all weeks at the same point.",
+    "metric": "Average change from the third day's close to the week's last close, in ATR at the start of the week, in calm-start weeks minus all weeks.",
+    "criterion": "Estimate at or below zero over the weeks of the evaluation window.",
+    "basis": "Control hypothesis: no directional effect of a calm start is expected in crypto; registered before any real-data result of the regime study was seen.",
+    "registered": "2026-11-05",
+    "evaluation_start": "2026-11-09",
+    "evaluation_end": "2027-11-05",
+    "status": "open"
   }
 ]

@@ -4,6 +4,11 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.2.19] – 2026-11-05
+
+### Added
+- Trade plans by volatility regime (specification 0007): the six plans in past weeks and months that started in today's volatility regime (calm, normal or volatile against all earlier sessions' ATR), graded against all periods at the same point. The trade plan tile names today's regime and its best-graded plan; the Today panel treats an A here like an A in the plan cards. Hypotheses H-2026-009 (SPY) and H-2026-010 (Bitcoin) registered before any real result, evaluated on weeks from 2026-11-09.
+
 ## [0.2.18] – 2026-11-05
 
 ### Added

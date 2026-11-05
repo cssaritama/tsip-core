@@ -7,7 +7,7 @@ from tsip.evidence.grading import finalize_grades
 from tsip.frames import daily_from_intraday_utc
 from tsip.report.build import InstrumentInput, prepare_context
 from tsip.studies import plan
-from tsip.studies.plan import bracket, plan_events
+from tsip.studies.plan import atr_percentiles, bracket, plan_events, regime_of
 
 
 def test_bracket_counts_a_bar_reaching_both_levels_as_the_stop():
@@ -114,7 +114,9 @@ def walk_cards():
 
 
 def test_plan_random_walk_has_no_edge(walk_cards):
-    assert {c.id for c in walk_cards} == {"BTC-USD.plan.week", "BTC-USD.plan.month", "SPY.plan.week", "SPY.plan.month"}
+    ids = {c.id for c in walk_cards}
+    assert {"BTC-USD.plan.week", "BTC-USD.plan.month", "SPY.plan.week", "SPY.plan.month"} <= ids
+    assert any(".plan_regime." in i for i in ids)
     grades = [it.grade for c in walk_cards for it in c.items]
     assert not any(g in {"A", "B"} for g in grades), grades
 
@@ -140,3 +142,33 @@ def test_plan_needs_intraday_paths():
     daily = daily_from_intraday_utc(hours, bars_per_day=24)
     ctx = prepare_context(InstrumentInput("BTC-USD", "crypto", daily=daily), reps=50, seed=1)
     assert plan.run(ctx) == []
+
+
+def test_atr_percentile_uses_only_earlier_sessions():
+    atr = np.r_[np.arange(1.0, 301.0), [0.5, 1000.0]]
+    ranks = atr_percentiles(atr, min_history=250)
+    assert np.isnan(ranks[:250]).all()
+    assert ranks[299] == pytest.approx(100.0)  # the highest value so far
+    assert ranks[300] == 0.0  # below every earlier value
+    assert ranks[301] == pytest.approx(100.0)
+    changed = atr.copy()
+    changed[301] = -5.0  # a later value never changes an earlier percentile
+    assert atr_percentiles(changed, min_history=250)[300] == ranks[300]
+    assert [regime_of(v) for v in (0.0, 33.0, 33.4, 66.6, 66.7, 100.0)] == [
+        "calm",
+        "calm",
+        "normal",
+        "normal",
+        "volatile",
+        "volatile",
+    ]
+    assert regime_of(float("nan")) is None
+
+
+def test_regime_card_compares_with_all_periods(walk_cards):
+    for card in (c for c in walk_cards if c.family == "plan_regime"):
+        st = card.state
+        assert st["regime"] == regime_of(st["atr_start_percentile"])
+        assert 0 < st["analogs"] < st["all_periods"]
+        for it in card.items:
+            assert it.estimate == pytest.approx(it.observed - it.baseline, abs=1e-9)

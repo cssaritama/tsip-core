@@ -52,3 +52,4 @@ R1. When ..., the report (or page) shall ...
 | [0004](0004-exchange-sessions.md) | Exchange sessions, holidays and early closes in the report | shipped (0.2.16) |
 | [0005](0005-trade-plan-from-here.md) | Trade plan from here: stop, target and expected result against all periods | shipped (0.2.18) |
 | [0006](0006-honest-baselines-and-board-triage.md) | Honest baselines and board triage | shipped (0.2.17) |
+| [0007](0007-trade-plans-by-volatility-regime.md) | Trade plans by volatility regime | shipped (0.2.19) |

@@ -40,7 +40,7 @@ SCHEMA = "tsip.report/1"
 SECTIONS = [
     ("now", "Where we are now", ("map",)),
     ("money", "From here to the period's end", ("money",)),
-    ("plan", "Trade plan from here", ("plan",)),
+    ("plan", "Trade plan from here", ("plan", "plan_regime")),
     ("levels", "Level memory", ("levels",)),
     ("sessions", "Sessions and intraday", ("sessions", "intraday")),
     ("volatility", "Volatility clock", ("volatility",)),
