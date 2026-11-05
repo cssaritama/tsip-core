@@ -33,6 +33,14 @@ The split is descriptive, not a pre-registered test, because the full history is
 
 Every edge item in an instrument report (every hour, weekday, session, horizon) is one test. q-values are computed across all of them with the Benjamini–Hochberg procedure, so the expected share of false discoveries among A and B grades is controlled at 5–10%.
 
+### Test budget
+
+Benjamini–Hochberg controls the tests a report shows, not the ones tried and dropped before it. Three rules keep the hidden count honest:
+
+1. **Count every test.** Each report states its edge tests per instrument (`grading.edge_tests`); `tools/test_budget.py` lists them by study and grade from any report or archived report. A study withdrawn or redefined after its results were seen stays in the record of the version that ran it.
+2. **Size conditions to the history.** Grade A needs 200 units in the condition, so a horizon with *n* complete periods can be split into at most *n* / 200 cells that can still reach A. With the ETF and crypto histories (2016 onward: about 2,700 to 3,900 sessions, 560 weeks, 130 months, 43 quarters), a session condition can be split into 13 to 19 cells, a week into two halves, and no month or quarter condition can reach A; such conditions are graded B at best. The long daily index history (NDX from 1986: 490 months) allows a monthly split in two. `tools/test_budget.py` also gives the smallest effect, in standard deviations of the outcome, that an A grade can detect with 80% power; it is an approximation for planning that assumes independent units.
+3. **Results seen before the definition is fixed are exploratory.** A condition defined or changed after its result was seen is marked as revised after the data, and confirmation comes only from the hypothesis register, evaluated on later data.
+
 ## 6. Grades
 
 **Edges**

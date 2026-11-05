@@ -34,4 +34,5 @@ Every month and quarter has an open, a high, a low and a close. If a market rise
 - **Outcome:** session index of the low and of the high, divided by the number of sessions.
 - **Control:** the same quantities for random walks with each period's length (10,000 simulated periods per length), not the other periods.
 - **Uncertainty:** circular block bootstrap over periods (month 6, quarter 4), most recent 30% held out.
+- **Sample and test budget (specification 0009):** the histories from 2016 hold about 130 months and 43 quarters, so no item on them can reach grade A (200 units); they are graded B at best and shown as such. The graded monthly test that can reach A uses the NDX daily history from 1986 (about 490 months); quarters (163 on NDX) are B at best everywhere. Each market adds 3 month items (first week, middle, last week) and 3 quarter items (one per month) for the low, and as many for the high (12 tests), counted in the instrument's tests.
 - **Hypothesis before the run:** for SPY, months' lows fall in the first week more often than a random walk would place them only by a small margin; most of the "early low" pattern is the arcsine law.

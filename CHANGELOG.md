@@ -4,6 +4,12 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Added
+- `tools/test_budget.py` (specification 0009): edge tests per instrument by study and grade, and for each horizon the cells a condition can be split into while still able to reach grade A and the smallest effect an A grade can detect. Methodology section 5 states the test budget: every test counted, conditions sized to the history, and conditions revised after their results were seen treated as exploratory.
+
+### Changed
+- Specification 0008: monthly and quarterly conditions on the 2016 histories cannot reach grade A (130 months, 43 quarters); the graded monthly test uses the NDX history from 1986, and quarterly items are B at best.
+
 ## [0.2.21] – 2026-11-05
 
 ### Fixed
