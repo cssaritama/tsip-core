@@ -4,6 +4,11 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.2.20] – 2026-11-05
+
+### Fixed
+- Publication: run #35 (0.2.19) built the report but the GitHub Pages deployment timed out after 10 minutes. The 20-minute wait set in 0.2.14 never applied: the deploy action caps its timeout at 600000 ms and said so in a warning. The deployment now waits the real maximum and, if GitHub Pages has not finished, cancels that attempt and tries once more.
+
 ## [0.2.19] – 2026-11-05
 
 ### Added

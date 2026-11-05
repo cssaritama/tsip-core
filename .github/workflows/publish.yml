@@ -141,12 +141,33 @@ jobs:
                  gh api -X POST "repos/$REPO/pages/deployments/$sha/cancel" && sleep 10 ;;
             esac
           done
-      - id: deployment
+      - id: first
+        # The action's maximum wait is 10 minutes (600000 ms); a larger value is cut to it (run #35 on
+        # 2026-11-05 warned and timed out). When GitHub Pages is slow, one more attempt follows.
+        continue-on-error: true
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
         with:
-          # GitHub Pages sometimes needs more than the default 10 minutes to finish a deployment
-          # (run #27 on 2026-11-04 timed out after a successful build); allow 20.
-          timeout: 1200000
+          timeout: 600000
+      - name: Cancel the unfinished attempt before retrying
+        if: steps.first.outcome == 'failure'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          CURRENT: ${{ github.sha }}
+        run: |
+          status=$(gh api "repos/$REPO/pages/deployments/$CURRENT" --jq '.status' 2>/dev/null || true)
+          echo "First attempt status: ${status:-unknown}"
+          gh api -X POST "repos/$REPO/pages/deployments/$CURRENT/cancel" || true
+          sleep 30
+      - id: second
+        if: steps.first.outcome == 'failure'
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+        with:
+          timeout: 600000
+      - id: deployment
+        name: Published address
+        run: echo "page_url=${{ steps.second.outputs.page_url || steps.first.outputs.page_url }}" >> "$GITHUB_OUTPUT"
 
   archive:
     # Every published report is stored once, compressed and fingerprinted, on the report-archive branch,
