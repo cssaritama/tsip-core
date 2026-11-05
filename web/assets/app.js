@@ -38,6 +38,7 @@
     const sign = v > 0 ? "+" : "";
     if (unit === "bps") return `${sign}${v.toFixed(d)} bps`;
     if (unit === "pp") return `${sign}${v.toFixed(d)} pts`;
+    if (unit === "ATR") return `${sign}${v.toFixed(digits ?? 2)} ATR`;
     return `${sign}${v.toFixed(d)}%`;
   };
   const pct = (v, d = 0) => (v === null || v === undefined ? "–" : `${v.toFixed(d)}%`);
@@ -204,6 +205,9 @@
     if (card.unit === "pp") {
       return el("p", { class: "finding__compare" }, `${it.label}: ${it.observed.toFixed(1)}% observed against ${it.baseline.toFixed(1)}% for ${contrast}; the difference is ${fmt(it.estimate, "pp")}.`);
     }
+    if (card.unit === "ATR") {
+      return el("p", { class: "finding__compare" }, `${it.label}: on average ${signed(it.observed, 2)} ATR in the same position against ${signed(it.baseline, 2)} ATR for ${contrast}; the difference is ${fmt(it.estimate, "ATR")}.`);
+    }
     return null;
   }
 
@@ -236,7 +240,11 @@
 
   // ------------------------------------------------------------------ time–space grid
   const HKEY = { week: "week", month: "month", quarter: "quarter", "half-year": "half-year", year: "year" };
-  const signed = (v, d = 2) => (v === null || v === undefined ? "–" : `${v > 0 ? "+" : ""}${v.toFixed(d)}`);
+  const signed = (v, d = 2) => {
+    if (v === null || v === undefined) return "–";
+    const r = Number(v.toFixed(d));  // no "-0.00": a value that rounds to zero is shown as zero
+    return `${r > 0 ? "+" : ""}${(r === 0 ? 0 : r).toFixed(d)}`;
+  };
   const capital = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
   function cardsOf(inst) {
@@ -692,14 +700,15 @@
 
   function evidenceBullet(card, item, { title, href, control } = {}) {
     if (!item || item.observed === null || item.observed === undefined || item.baseline === null || item.baseline === undefined) return null;
-    const vol = card.family === "volatility";
+    const vol = card.family === "volatility", atr = card.unit === "ATR";
     const max = vol ? Math.max(item.observed, item.baseline) * 1.25 : 100;
-    const f = (v) => (vol ? `${v.toFixed(2)}%` : `${v.toFixed(0)}%`);
+    const f = (v) => (atr ? `${signed(v, 2)} ATR` : vol ? `${v.toFixed(2)}%` : `${v.toFixed(0)}%`);
     const body = [
       el("div", { class: "ev__top" },
         el("span", { class: "ev__title" }, title || item.label),
         el("span", { class: "ev__grade" }, meter(item.grade, confidence(card, item.grade)), item.grade)),
-      bullet(item.observed, item.baseline, max, item.grade),
+      atr ? dbar(item.observed, item.baseline, Math.max(0.5, Math.abs(item.observed), Math.abs(item.baseline)) * 1.1, item.grade)
+        : bullet(item.observed, item.baseline, max, item.grade),
       el("div", { class: "ev__vals" },
         el("span", {}, el("b", {}, f(item.observed)), " observed"),
         el("span", {}, `${f(item.baseline)} ${control || shortContrast(card.contrast)}`))];
@@ -788,6 +797,7 @@
     if (card.family === "sessions" && /day_(high|low)$/.test(id)) return `Day ${id.endsWith("high") ? "high" : "low"} forms ${sessionPhrase(item.label)}`;
     if (card.family === "weekly") return `Week ${id.endsWith("high") ? "high" : "low"} forms on ${label}`;
     if (card.family === "money") return `${capital(card.state?.horizon || "period")}: ${(MONEY_TITLES[item.extra?.outcome] || label).toLowerCase()}`;
+    if (card.family === "plan") return `${capital(card.state?.horizon || "period")}: ${(PLAN_ROWS.find(([k]) => k === item.extra?.plan)?.[1] || label).toLowerCase()}`;
     if (card.family === "revisits") {
       const h = id.split(".").pop();
       return `Prior ${h}'s ${label.charAt(0).toLowerCase()}${label.slice(1)}`;
@@ -1008,8 +1018,7 @@
     const cards = ["week", "month", "quarter"].map((h) => findCard(inst, `money.${h}`)).filter((c) => c && c.items.length);
     if (!cards.length) return null;
     const kind = inst.instrument.calendar === "24/7" ? "crypto" : "etf";
-    const profiles = COST_PROFILES[kind];
-    let cost = loadCost(kind);
+    const cost = loadCost(kind);
     let expanded = false;
     const first = cards[0], st0 = first.state || {};
     const c0 = ctl(st0);
@@ -1073,19 +1082,8 @@
       const inAtr = list.filter((c) => c.state.atr_start_pct).map((c) => `${(cost.pct / c.state.atr_start_pct).toFixed(2)} (${c.state.horizon})`).join(", ");
       note.textContent = cost.pct > 0
         ? `Cost: ${cost.pct.toFixed(2)}% per round trip${cost.source ? `. Source: ${cost.source}` : ""}. In ATR at the start of each period it is ${inAtr}; each share uses the first published threshold at or above it. Descriptive, not graded.`
-        : "Graded rows are gross. Choose your trading cost to see how often past periods ended beyond it.";
+        : "Graded rows are gross. Set your trading cost at the top of the board to see how often past periods ended beyond it.";
     };
-    const select = el("select", { class: "cost__select", "aria-label": "Trading cost per round trip" },
-      ...profiles.map((p) => el("option", { value: p.id, selected: p.id === cost.id ? "selected" : null }, `${p.label}${p.pct ? ` (${p.pct}% round trip)` : ""}`)),
-      el("option", { value: "custom", selected: cost.id === "custom" ? "selected" : null }, "My own cost per round trip"));
-    const custom = el("input", { class: "cost__custom", type: "number", min: "0", max: "3", step: "0.01", value: cost.id === "custom" ? String(cost.pct) : "", "aria-label": "My cost per round trip, percent", placeholder: "%" });
-    custom.hidden = cost.id !== "custom";
-    select.addEventListener("change", () => {
-      if (select.value === "custom") { custom.hidden = false; custom.focus(); cost = { id: "custom", pct: Number(custom.value) || 0, source: "your own figure" }; }
-      else { custom.hidden = true; const p = profiles.find((x) => x.id === select.value); cost = { id: p.id, pct: p.pct, source: p.source }; }
-      saveCost(kind, cost); renderTable();
-    });
-    custom.addEventListener("input", () => { cost = { id: "custom", pct: Math.max(0, Math.min(3, Number(custom.value) || 0)), source: "your own figure" }; saveCost(kind, cost); renderTable(); });
     renderTable();
     const href = `#${first.id.replaceAll(".", "-")}`;
     return tile("tile--money", "What can be made or lost from here?",
@@ -1098,10 +1096,118 @@
         el("div", { class: "money__odds" },
           wrap,
           foldLine,
-          el("div", { class: "cost" }, el("label", {}, "Your trading cost", select), custom),
           note,
           el("p", { class: "tile__line" }, `Each cell: past periods in the same position as today (bar) against ${c0.word === "all" ? "all" : "the other"} periods at the same point (line), with the grade. Percentages are ATR multiples at the ATR at the start of each period.`),
           el("a", { class: "tile__more", href }, "Method and numbers for every horizon"))));
+  }
+
+  // One trading cost for the whole board, chosen once and kept in this browser only (specifications 0003, 0005).
+  function costControl(inst) {
+    const kind = inst.instrument.calendar === "24/7" ? "crypto" : "etf";
+    const profiles = COST_PROFILES[kind];
+    const cost = loadCost(kind);
+    const select = el("select", { class: "cost__select", "aria-label": "Your trading cost per round trip" },
+      ...profiles.map((p) => el("option", { value: p.id, selected: p.id === cost.id ? "selected" : null }, `${p.label}${p.pct ? ` (${p.pct}% round trip)` : ""}`)),
+      el("option", { value: "custom", selected: cost.id === "custom" ? "selected" : null }, "My own cost per round trip"));
+    const custom = el("input", { class: "cost__custom", type: "number", min: "0", max: "3", step: "0.01", value: cost.id === "custom" ? String(cost.pct) : "", "aria-label": "My cost per round trip, percent", placeholder: "%" });
+    custom.hidden = cost.id !== "custom";
+    const apply = (next) => { saveCost(kind, next); renderBoard(inst); };
+    select.addEventListener("change", () => {
+      if (select.value === "custom") { custom.hidden = false; custom.focus(); return; }  // applied once a figure is entered
+      const p = profiles.find((x) => x.id === select.value);
+      apply({ id: p.id, pct: p.pct, source: p.source });
+    });
+    custom.addEventListener("change", () => apply({ id: "custom", pct: Math.max(0, Math.min(3, Number(custom.value) || 0)), source: "your own figure" }));
+    return el("div", { class: "cost cost--board" },
+      el("label", {}, "Your trading cost", select), custom,
+      el("span", { class: "cost__hint" }, cost.pct > 0 ? "Applied to the trade plan and to the money table; grades stay gross." : "Grades are always gross; a cost is applied to the trade plan and to the money table."));
+  }
+
+  // Average result in ATR on a scale centred on zero: bar for today's position, tick for all periods.
+  function dbar(value, control, max, grade) {
+    const at = (v) => 50 + Math.max(-50, Math.min(50, (v / max) * 50));
+    const x0 = at(0), x1 = at(value);
+    return el("div", { class: "dbar", "aria-hidden": "true" },
+      el("span", { class: "dbar__zero" }),
+      el("span", { class: "dbar__bar", style: `left:${Math.min(x0, x1).toFixed(1)}%;width:${Math.max(0.6, Math.abs(x1 - x0)).toFixed(1)}%;background:${gradeFill(grade)}` }),
+      control === null || control === undefined ? null : el("span", { class: "dbar__tick", style: `left:${at(control).toFixed(1)}%` }));
+  }
+
+  const PLAN_ROWS = [
+    ["long_hold", "Long, held to the end"], ["long_1_1", "Long, stop 1, target 1"], ["long_1_2", "Long, stop 1, target 2"],
+    ["short_hold", "Short, held to the end"], ["short_1_1", "Short, stop 1, target 1"], ["short_1_2", "Short, stop 1, target 2"],
+  ];
+
+  // What a simple plan taken at the last close returned by the period's end, in today's position against all
+  // periods at the same point, gross and after the reader's cost (specification 0005).
+  function tilePlan(inst) {
+    const cards = ["week", "month"].map((h) => findCard(inst, `plan.${h}`)).filter((c) => c && c.items.length);
+    if (!cards.length) return null;
+    const kind = inst.instrument.calendar === "24/7" ? "crypto" : "etf";
+    const cost = loadCost(kind);
+    const costAtr = (c) => (cost.pct > 0 && c.state.atr_start_pct ? cost.pct / c.state.atr_start_pct : 0);
+    const graded = (c) => c.items.some((i) => ["A", "B", "C"].includes(i.grade));
+    const folded = cards.filter((c, k) => k > 0 && !graded(c));
+    let expanded = false;
+    const first = cards[0], st0 = first.state || {};
+    const lead = [...first.items].sort((a, b) => RANK[a.grade] - RANK[b.grade])[0];
+    const c0 = costAtr(first);
+    const leadText = PLAN_ROWS.find(([k]) => k === lead.extra?.plan)?.[1] || lead.label;
+    const s0 = lead.extra?.same || {}, a0 = lead.extra?.all || {};
+    const split = lead.extra?.plan?.endsWith("hold")
+      ? el("p", { class: "tile__line" }, `Ended in profit in ${pct(s0.win)} of past ${st0.horizon}s like this, against ${pct(a0.win)} of all ${st0.horizon}s.`)
+      : el("div", { class: "split", role: "img", "aria-label": `Target first ${pct(s0.target_first)}, stop first ${pct(s0.stop_first)}, neither ${pct(s0.neither)}` },
+          el("span", { class: "split__t", style: `flex:${s0.target_first || 0} 1 0` }, `Target ${pct(s0.target_first)}`),
+          el("span", { class: "split__s", style: `flex:${s0.stop_first || 0} 1 0` }, `Stop ${pct(s0.stop_first)}`),
+          el("span", { class: "split__n", style: `flex:${s0.neither || 0} 1 0` }, s0.neither >= 12 ? `Neither ${pct(s0.neither)}` : ""));
+    const wrap = el("div", { class: "table-wrap" });
+    const foldLine = el("p", { class: "tile__line mfold" });
+    const renderTable = () => {
+      const list = expanded ? cards : cards.filter((c) => !folded.includes(c));
+      const scale = Math.max(0.5, ...list.flatMap((c) => c.items.flatMap((i) => [Math.abs(i.observed ?? 0), Math.abs(i.baseline ?? 0)]))) * 1.1;
+      const head = el("tr", {}, el("th", {}, ""), ...list.map((c) => el("th", { scope: "col" },
+        el("b", {}, capital(c.state.horizon)),
+        el("span", {}, `${c.state.sessions_elapsed} of about ${c.state.typical_sessions} ${c.state.session_unit}`),
+        el("span", {}, `${num(c.state.analogs)} past ${c.state.horizon}s like this`),
+        c.state.atr_start_pct ? el("span", {}, `1 ATR = ${c.state.atr_start_pct.toFixed(2)}%`) : null)));
+      const rows = PLAN_ROWS.map(([key, label]) => el("tr", {}, el("th", { scope: "row" }, label), ...list.map((c) => {
+        const it = c.items.find((i) => i.extra?.plan === key);
+        if (!it || it.observed === null || it.observed === undefined) return el("td", {}, "–");
+        const s = it.extra.same, ca = costAtr(c), h = c.state.horizon;
+        const mix = key.endsWith("hold") ? `in profit ${pct(s.win)}` : `target ${pct(s.target_first)} · stop ${pct(s.stop_first)}`;
+        return el("td", { class: "mcell pcell", title: `${it.label}: average ${signed(it.observed, 2)} ATR in ${num(c.state.analogs)} past ${h}s like this, against ${signed(it.baseline, 2)} ATR in all ${num(c.state.all_periods)} ${h}s at the same point${ca ? `; after your cost (${ca.toFixed(2)} ATR) ${signed(it.observed - ca, 2)} ATR` : ""}; ${confidence(c, it.grade).toLowerCase()} (${it.grade})` },
+          el("span", { class: "mcell__top" }, el("b", {}, signed(it.observed, 2)), el("span", { class: `mcell__g ${gradeClass(it.grade)}` }, it.grade)),
+          dbar(it.observed, it.baseline, scale, it.grade),
+          el("span", { class: "pcell__mix" }, mix),
+          ca ? el("span", { class: "pcell__net" }, `after cost ${signed(it.observed - ca, 2)}`) : null);
+      })));
+      wrap.replaceChildren(el("table", { class: "mtable ptable" }, el("thead", {}, head), el("tbody", {}, ...rows)));
+      if (folded.length) {
+        const toggle = el("button", { class: "mfold__btn", type: "button", "aria-expanded": expanded ? "true" : "false" },
+          expanded ? "Hide it" : `Show ${folded.map((c) => c.state.horizon).join(" and ")}`);
+        toggle.addEventListener("click", () => { expanded = !expanded; renderTable(); });
+        foldLine.replaceChildren(...folded.map((c) => el("span", {}, `${capital(c.state.horizon)}: ${c.items.every((i) => i.grade === "N/A") ? `too little history to grade (${num(c.state.analogs)} past ${c.state.horizon}s like this; 30 needed)` : `no plan differs reliably from all ${c.state.horizon}s at the same point`}. `)), toggle);
+      } else foldLine.replaceChildren();
+      foldLine.hidden = !folded.length;
+    };
+    renderTable();
+    const costNote = cost.pct > 0
+      ? `Your cost: ${cost.pct.toFixed(2)}% per round trip, ${cards.map((c) => `${costAtr(c).toFixed(2)} ATR of the ${c.state.horizon}`).join(" and ")}${cost.source ? `. Source: ${cost.source}` : ""}.`
+      : "No cost applied. Set your trading cost at the top of the board to see each result after it.";
+    return tile("tile--plan", "What would a simple plan have made from here?",
+      el("div", { class: "money__body" },
+        el("div", { class: "money__main" },
+          figure(`${signed(c0 ? lead.observed - c0 : lead.observed, 2)} ATR`,
+            `${leadText}, from the last close: average result${c0 ? " after your cost" : ""} in ${num(st0.analogs)} past ${st0.horizon}s like this, against ${signed(lead.baseline - c0, 2)} ATR in all ${num(st0.all_periods)} ${st0.horizon}s at the same point. 1 ATR at the start of the ${st0.horizon} = ${st0.atr_start_pct?.toFixed(2)}%.`,
+            gradeTag(lead.grade, confidence(first, lead.grade))),
+          split,
+          el("p", { class: "tile__line" }, "Bar: average result in today's position; line: all periods at the same point; zero in the middle.")),
+        el("div", { class: "money__odds" },
+          wrap,
+          foldLine,
+          el("p", { class: "tile__line" }, costNote),
+          el("p", { class: "tile__line" }, "Plans start at the last close: held to the period's last close, or with a stop 1 ATR away and a target 1 or 2 ATR away. A bar that reaches both counts as the stop. Results are averages in ATR at the start of each period. The grade says whether today's position differs from all periods at the same point, not whether a plan pays."),
+          el("a", { class: "tile__more", href: `#${first.id.replaceAll(".", "-")}` }, "Method and numbers for every plan"))));
   }
 
   function edgeCounts(inst) {
@@ -1123,7 +1229,7 @@
 
   // Strongest graded effects with a measurable control, one per family, timing families first.
   function strongest(inst, n = 3) {
-    const order = ["volatility", "sessions", "money", "revisits", "weekly", "paths"];
+    const order = ["volatility", "sessions", "money", "plan", "revisits", "weekly", "paths"];
     const pool = cardsOf(inst).filter((c) => c.kind === "edge" && ["A", "B"].includes(c.grade));
     const strength = (c) => {
       const it = c.items[c.primary ?? 0];
@@ -1169,6 +1275,16 @@
 
   function todayPanel(inst, clk, crypto, unit) {
     const facts = [];
+    for (const h of ["week", "month"]) {
+      const c = findCard(inst, `plan.${h}`);
+      const best = (c?.items || []).filter((i) => i.grade === "A" && i.observed !== null && i.baseline !== null)
+        .sort((a, b) => Math.abs(b.estimate) - Math.abs(a.estimate))[0];
+      if (!best) continue;
+      const name = (PLAN_ROWS.find(([k]) => k === best.extra?.plan)?.[1] || best.label).toLowerCase();
+      facts.push({ fig: `${signed(best.observed, 2)} ATR`, grade: best.grade, card: c, href: "#tile-plan",
+        text: `average result of a ${name.replace("held to the end", `held to the ${h}'s end`)} from the last close, in past ${h}s in today's position, against ${signed(best.baseline, 2)} ATR in all ${h}s (gross)` });
+      break;
+    }
     for (const h of ["week", "month", "quarter"]) {
       const c = findCard(inst, `money.${h}`);
       const best = (c?.items || []).filter((i) => i.grade === "A" && i.observed !== null && i.baseline !== null)
@@ -1219,13 +1335,15 @@
     const when = closeOnly ? `close-only index reference, last close ${dayLabel(lastDay)}`
       : crypto ? `last full day ${dayLabel(lastDay)}; trading around the clock`
       : clk.open ? `${clk.label}` : `last close ${dayLabel(lastDay)}; next session ${clk.weekday} ${clk.dom} ${clk.month}, 09:30 New York${clk.early ? `, early close ${clk.closeText}` : ""}`;
-    const tiles = [tileMove(inst, clk, unit, crypto), tileWhen(inst, clk, crypto), tilePosition(inst, unit), tileLevels(inst, unit), tileMoney(inst, unit), tileEvidence(inst)].filter(Boolean);
+    const tiles = [tileMove(inst, clk, unit, crypto), tileWhen(inst, clk, crypto), tilePosition(inst, unit), tileLevels(inst, unit), tileMoney(inst, unit), tilePlan(inst), tileEvidence(inst)].filter(Boolean);
+    const costs = findCard(inst, "money.week") || findCard(inst, "money.month") || findCard(inst, "plan.week") || findCard(inst, "plan.month");
     box.replaceChildren(
       el("div", { class: "board__head" },
         el("h2", { id: "board-title" }, "At a glance"),
         el("p", {}, `${marketName(inst.code)}, ${inst.code}: ${when}`),
         st ? el("span", { class: "board__status" }, el("span", { class: `dot dot--${st.status}` }), word[st.status] || st.status) : null),
       closeOnly ? null : todayPanel(inst, clk, crypto, unit),
+      costs && !closeOnly ? el("div", { class: "board__tools" }, costControl(inst)) : null,
       el("div", { class: "board__grid" }, ...tiles),
       el("p", { class: "board__foot" }, closeOnly
         ? `${marketName(inst.code)} is published as closes only, so positions, levels and intraday timing are shown for the tradable funds (SPY, QQQ); its long-history statistics are listed below.`
@@ -1337,7 +1455,7 @@
     const span = [cov.daily && `Daily ${cov.daily.start} to ${cov.daily.end}`, cov.intraday && `${cov.intraday.timeframe} bars from ${cov.intraday.start}`].filter(Boolean);
     document.getElementById("index-refs").replaceChildren(...span.map((s) => el("div", {}, s)),
       el("div", {}, `Source: ${inst.sources.map((s) => s.name || s.source).join(", ")}`));
-    const AXIS = { now: "Space", money: "Space", levels: "Space", revisits: "Space", paths: "Space", sessions: "Time", volatility: "Time", weekly: "Time", calendar: "Time" };
+    const AXIS = { now: "Space", money: "Space", plan: "Space", levels: "Space", revisits: "Space", paths: "Space", sessions: "Time", volatility: "Time", weekly: "Time", calendar: "Time" };
     const groups = ["Time", "Space"].map((axis) => [axis, inst.sections.filter((s) => (AXIS[s.id] || "Space") === axis)]).filter(([, list]) => list.length);
     index.replaceChildren(...groups.flatMap(([axis, list]) => [el("span", { class: "index__axis" }, axis),
       ...list.map((s) => el("a", { href: `#sec-${code}-${s.id}` }, s.title))]));

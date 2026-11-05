@@ -162,7 +162,23 @@ p { margin: 0; }
 .lmap__dot { stroke: var(--raise); stroke-width: 2; }
 .lmap__dot--high { fill: var(--time); }
 .lmap__dot--low { fill: var(--brass); }
-.tile--evidence, .tile--money { grid-column: 1 / -1; }
+.tile--evidence, .tile--money, .tile--plan { grid-column: 1 / -1; }
+/* Board-level trading cost (specification 0005) and the trade plan tile. */
+.board__tools { margin: -2px 0 12px; }
+.cost--board { padding: 10px 20px; background: var(--raise); border: 1px solid var(--line); border-radius: var(--radius); }
+.cost--board label { flex: 0 1 560px; }
+.cost__hint { flex: 1 1 240px; font-size: 12px; color: var(--muted); }
+.dbar { position: relative; height: 6px; border-radius: 3px; background: var(--line); margin: 2px 0 4px; }
+.dbar__zero { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--muted); }
+.dbar__bar { position: absolute; top: 0; bottom: 0; border-radius: 3px; }
+.dbar__tick { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--text); border-radius: 1px; }
+.pcell__mix, .pcell__net { display: block; font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+.pcell__net { color: var(--text-2); }
+.split { display: flex; gap: 2px; height: 22px; border-radius: 4px; overflow: hidden; font-size: 11.5px; }
+.split span { display: flex; align-items: center; padding: 0 6px; min-width: 0; white-space: nowrap; overflow: hidden; color: var(--text); }
+.split__t { background: color-mix(in srgb, var(--g-A) 45%, transparent); }
+.split__s { background: color-mix(in srgb, var(--contra) 35%, transparent); }
+.split__n { background: var(--line); }
 .money { display: grid; gap: 16px; }
 .money__body { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.45fr); gap: 36px; }
 .money__main, .money__odds { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-content: start; min-width: 0; }
@@ -569,7 +585,7 @@ th { color: var(--muted); font-weight: 500; }
   .switch__refs { flex-basis: 100%; }
   .row { grid-template-columns: 1fr; }
   .board__grid { grid-template-columns: 1fr; }
-  .tile--wide, .tile--levels, .tile--evidence, .tile--money { grid-column: auto; }
+  .tile--wide, .tile--levels, .tile--evidence, .tile--money, .tile--plan { grid-column: auto; }
   .lvl-pair, .evidence .ev-list { grid-template-columns: 1fr; gap: 20px; }
   .tile { padding: 20px 18px 22px; }
   .tile__fig { font-size: 40px; }
