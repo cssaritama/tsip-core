@@ -435,7 +435,34 @@
     return { y: +parts.year, m: +parts.month, d: +parts.day, h: +parts.hour, min: +parts.minute, wd: DAY_NAMES.indexOf(parts.weekday) };
   }
 
-  function equityClock(now) {
+  // Exchange sessions published with the report (holidays and early closes from the exchange calendar).
+  function sessionClock(now, ahead) {
+    const list = (ahead?.sessions || []).map((s) => ({ ...s, open: new Date(s.open_utc), close: new Date(s.close_utc) }));
+    const cur = list.find((s) => s.open <= now && now < s.close);
+    const next = cur || list.find((s) => s.open > now);
+    if (!next) return null;
+    const pad = (n) => String(n).padStart(2, "0");
+    const t = zoned(now, "America/New_York");
+    const c = zoned(next.close, "America/New_York");
+    const minutes = t.h * 60 + t.min;
+    const closes = next.early_close ? `, closing early at ${pad(c.h)}:${pad(c.min)} New York` : "";
+    const day = new Date(`${next.date}T12:00:00Z`);
+    const today = next.date === `${t.y}-${pad(t.m)}-${pad(t.d)}`;
+    const label = cur
+      ? `Regular session in progress, ${pad(t.h)}:${pad(t.min)} New York${closes}`
+      : today ? `Before the open; next: today's regular session${closes}` : `Market closed; next session ${DAY_NAMES[day.getUTCDay()]}${closes}`;
+    return {
+      open: Boolean(cur), label, early: Boolean(next.early_close),
+      session: cur ? (minutes < 630 ? "Opening hour" : minutes < 900 ? "Midday" : "Closing hour") : "Opening hour",
+      slot: cur ? `${pad(t.h)}:${t.min < 30 ? "00" : "30"} ET` : "09:30 ET",
+      weekday: DAY_NAMES[day.getUTCDay()], month: MONTH_SHORT[day.getUTCMonth()], dom: day.getUTCDate(), y: day.getUTCFullYear(), m: day.getUTCMonth() + 1,
+      closeText: next.early_close ? `${pad(c.h)}:${pad(c.min)}` : null,
+    };
+  }
+
+  function equityClock(now, ahead) {
+    const fromCalendar = sessionClock(now, ahead);
+    if (fromCalendar) return fromCalendar;
     const t = zoned(now, "America/New_York");
     const minutes = t.h * 60 + t.min;
     let day = new Date(now);
@@ -527,7 +554,7 @@
 
   function timeCoordinates(inst, now = new Date()) {
     const crypto = inst.instrument.calendar === "24/7";
-    const clk = crypto ? cryptoClock(now) : equityClock(now);
+    const clk = crypto ? cryptoClock(now) : equityClock(now, inst.sessions_ahead);
     const starts = (label) => (l) => l.label.startsWith(label);
     const coords = [];
     // session
@@ -915,43 +942,134 @@
     return root;
   }
 
-  const MONEY_TITLES = {
-    up_1: "Reached 1 ATR above", down_1: "Reached 1 ATR below", up_2: "Reached 2 ATR above", down_2: "Reached 2 ATR below",
-    end_up: "Ended above, after costs", end_down: "Ended below, after costs",
+  const MONEY_ROWS = [
+    ["up_1", "Reached 1 ATR above"], ["down_1", "Reached 1 ATR below"],
+    ["up_2", "Reached 2 ATR above"], ["down_2", "Reached 2 ATR below"],
+    ["end_up", "Ended above the close"], ["end_down", "Ended below the close"],
+  ];
+  const MONEY_TITLES = Object.fromEntries(MONEY_ROWS);
+
+  // Round-trip costs with market or limit orders at the lowest volume tier, each with its source and date
+  // (tsip-platform/docs/strategy/BENCHMARK_2026-11-04.md). Descriptive only: no grade uses a cost.
+  const COST_PROFILES = {
+    crypto: [
+      { id: "gross", label: "No costs (gross)", pct: 0, source: "" },
+      { id: "binance", label: "Binance spot, 0.10% per side", pct: 0.2, source: "Binance standard fee (CryptoPotato, 2025-10-21)" },
+      { id: "binance-bnb", label: "Binance paying in BNB, 0.075% per side", pct: 0.15, source: "Binance with the BNB discount (CryptoPotato, 2025-10-21)" },
+      { id: "coinbase-maker", label: "Coinbase Advanced, limit 0.40% per side", pct: 0.8, source: "Lowest tier, maker (Datawallet, 2026-08-20)" },
+      { id: "coinbase-taker", label: "Coinbase Advanced, market 0.60% per side", pct: 1.2, source: "Lowest tier, taker (Datawallet, 2026-08-20)" },
+      { id: "kraken-maker", label: "Kraken Pro, limit 0.40% per side", pct: 0.8, source: "Lowest tier, maker (kraken.com, 2026-11-04)" },
+      { id: "kraken-taker", label: "Kraken Pro, market 0.80% per side", pct: 1.6, source: "Lowest tier, taker (kraken.com, 2026-11-04)" },
+    ],
+    etf: [
+      { id: "gross", label: "No costs (gross)", pct: 0, source: "" },
+      { id: "eu-5000", label: "EU broker, EUR 1 per order, EUR 5,000", pct: 0.04, source: "Trade Republic EUR 1.00, Scalable Capital EUR 0.99 per order (justETF, 2026-05-06)" },
+      { id: "eu-1000", label: "EU broker, EUR 1 per order, EUR 1,000", pct: 0.2, source: "Same fee on a smaller order (justETF, 2026-05-06)" },
+      { id: "eu-500", label: "EU broker, EUR 1 per order, EUR 500", pct: 0.4, source: "Same fee on a smaller order (justETF, 2026-05-06)" },
+    ],
   };
+
+  // Share of past periods that ended beyond a cost, from the published thresholds: the first threshold at or
+  // above the cost, so the share shown never flatters the reader's cost.
+  function beyondCost(nt, group, side, cost) {
+    const k = (nt?.pct || []).findIndex((t) => t >= cost - 1e-9);
+    if (k < 0) return null;
+    const v = nt?.[group]?.[side]?.[k];
+    return v === undefined ? null : { threshold: nt.pct[k], share: v };
+  }
+
+  function loadCost(kind) {
+    try {
+      const saved = JSON.parse(localStorage.getItem(`tsip.cost.${kind}`) || "null");
+      if (saved && typeof saved.pct === "number" && saved.pct >= 0) return saved;
+    } catch (e) { /* browser storage unavailable: use the default */ }
+    return { id: "gross", pct: 0 };
+  }
+
+  function saveCost(kind, value) {
+    try { localStorage.setItem(`tsip.cost.${kind}`, JSON.stringify(value)); } catch (e) { /* not kept */ }
+  }
 
   function tileMoney(inst, unit) {
     const cards = ["week", "month", "quarter"].map((h) => findCard(inst, `money.${h}`)).filter((c) => c && c.items.length);
     if (!cards.length) return null;
-    const box = el("div", { class: "money" });
-    const show = (card) => {
-      const st = card.state || {};
-      const same = st.excursions?.same || {}, others = st.excursions?.others || {};
-      const up = same.up_atr?.median, down = same.down_atr?.median;
-      const h = st.horizon;
-      const href = `#${card.id.replaceAll(".", "-")}`;
-      const byKey = Object.fromEntries(card.items.map((it) => [it.extra?.outcome, it]));
-      const bullets = ["up_1", "down_1", "up_2", "down_2", "end_up", "end_down"].map((k) => byKey[k])
-        .filter(Boolean).map((it) => evidenceBullet(card, it, { title: MONEY_TITLES[it.extra.outcome], href, control: `other ${h}s` }));
-      box.replaceChildren(
-        cards.length > 1 ? el("div", { class: "seg", role: "tablist", "aria-label": "Horizon" }, ...cards.map((c) => {
-          const b = el("button", { class: "seg__opt", type: "button", role: "tab", "aria-selected": String(c === card) }, capital(c.state.horizon));
-          b.addEventListener("click", () => show(c));
-          return b;
-        })) : null,
-        el("div", { class: "money__body" },
-          el("div", { class: "money__main" },
-            figure(up === undefined || down === undefined ? "–" : `+${up.toFixed(1)} / −${down.toFixed(1)}`,
-              `ATR: the median move above and below the last close before the ${h} ended, in ${num(st.analogs)} past ${h}s in the same position after ${st.sessions_elapsed} ${st.sessions_elapsed === 1 ? st.session_unit.slice(0, -1) : st.session_unit}. 1 ATR at the start of the ${h} = ${st.atr_start_pct?.toFixed(2)}%.`),
-            moneyFan(same, others, st.atr_start_pct),
-            el("p", { class: "tile__line" }, `Bars: median move; whiskers: middle half of past ${h}s; thin lines: other ${h}s at the same point (${num(st.others)}).`)),
-          el("div", { class: "money__odds" },
-            el("p", { class: "tile__line" }, `Share of past ${h}s (bar) against other ${h}s at the same point (line). Costs ${st.cost_pct?.toFixed(2)}% per round trip, assumed.`),
-            el("div", { class: "money__grid" }, ...bullets),
-            el("a", { class: "tile__more", href }, "Method, numbers and the other horizons"))));
+    const kind = inst.instrument.calendar === "24/7" ? "crypto" : "etf";
+    const profiles = COST_PROFILES[kind];
+    let cost = loadCost(kind);
+    const first = cards[0], st0 = first.state || {};
+    const same0 = st0.excursions?.same || {}, others0 = st0.excursions?.others || {};
+    const up0 = same0.up_atr?.median, down0 = same0.down_atr?.median;
+    const plural = (n, word) => (n === 1 ? word.slice(0, -1) : word);
+    const move = (st, key, sign) => {
+      const m = st.excursions?.same?.[key]?.median;
+      if (m === undefined || m === null) return "–";
+      const pctv = st.atr_start_pct ? ` (${(m * st.atr_start_pct).toFixed(2)}%)` : "";
+      return `${sign}${m.toFixed(1)} ATR${pctv}`;
     };
-    show(cards[0]);
-    return tile("tile--money", "What can be made or lost from here?", box);
+    const head = el("tr", {}, el("th", {}, ""), ...cards.map((c) => el("th", { scope: "col" },
+      el("b", {}, capital(c.state.horizon)),
+      el("span", {}, `${c.state.sessions_elapsed} of about ${c.state.typical_sessions} ${c.state.session_unit}`),
+      el("span", {}, `${num(c.state.analogs)} past ${c.state.horizon}s like this`))));
+    const rows = [
+      el("tr", { class: "mtable__move" }, el("th", { scope: "row" }, "Typical move above"), ...cards.map((c) => el("td", {}, move(c.state, "up_atr", "+")))),
+      el("tr", { class: "mtable__move" }, el("th", { scope: "row" }, "Typical move below"), ...cards.map((c) => el("td", {}, move(c.state, "down_atr", "−")))),
+      ...MONEY_ROWS.map(([key, label]) => el("tr", {}, el("th", { scope: "row" }, label), ...cards.map((c) => {
+        const it = c.items.find((i) => i.extra?.outcome === key);
+        if (!it || it.observed === null || it.observed === undefined) return el("td", {}, "–");
+        const h = c.state.horizon;
+        return el("td", { class: "mcell", title: `${it.observed.toFixed(0)}% of ${num(c.state.analogs)} past ${h}s like this, against ${it.baseline.toFixed(0)}% of ${num(c.state.others)} other ${h}s at the same point; ${confidence(c, it.grade).toLowerCase()} (${it.grade})` },
+          el("span", { class: "mcell__top" }, el("b", {}, `${it.observed.toFixed(0)}%`), el("span", { class: `mcell__g ${gradeClass(it.grade)}` }, it.grade)),
+          bullet(it.observed, it.baseline, 100, it.grade));
+      }))),
+    ];
+    const costRows = [["above", "Ended more than the cost above"], ["below", "Ended more than the cost below"]].map(([side, label]) => {
+      const tr = el("tr", { class: "mtable__cost" }, el("th", { scope: "row" }, label));
+      tr.dataset.side = side;
+      return tr;
+    });
+    const fillCost = () => {
+      for (const tr of costRows) {
+        tr.querySelectorAll("td").forEach((td) => td.remove());
+        for (const c of cards) {
+          const nt = c.state.net_thresholds;
+          if (!nt?.pct?.length) { tr.append(el("td", {}, "–")); continue; }
+          const mine = beyondCost(nt, "same", tr.dataset.side, cost.pct), other = beyondCost(nt, "others", tr.dataset.side, cost.pct);
+          tr.append(mine ? el("td", { class: "mcell", title: `Share of past ${c.state.horizon}s that ended more than ${mine.threshold}% ${tr.dataset.side} the close (descriptive, not graded)` },
+            el("span", { class: "mcell__top" }, el("b", {}, `${mine.share.toFixed(0)}%`), el("span", { class: "mcell__t" }, `>${mine.threshold}%`)),
+            other ? bullet(mine.share, other.share, 100, "D") : null) : el("td", {}, "beyond 3%"));
+        }
+      }
+      note.textContent = cost.pct
+        ? `Cost: ${cost.pct.toFixed(2)}% per round trip${cost.source ? `, ${cost.source}` : ""}. Shares use the first published threshold at or above it; descriptive, not graded.`
+        : "No cost applied: the shares beyond 0% are the graded rows above. Choose a profile to apply your own cost.";
+    };
+    const select = el("select", { class: "cost__select", "aria-label": "Trading cost per round trip" },
+      ...profiles.map((p) => el("option", { value: p.id, selected: p.id === cost.id ? "selected" : null }, `${p.label}${p.pct ? ` (${p.pct}% round trip)` : ""}`)),
+      el("option", { value: "custom", selected: cost.id === "custom" ? "selected" : null }, "My own cost per round trip"));
+    const custom = el("input", { class: "cost__custom", type: "number", min: "0", max: "3", step: "0.01", value: cost.id === "custom" ? String(cost.pct) : "", "aria-label": "My cost per round trip, percent", placeholder: "%" });
+    custom.hidden = cost.id !== "custom";
+    const note = el("p", { class: "tile__line" });
+    select.addEventListener("change", () => {
+      if (select.value === "custom") { custom.hidden = false; custom.focus(); cost = { id: "custom", pct: Number(custom.value) || 0, source: "your own figure" }; }
+      else { custom.hidden = true; const p = profiles.find((x) => x.id === select.value); cost = { id: p.id, pct: p.pct, source: p.source }; }
+      saveCost(kind, cost); fillCost();
+    });
+    custom.addEventListener("input", () => { cost = { id: "custom", pct: Math.max(0, Math.min(3, Number(custom.value) || 0)), source: "your own figure" }; saveCost(kind, cost); fillCost(); });
+    fillCost();
+    const href = `#${first.id.replaceAll(".", "-")}`;
+    return tile("tile--money", "What can be made or lost from here?",
+      el("div", { class: "money__body" },
+        el("div", { class: "money__main" },
+          figure(up0 === undefined || down0 === undefined ? "–" : `+${up0.toFixed(1)} / −${down0.toFixed(1)}`,
+            `ATR: the median move above and below the last close before the ${st0.horizon} ended, in ${num(st0.analogs)} past ${st0.horizon}s in the same position after ${st0.sessions_elapsed} ${plural(st0.sessions_elapsed, st0.session_unit)}. 1 ATR at the start of the ${st0.horizon} = ${st0.atr_start_pct?.toFixed(2)}%.`),
+          moneyFan(same0, others0, st0.atr_start_pct),
+          el("p", { class: "tile__line" }, `Bars: median move; whiskers: middle half of past ${st0.horizon}s; thin lines: other ${st0.horizon}s at the same point (${num(st0.others)}).`)),
+        el("div", { class: "money__odds" },
+          el("div", { class: "table-wrap" }, el("table", { class: "mtable" }, el("thead", {}, head), el("tbody", {}, ...rows, ...costRows))),
+          el("div", { class: "cost" }, el("label", {}, "Your trading cost", select), custom),
+          note,
+          el("p", { class: "tile__line" }, "Each cell: past periods in the same position as today (bar) against the other periods at the same point (line), with the grade. Figures are gross unless a cost is chosen."),
+          el("a", { class: "tile__more", href }, "Method and numbers for every horizon"))));
   }
 
   function edgeCounts(inst) {
@@ -1013,7 +1131,7 @@
     if (!inst || inst.status !== "ok") { box.replaceChildren(); box.hidden = true; return; }
     box.hidden = false;
     const crypto = inst.instrument.calendar === "24/7";
-    const clk = crypto ? cryptoClock(new Date()) : equityClock(new Date());
+    const clk = crypto ? cryptoClock(new Date()) : equityClock(new Date(), inst.sessions_ahead);
     const unit = crypto ? "days" : "sessions";
     const st = (state.report.data_status?.instruments || []).find((r) => r.code === inst.code);
     const word = { fresh: "Data up to date", degraded: "Data current, fallback source", stale: "Data out of date" };
@@ -1021,7 +1139,7 @@
     const lastDay = inst.position?.as_of || String(inst.coverage?.daily?.end || "").slice(0, 10);
     const when = closeOnly ? `close-only index reference, last close ${dayLabel(lastDay)}`
       : crypto ? `last full day ${dayLabel(lastDay)}; trading around the clock`
-      : clk.open ? `${clk.label}` : `last close ${dayLabel(lastDay)}; next session ${clk.weekday} ${clk.dom} ${clk.month}, 09:30 New York`;
+      : clk.open ? `${clk.label}` : `last close ${dayLabel(lastDay)}; next session ${clk.weekday} ${clk.dom} ${clk.month}, 09:30 New York${clk.early ? `, early close ${clk.closeText}` : ""}`;
     const tiles = [tileMove(inst, clk, unit, crypto), tileWhen(inst, clk, crypto), tilePosition(inst, unit), tileLevels(inst, unit), tileMoney(inst, unit), tileEvidence(inst)].filter(Boolean);
     box.replaceChildren(
       el("div", { class: "board__head" },

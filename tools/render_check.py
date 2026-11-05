@@ -46,6 +46,15 @@ class _QuietHandler(http.server.SimpleHTTPRequestHandler):
         pass
 
 
+# Board tiles clip their content (hidden overflow): a tile whose content is wider than the tile has
+# text that cannot be seen, which the page-level scroll check does not catch.
+CLIPPED = r"""
+() => [...document.querySelectorAll(".tile, .coord, .curves-card")]
+  .filter((t) => t.getBoundingClientRect().width > 0 && t.scrollWidth > t.clientWidth + 1)
+  .map((t) => `${t.className}: content ${t.scrollWidth}px in ${t.clientWidth}px`)
+"""
+
+
 def serve(directory: Path) -> tuple[http.server.ThreadingHTTPServer, str]:
     handler = functools.partial(_QuietHandler, directory=str(directory))
     server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
@@ -83,6 +92,7 @@ def check(site: Path, markets: list[str], widths: tuple[int, ...] = WIDTHS) -> l
                         if scroll > 1:
                             problems.append(f"{where}: horizontal scroll of {scroll}px")
                         problems.extend(f"{where}: overlap {o}" for o in page.evaluate(OVERLAPS))
+                        problems.extend(f"{where}: clipped {c}" for c in page.evaluate(CLIPPED))
                     problems.extend(f"{width}px {scheme}: console error {e}" for e in errors)
                     page.close()
             browser.close()
