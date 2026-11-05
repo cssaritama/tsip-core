@@ -70,5 +70,29 @@
     "evaluation_start": "2026-11-02",
     "evaluation_end": "2027-10-29",
     "status": "open"
+  },
+  {
+    "id": "H-2026-007",
+    "instrument": "SPY",
+    "statement": "In weeks that have traded above the prior week's high but not below its low by the close of the week's third session, a long held from that close to the week's last close returns more, on average, than across all weeks at the same point.",
+    "metric": "Average change from the third session's close to the week's last close, in ATR at the start of the week, in qualifying weeks minus all weeks at the same point (trade plan from here, long to the period's end).",
+    "criterion": "Estimate above zero over the weeks of the evaluation window.",
+    "basis": "Money-terms result of the report of 2026-11-05 (SPY week after three sessions, prior week's high traded and low not: ended the week above that close in 63.8% of 287 past weeks against 58.2% of all 562, grade A), seen before registration; to be evaluated only on weeks after registration (specification 0005).",
+    "registered": "2026-11-05",
+    "evaluation_start": "2026-11-09",
+    "evaluation_end": "2027-11-05",
+    "status": "open"
+  },
+  {
+    "id": "H-2026-008",
+    "instrument": "SPY",
+    "statement": "In the same weeks, fewer reach 1 ATR below the third session's close before the week ends than across all weeks at the same point.",
+    "metric": "Share of qualifying weeks that trade 1 ATR (at the start of the week) below the third session's close before the week's last close, minus the share for all weeks at the same point, percentage points.",
+    "criterion": "Estimate below zero over the weeks of the evaluation window.",
+    "basis": "Money-terms result of the report of 2026-11-05 (SPY week after three sessions, prior week's high traded and low not: 21.3% of past weeks reached 1 ATR below against 29.4% of all weeks, grade A), seen before registration; to be evaluated only on weeks after registration (specification 0005).",
+    "registered": "2026-11-05",
+    "evaluation_start": "2026-11-09",
+    "evaluation_end": "2027-11-05",
+    "status": "open"
   }
 ]
