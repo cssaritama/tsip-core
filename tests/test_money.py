@@ -19,14 +19,14 @@ def test_money_events_use_only_the_forward_window():
     week = d.index[25:30]  # sixth week, Monday to Friday
     d.loc[week[1], "high"] = 110.0  # observation session (k = 2): must not count as a forward excursion
     d.loc[week[3], "high"] = 104.0  # after the observation point: counts
-    events = money_events(d, "week", crypto=False, sessions=2, cost_pct=0.02)
+    events = money_events(d, "week", crypto=False, sessions=2)
     row = events[events["start"] == week[0]].iloc[0]
     assert row["broke_high_so_far"] and not row["broke_low_so_far"]
     assert row["up_pct"] == pytest.approx(4.0)  # 104 against the close of session 2, not 110
     assert row["up_atr"] == pytest.approx(2.0)  # yardstick: ATR of 2% at the prior week's last session
     assert row["down_atr"] == pytest.approx(0.5)
     assert row["up_1"] == 1.0 and row["up_2"] == 1.0 and row["down_1"] == 0.0
-    assert row["end_up"] == 0.0 and row["end_down"] == 0.0  # flat close, inside the cost band
+    assert row["end_up"] == 0.0 and row["end_down"] == 0.0  # flat close: neither above nor below
     # the spike widens the ATR only from the next week on
     later = events[events["start"] == d.index[30]].iloc[0]
     assert later["up_atr"] < 0.5
@@ -90,7 +90,17 @@ def test_money_card_for_the_current_period(rw_report):
     for it in card["items"]:
         assert 0 <= it["observed"] <= 100 and 0 <= it["baseline"] <= 100
     st = card["state"]
-    assert st["cost_pct"] == 0.02 and st["atr_start_pct"] > 0 and st["analogs"] > 30 and st["others"] > 30
+    assert "cost_pct" not in st and not any("cost" in it["label"] for it in card["items"])  # grades carry no cost
+    assert st["atr_start_pct"] > 0 and st["analogs"] > 30 and st["others"] > 30
+    nt = st["net_thresholds"]
+    assert nt["pct"][0] == 0.0 and nt["pct"] == sorted(nt["pct"])
+    for group in ("same", "others"):
+        for side in ("above", "below"):
+            values = nt[group][side]
+            assert len(values) == len(nt["pct"]) and values == sorted(values, reverse=True)
+    by_outcome = {it["extra"]["outcome"]: it for it in card["items"]}
+    assert nt["same"]["above"][0] == pytest.approx(by_outcome["end_up"]["observed"], abs=0.05)
+    assert nt["others"]["below"][0] == pytest.approx(by_outcome["end_down"]["baseline"], abs=0.05)
     for group in ("same", "others"):
         med = st["excursions"][group]["up_atr"]
         assert med["q1"] <= med["median"] <= med["q3"]

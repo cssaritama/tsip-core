@@ -1,7 +1,7 @@
 # 0003 Money terms: all horizons side by side, gross grades and cost profiles
 
-**Status:** draft, for the founder's approval · supersedes part of 0001 when shipped
-**Level:** 2 study (change of graded items) · **Open work:** W-48 · **Decisions:** ADR 0065 (proposed)
+**Status:** shipped (0.2.16), approved by the founder on 2026-11-05 · supersedes items 5 and 6 and the cost of 0001
+**Level:** 2 study (change of graded items) · **Open work:** W-48 · **Decisions:** ADR 0065
 
 ## Problem and decision supported
 
@@ -11,8 +11,8 @@ Version 0.2.13 shows one horizon at a time behind a week, month and quarter swit
 
 - R1. The board shall show week, month and quarter side by side, each with the number of past periods it rests on, without a switch.
 - R2. Graded items shall not depend on any cost assumption: "ended above the close" and "ended below the close" replace the cost-based items.
-- R3. The report shall publish, for each horizon and for both groups (same state and other states), the share of past periods whose change to the period's end exceeded each of a fixed set of thresholds above and below the close: 0, 0.1, 0.2, 0.5, 1.0, 1.5, 2.0 and 3.0%.
-- R4. The page shall offer cost profiles, each with its source and date (Binance 0.20%, Coinbase Advanced 1.20%, Kraken Pro 1.60%, EU broker EUR 2 per round trip on a chosen order size, US zero-commission broker, custom), and show the share of past periods that ended beyond the chosen cost, read from the published thresholds and labelled descriptive (not graded). The choice is remembered in the viewer's browser only.
+- R3. The report shall publish, for each horizon and for both groups (same state and other states), the share of past periods whose change to the period's end exceeded each of a fixed set of thresholds above and below the close: 0, 0.04, 0.1, 0.15, 0.2, 0.4, 0.5, 0.8, 1.0, 1.2, 1.5, 1.6, 2.0 and 3.0% (every cost profile falls on a threshold).
+- R4. The page shall offer cost profiles, each with its source and date (crypto: Binance 0.20% and 0.15% with BNB, Coinbase Advanced 0.80% limit and 1.20% market, Kraken Pro 0.80% limit and 1.60% market; ETFs: an EU broker at EUR 1 per order on EUR 500, 1,000 or 5,000; for both: no costs, or the reader's own figure up to 3%), and show the share of past periods that ended beyond the chosen cost, read from the published thresholds and labelled descriptive (not graded). The choice is remembered in the viewer's browser only.
 
 ## Acceptance criteria
 
@@ -32,7 +32,7 @@ Version 0.2.13 shows one horizon at a time behind a week, month and quarter swit
 
 ## Data contract
 
-Card `state.net_thresholds`: `{"pct": [0, 0.1, 0.2, 0.5, 1, 1.5, 2, 3], "same": {"above": [...], "below": [...]}, "others": {"above": [...], "below": [...]}}` in percent of past periods. Items 5 and 6 become `end_up` = "Ended the {h} above the close" and `end_down` = "Ended the {h} below the close" (threshold 0). `cost_pct` leaves the card.
+Card `state.net_thresholds`: `{"pct": [0, 0.04, 0.1, 0.15, 0.2, 0.4, 0.5, 0.8, 1, 1.2, 1.5, 1.6, 2, 3], "same": {"above": [...], "below": [...]}, "others": {"above": [...], "below": [...]}}` in percent of past periods. Items 5 and 6 become `end_up` = "Ended the {h} above the close" and `end_down` = "Ended the {h} below the close" (threshold 0). `cost_pct` leaves the card.
 
 ## Tasks
 
@@ -42,4 +42,11 @@ Card `state.net_thresholds`: `{"pct": [0, 0.1, 0.2, 0.5, 1, 1.5, 2, 3], "same": 
 
 ## Verification
 
-To be filled at delivery.
+| ID | Result | Evidence |
+|---|---|---|
+| B1 | passed | `test_money_card_for_the_current_period`: no item label or state field mentions a cost |
+| B2 | passed | same test: thresholds for both groups and sides, decreasing, and the 0% share equals the graded "ended above" and "ended below" shares |
+| B3 | passed | `test_money_random_walk_has_no_edge` |
+| B4 | passed | render check at 390 to 1920 px on the published report of 2026-11-05 02:53 UTC and on a synthetic 0.2.16 report: no overlap, no clipped tile, no horizontal scroll |
+| B5 | passed | browser check: Coinbase Advanced taker (1.20%) reads the 1.2% threshold; a custom 0.33% reads 0.4%; the choice is remembered after a reload; ETFs list the EU broker profiles |
+| B6 | passed | `docs/METHODOLOGY.md` and `docs/DESIGN.md` updated |

@@ -27,15 +27,16 @@ HORIZONS = ("week", "month", "quarter")
 BLOCK = {"week": 8, "month": 6, "quarter": 4}
 ATR_WINDOW = 14
 THRESHOLDS = (1.0, 2.0)
-# Round-trip cost assumption, percent of price, by instrument kind (published with every card).
-ROUND_TRIP_COST_PCT = {"etf": 0.02, "future": 0.02, "crypto": 0.20}
+# Changes to the period's end, in percent, at which the share of past periods beyond each is published,
+# so that readers can apply their own trading costs on the page (specification 0003). Grades use none.
+NET_THRESHOLDS_PCT = (0.0, 0.04, 0.1, 0.15, 0.2, 0.4, 0.5, 0.8, 1.0, 1.2, 1.5, 1.6, 2.0, 3.0)
 ITEMS = (
     ("up_1", "Reached 1 ATR above the close before the {h} ended"),
     ("down_1", "Reached 1 ATR below the close before the {h} ended"),
     ("up_2", "Reached 2 ATR above the close before the {h} ended"),
     ("down_2", "Reached 2 ATR below the close before the {h} ended"),
-    ("end_up", "Ended the {h} more than costs above the close"),
-    ("end_down", "Ended the {h} more than costs below the close"),
+    ("end_up", "Ended the {h} above the close"),
+    ("end_down", "Ended the {h} below the close"),
 )
 EXCURSIONS = ("up_atr", "down_atr", "net_atr", "up_pct", "down_pct", "net_pct")
 
@@ -48,7 +49,7 @@ def atr_percent(daily: pd.DataFrame, window: int = ATR_WINDOW) -> np.ndarray:
     return (tr.rolling(window, min_periods=window).mean() / c * PP).to_numpy(float)
 
 
-def money_events(daily: pd.DataFrame, horizon: str, *, crypto: bool, sessions: int, cost_pct: float) -> pd.DataFrame:
+def money_events(daily: pd.DataFrame, horizon: str, *, crypto: bool, sessions: int) -> pd.DataFrame:
     """One row per complete period that follows a complete period and lasts longer than ``sessions``."""
     bars = horizon_bars(daily, horizon, crypto=crypto)
     keys = period_key(daily.index, horizon)
@@ -89,8 +90,8 @@ def money_events(daily: pd.DataFrame, horizon: str, *, crypto: bool, sessions: i
                 "down_1": float(down / yardstick >= THRESHOLDS[0]),
                 "up_2": float(up / yardstick >= THRESHOLDS[1]),
                 "down_2": float(down / yardstick >= THRESHOLDS[1]),
-                "end_up": float(net > cost_pct),
-                "end_down": float(-net > cost_pct),
+                "end_up": float(net > 0.0),
+                "end_down": float(net < 0.0),
             }
         )
     return pd.DataFrame(rows)
@@ -106,17 +107,25 @@ def _summary(frame: pd.DataFrame) -> dict:
     return out
 
 
+def _net_thresholds(frame: pd.DataFrame) -> dict:
+    """Share of periods (percent) whose change to the period's end exceeded each threshold, each way."""
+    net = frame["net_pct"].to_numpy(float) if len(frame) else np.array([])
+    if not len(net):
+        return {"above": [], "below": []}
+    return {
+        "above": [round(float((net > t).mean() * PP), 1) for t in NET_THRESHOLDS_PCT],
+        "below": [round(float((net < -t).mean() * PP), 1) for t in NET_THRESHOLDS_PCT],
+    }
+
+
 def money_card(ctx: StudyContext, horizon: str) -> EvidenceCard | None:
     if not ctx.has_daily_ohlc or ctx.daily.attrs.get("close_only"):
-        return None
-    cost = ROUND_TRIP_COST_PCT.get(ctx.instrument.kind)
-    if cost is None:
         return None
     d = ctx.daily
     state = current_state(d, horizon, crypto=ctx.is_crypto)
     if state is None:
         return None
-    events = money_events(d, horizon, crypto=ctx.is_crypto, sessions=state["sessions"], cost_pct=cost)
+    events = money_events(d, horizon, crypto=ctx.is_crypto, sessions=state["sessions"])
     if len(events) == 0:
         return None
     events = events[events["key"] != state["key"]]  # the current period never enters its own analogs
@@ -164,11 +173,15 @@ def money_card(ctx: StudyContext, horizon: str) -> EvidenceCard | None:
         "broke_prior_high": state["broke_high"],
         "broke_prior_low": state["broke_low"],
         "atr_start_pct": round(float(yardstick), 3) if np.isfinite(yardstick) else None,
-        "cost_pct": cost,
         "analogs": int(len(same)),
         "others": int(len(others)),
         "as_of": str(state["as_of"].date()),
         "excursions": {"same": _summary(same), "others": _summary(others)},
+        "net_thresholds": {
+            "pct": list(NET_THRESHOLDS_PCT),
+            "same": _net_thresholds(same),
+            "others": _net_thresholds(others),
+        },
     }
     situation = (
         ("above" if state["broke_high"] else "not above")
@@ -193,14 +206,17 @@ def money_card(ctx: StudyContext, horizon: str) -> EvidenceCard | None:
             f"session: highest high and lowest low against the close at the observation point, and the last close, "
             f"in multiples of the 14-session ATR at the start of the {name}. Each share is compared with the {name}s "
             f"at the same point in a different state; circular block bootstrap over {name}s ({BLOCK[horizon]}-{name} "
-            f"blocks), most recent 30% held out. Costs: {cost:.2f}% per round trip (assumption)."
+            f"blocks), most recent 30% held out. All figures are gross; the share of past {name}s that ended beyond "
+            f"each of several thresholds is published so that any trading cost can be applied."
         ),
         control=f"{name.capitalize()}s at the same point in a different state",
         contrast=f"other {name}s at the same point",
         n_label=f"{name}s",
         items=items,
         period=period_of(pd.DatetimeIndex(same["start"]) if len(same) else pd.DatetimeIndex([])),
-        notes=[f"Round-trip cost assumed: {cost:.2f}% of price. Figures are gross of financing, taxes and slippage."],
+        notes=[
+            "Figures are gross: no commissions, spread, financing or taxes. On the page, a cost profile shows how often past periods ended beyond that cost."
+        ],
         state=card_state,
     )
 
@@ -210,4 +226,4 @@ def run(ctx: StudyContext) -> list[EvidenceCard]:
     return [c for c in cards if c is not None]
 
 
-__all__ = ["money_events", "money_card", "run", "atr_percent", "ROUND_TRIP_COST_PCT"]
+__all__ = ["money_events", "money_card", "run", "atr_percent", "NET_THRESHOLDS_PCT"]
