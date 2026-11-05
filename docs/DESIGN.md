@@ -27,20 +27,21 @@ The same encodings are used everywhere, so a reader learns them once:
 | Range track with a middle band | The prior period's range is the middle half of the track; the marker is the last close |
 | Axis in ATR with a shaded band | Untested levels by distance from the last close; the band is one normal day (±1 ATR) |
 | Gauge with a middle band | Percentile of today's ATR in the instrument's own history; the band is the middle half of history |
-| Bars left and right of a close line, with whiskers | Median move below and above the close to the period's end; whiskers are the middle half of past periods; thin lines are the other periods' medians |
-| Table cell with a number, a short bar and a grade letter | The share for periods like today (number and bar) against the other periods at the same point (thin line), with its grade |
+| Bars left and right of a close line, with whiskers | Median move below and above the close to the period's end; whiskers are the middle half of past periods; thin lines are the medians of all periods at the same point |
+| Table cell with a number, a short bar and a grade letter | The share for periods like today (number and bar) against all periods at the same point (thin line), with its grade |
 | Highlighted bar or label | The current (or next) coordinate in time |
 
 ## Structure
 
 After the title, a one-sentence lede and the market switch:
 
-1. **At a glance** (the decision board): six tiles.
+1. **At a glance** (the decision board): a Today panel and six tiles.
+   - *Today:* at most three facts that apply to the current position, each with its figure, its grade or "measured, not graded", and a link to its tile: the strongest A of the money cards (week first), the size of the current or next slot of the clock when graded A, and the ATR with its percentile. Only strong evidence leads the board (specification 0006).
    - *How far does it move?* ATR now, its percentile in the instrument's history (gauge), and a ladder of magnitudes on one scale: average bar, busiest bar, average day close to close, ATR now, average day high to low.
    - *When does it move?* The intraday volatility profile with the current or next slot highlighted, and where the day's high and low form in the current window against a random walk.
    - *Where does it stand?* Range tracks for the week, month and quarter, with distances in ATR.
    - *Which levels are in reach?* All untested levels on one ATR axis (highs above the line, lows below), and the nearest high above and low below with reach odds within 5, 20 and 60 sessions.
-   - *What can be made or lost from here?* The median move above and below the close to the end of the week (figure and fan chart), and a table with the week, month and quarter side by side, each with the number of past periods it rests on: typical moves in ATR and percent (the ATR multiple at the period's starting ATR, which each column shows as "1 ATR = x%"), six graded shares (1 and 2 ATR above and below, ended above or below) against other periods at the same point, and the shares that ended beyond the reader's own trading cost, chosen from sourced exchange and broker profiles or typed in, converted into ATR of each period (remembered in the browser, descriptive only). ATR multiples carry two decimals so that multiple times yardstick matches the percent shown. On narrow screens the table scrolls sideways inside the tile with the row labels fixed.
+   - *What can be made or lost from here?* The median move above and below the close to the end of the week (figure and fan chart), and a table with the week, month and quarter side by side, each with the number of past periods it rests on: typical moves in ATR and percent (the ATR multiple at the period's starting ATR, which each column shows as "1 ATR = x%"), six graded shares (1 and 2 ATR above and below, ended above or below) against other periods at the same point, and the shares that ended beyond the reader's own trading cost, chosen from sourced exchange and broker profiles or typed in, converted into ATR of each period (remembered in the browser, descriptive only). ATR multiples carry two decimals so that multiple times yardstick matches the percent shown. On narrow screens the table scrolls sideways inside the tile with the row labels fixed. Horizons after the first with no item graded A, B or C are folded into one line that names each and the reason, with a control to show them; the two cost rows appear only once a cost is chosen.
    - *What does the evidence support?* How many of the market's effects tested against a control are graded A or B, the distribution of grades, and the three strongest effects with their controls.
 2. **Time**: the calendar coordinates of the current or next session (session window, day of the week, month, quarter and year), each with a small profile chart (current coordinate highlighted) and the graded facts for that coordinate.
 3. **Space**: the grid of horizons against their reference ranges, the untested-levels ladder and table, and the revisit curves (how soon prior highs and lows are traded again, against arbitrary levels).

@@ -714,7 +714,7 @@
       el("div", { class: "gauge__scale" }, el("span", {}, "Calmer"), el("span", {}, "Middle half of history"), el("span", {}, "More volatile")));
   }
 
-  const tile = (cls, question, ...children) => el("article", { class: `tile ${cls}` }, el("h3", { class: "tile__q" }, question), ...children);
+  const tile = (cls, question, ...children) => el("article", { class: `tile ${cls}`, id: cls.split(" ")[0].replace("tile--", "tile-") }, el("h3", { class: "tile__q" }, question), ...children);
   const figure = (value, sub, extra = null) =>
     el("div", { class: "tile__head" }, el("div", { class: "tile__fig" }, value), el("div", { class: "tile__sub" }, sub), extra);
 
@@ -991,88 +991,116 @@
     try { localStorage.setItem(`tsip.cost.${kind}`, JSON.stringify(value)); } catch (e) { /* not kept */ }
   }
 
+  // The comparison group of a money card: all periods at the same point (specification 0006); reports built
+  // before 0.2.17 only carry the periods in the other states.
+  const ctl = (st) => (st?.all_periods
+    ? { key: "all", n: st.all_periods, word: "all" }
+    : { key: "others", n: st?.others, word: "other" });
+
+  // A horizon is folded when no item is graded A, B or C; the reason is shown instead of the cells.
+  function foldReason(c) {
+    const h = c.state.horizon;
+    if (c.items.every((i) => i.grade === "N/A")) return `too little history to grade (${num(c.state.analogs)} past ${h}s like this; 30 needed)`;
+    return `no reliable difference from ${ctl(c.state).word} ${h}s at the same point (${num(c.state.analogs)} past ${h}s like this)`;
+  }
+
   function tileMoney(inst, unit) {
     const cards = ["week", "month", "quarter"].map((h) => findCard(inst, `money.${h}`)).filter((c) => c && c.items.length);
     if (!cards.length) return null;
     const kind = inst.instrument.calendar === "24/7" ? "crypto" : "etf";
     const profiles = COST_PROFILES[kind];
     let cost = loadCost(kind);
+    let expanded = false;
     const first = cards[0], st0 = first.state || {};
-    const same0 = st0.excursions?.same || {}, others0 = st0.excursions?.others || {};
+    const c0 = ctl(st0);
+    const same0 = st0.excursions?.same || {}, ctl0 = st0.excursions?.[c0.key] || st0.excursions?.others || {};
     const up0 = same0.up_atr?.median, down0 = same0.down_atr?.median;
     const plural = (n, word) => (n === 1 ? word.slice(0, -1) : word);
+    const graded = (c) => c.items.some((i) => ["A", "B", "C"].includes(i.grade));
+    const folded = cards.filter((c, k) => k > 0 && !graded(c));
     const move = (st, key, sign) => {
       const m = st.excursions?.same?.[key]?.median;
       if (m === undefined || m === null) return "–";
       const pctv = st.atr_start_pct ? ` (${(m * st.atr_start_pct).toFixed(2)}%)` : "";
       return `${sign}${m.toFixed(2)} ATR${pctv}`;
     };
-    const head = el("tr", {}, el("th", {}, ""), ...cards.map((c) => el("th", { scope: "col" },
-      el("b", {}, capital(c.state.horizon)),
-      el("span", {}, `${c.state.sessions_elapsed} of about ${c.state.typical_sessions} ${c.state.session_unit}`),
-      el("span", {}, `${num(c.state.analogs)} past ${c.state.horizon}s like this`),
-      c.state.atr_start_pct ? el("span", {}, `1 ATR = ${c.state.atr_start_pct.toFixed(2)}%`) : null)));
-    const rows = [
-      el("tr", { class: "mtable__move" }, el("th", { scope: "row" }, "Typical move above"), ...cards.map((c) => el("td", {}, move(c.state, "up_atr", "+")))),
-      el("tr", { class: "mtable__move" }, el("th", { scope: "row" }, "Typical move below"), ...cards.map((c) => el("td", {}, move(c.state, "down_atr", "−")))),
-      ...MONEY_ROWS.map(([key, label]) => el("tr", {}, el("th", { scope: "row" }, label), ...cards.map((c) => {
-        const it = c.items.find((i) => i.extra?.outcome === key);
-        if (!it || it.observed === null || it.observed === undefined) return el("td", {}, "–");
-        const h = c.state.horizon;
-        return el("td", { class: "mcell", title: `${it.observed.toFixed(0)}% of ${num(c.state.analogs)} past ${h}s like this, against ${it.baseline.toFixed(0)}% of ${num(c.state.others)} other ${h}s at the same point; ${confidence(c, it.grade).toLowerCase()} (${it.grade})` },
-          el("span", { class: "mcell__top" }, el("b", {}, `${it.observed.toFixed(0)}%`), el("span", { class: `mcell__g ${gradeClass(it.grade)}` }, it.grade)),
-          bullet(it.observed, it.baseline, 100, it.grade));
-      }))),
-    ];
-    const costRows = [["above", "Ended more than the cost above"], ["below", "Ended more than the cost below"]].map(([side, label]) => {
-      const tr = el("tr", { class: "mtable__cost" }, el("th", { scope: "row" }, label));
-      tr.dataset.side = side;
-      return tr;
-    });
-    const fillCost = () => {
-      for (const tr of costRows) {
-        tr.querySelectorAll("td").forEach((td) => td.remove());
-        for (const c of cards) {
-          const nt = c.state.net_thresholds, atr0 = c.state.atr_start_pct;
-          if (!nt?.atr?.length || !atr0) { tr.append(el("td", {}, "–")); continue; }
-          const costAtr = cost.pct / atr0, h = c.state.horizon;
-          const mine = beyondCost(nt, "same", tr.dataset.side, costAtr), other = beyondCost(nt, "others", tr.dataset.side, costAtr);
-          tr.append(mine ? el("td", { class: "mcell", title: `Share of past ${h}s like this that ended more than ${mine.threshold} ATR ${tr.dataset.side} the close; your cost of ${cost.pct.toFixed(2)}% is ${costAtr.toFixed(2)} ATR at this ${h}'s starting ATR of ${atr0.toFixed(2)}% (descriptive, not graded)` },
-            el("span", { class: "mcell__top" }, el("b", {}, `${mine.share.toFixed(0)}%`), el("span", { class: "mcell__t" }, `>${mine.threshold} ATR`)),
-            other ? bullet(mine.share, other.share, 100, "D") : null) : el("td", { title: `Your cost is ${costAtr.toFixed(2)} ATR of this ${h}, beyond the published range` }, "beyond 3 ATR"));
+    const costCell = (c, side) => {
+      const nt = c.state.net_thresholds, atr0 = c.state.atr_start_pct, g = ctl(c.state);
+      if (!nt?.atr?.length || !atr0) return el("td", {}, "–");
+      const costAtr = cost.pct / atr0, h = c.state.horizon;
+      const mine = beyondCost(nt, "same", side, costAtr), other = beyondCost(nt, nt[g.key] ? g.key : "others", side, costAtr);
+      return mine
+        ? el("td", { class: "mcell", title: `Share of past ${h}s like this that ended more than ${mine.threshold} ATR ${side} the close, against ${other ? `${other.share.toFixed(0)}% of ${g.word} ${h}s at the same point` : "no comparison"}; your cost of ${cost.pct.toFixed(2)}% is ${costAtr.toFixed(2)} ATR at this ${h}'s starting ATR of ${atr0.toFixed(2)}% (descriptive, not graded)` },
+          el("span", { class: "mcell__top" }, el("b", {}, `${mine.share.toFixed(0)}%`), el("span", { class: "mcell__t" }, `>${mine.threshold} ATR`)),
+          other ? bullet(mine.share, other.share, 100, "D") : null)
+        : el("td", { title: `Your cost is ${costAtr.toFixed(2)} ATR of this ${h}, beyond the published range` }, "beyond 3 ATR");
+    };
+    const wrap = el("div", { class: "table-wrap" });
+    const foldLine = el("p", { class: "tile__line mfold" });
+    const note = el("p", { class: "tile__line" });
+    const renderTable = () => {
+      const list = expanded ? cards : cards.filter((c) => !folded.includes(c));
+      const head = el("tr", {}, el("th", {}, ""), ...list.map((c) => el("th", { scope: "col" },
+        el("b", {}, capital(c.state.horizon)),
+        el("span", {}, `${c.state.sessions_elapsed} of about ${c.state.typical_sessions} ${c.state.session_unit}`),
+        el("span", {}, `${num(c.state.analogs)} past ${c.state.horizon}s like this`),
+        c.state.atr_start_pct ? el("span", {}, `1 ATR = ${c.state.atr_start_pct.toFixed(2)}%`) : null)));
+      const rows = [
+        el("tr", { class: "mtable__move" }, el("th", { scope: "row" }, "Typical move above"), ...list.map((c) => el("td", {}, move(c.state, "up_atr", "+")))),
+        el("tr", { class: "mtable__move" }, el("th", { scope: "row" }, "Typical move below"), ...list.map((c) => el("td", {}, move(c.state, "down_atr", "−")))),
+        ...MONEY_ROWS.map(([key, label]) => el("tr", {}, el("th", { scope: "row" }, label), ...list.map((c) => {
+          const it = c.items.find((i) => i.extra?.outcome === key);
+          if (!it || it.observed === null || it.observed === undefined) return el("td", {}, "–");
+          const h = c.state.horizon, g = ctl(c.state);
+          return el("td", { class: "mcell", title: `${it.observed.toFixed(0)}% of ${num(c.state.analogs)} past ${h}s like this, against ${it.baseline.toFixed(0)}% of ${num(g.n)} ${g.word} ${h}s at the same point; ${confidence(c, it.grade).toLowerCase()} (${it.grade})` },
+            el("span", { class: "mcell__top" }, el("b", {}, `${it.observed.toFixed(0)}%`), el("span", { class: `mcell__g ${gradeClass(it.grade)}` }, it.grade)),
+            bullet(it.observed, it.baseline, 100, it.grade));
+        }))),
+      ];
+      if (cost.pct > 0) {
+        for (const [side, label] of [["above", "Ended more than your cost above"], ["below", "Ended more than your cost below"]]) {
+          rows.push(el("tr", { class: "mtable__cost" }, el("th", { scope: "row" }, label), ...list.map((c) => costCell(c, side))));
         }
       }
-      const inAtr = cards.filter((c) => c.state.atr_start_pct).map((c) => `${(cost.pct / c.state.atr_start_pct).toFixed(2)} (${c.state.horizon})`).join(", ");
-      note.textContent = cost.pct
+      wrap.replaceChildren(el("table", { class: "mtable" }, el("thead", {}, head), el("tbody", {}, ...rows)));
+      if (folded.length) {
+        const toggle = el("button", { class: "mfold__btn", type: "button", "aria-expanded": expanded ? "true" : "false" },
+          expanded ? "Hide them" : `Show ${folded.map((c) => c.state.horizon).join(" and ")}`);
+        toggle.addEventListener("click", () => { expanded = !expanded; renderTable(); });
+        foldLine.replaceChildren(...folded.map((c) => el("span", {}, `${capital(c.state.horizon)}: ${foldReason(c)}. `)), toggle);
+      } else foldLine.replaceChildren();
+      foldLine.hidden = !folded.length;
+      const inAtr = list.filter((c) => c.state.atr_start_pct).map((c) => `${(cost.pct / c.state.atr_start_pct).toFixed(2)} (${c.state.horizon})`).join(", ");
+      note.textContent = cost.pct > 0
         ? `Cost: ${cost.pct.toFixed(2)}% per round trip${cost.source ? `. Source: ${cost.source}` : ""}. In ATR at the start of each period it is ${inAtr}; each share uses the first published threshold at or above it. Descriptive, not graded.`
-        : "No cost applied: the shares beyond 0 ATR are the graded rows above. Choose a profile to apply your own cost.";
+        : "Graded rows are gross. Choose your trading cost to see how often past periods ended beyond it.";
     };
     const select = el("select", { class: "cost__select", "aria-label": "Trading cost per round trip" },
       ...profiles.map((p) => el("option", { value: p.id, selected: p.id === cost.id ? "selected" : null }, `${p.label}${p.pct ? ` (${p.pct}% round trip)` : ""}`)),
       el("option", { value: "custom", selected: cost.id === "custom" ? "selected" : null }, "My own cost per round trip"));
     const custom = el("input", { class: "cost__custom", type: "number", min: "0", max: "3", step: "0.01", value: cost.id === "custom" ? String(cost.pct) : "", "aria-label": "My cost per round trip, percent", placeholder: "%" });
     custom.hidden = cost.id !== "custom";
-    const note = el("p", { class: "tile__line" });
     select.addEventListener("change", () => {
       if (select.value === "custom") { custom.hidden = false; custom.focus(); cost = { id: "custom", pct: Number(custom.value) || 0, source: "your own figure" }; }
       else { custom.hidden = true; const p = profiles.find((x) => x.id === select.value); cost = { id: p.id, pct: p.pct, source: p.source }; }
-      saveCost(kind, cost); fillCost();
+      saveCost(kind, cost); renderTable();
     });
-    custom.addEventListener("input", () => { cost = { id: "custom", pct: Math.max(0, Math.min(3, Number(custom.value) || 0)), source: "your own figure" }; saveCost(kind, cost); fillCost(); });
-    fillCost();
+    custom.addEventListener("input", () => { cost = { id: "custom", pct: Math.max(0, Math.min(3, Number(custom.value) || 0)), source: "your own figure" }; saveCost(kind, cost); renderTable(); });
+    renderTable();
     const href = `#${first.id.replaceAll(".", "-")}`;
     return tile("tile--money", "What can be made or lost from here?",
       el("div", { class: "money__body" },
         el("div", { class: "money__main" },
           figure(up0 === undefined || down0 === undefined ? "–" : `+${up0.toFixed(2)} / −${down0.toFixed(2)}`,
             `ATR: the median move above and below the last close before the ${st0.horizon} ended, in ${num(st0.analogs)} past ${st0.horizon}s in the same position after ${st0.sessions_elapsed} ${plural(st0.sessions_elapsed, st0.session_unit)}. 1 ATR at the start of the ${st0.horizon} = ${st0.atr_start_pct?.toFixed(2)}%.`),
-          moneyFan(same0, others0, st0.atr_start_pct),
-          el("p", { class: "tile__line" }, `Bars: median move; whiskers: middle half of past ${st0.horizon}s; thin lines: other ${st0.horizon}s at the same point (${num(st0.others)}).`)),
+          moneyFan(same0, ctl0, st0.atr_start_pct),
+          el("p", { class: "tile__line" }, `Bars: median move; whiskers: middle half of past ${st0.horizon}s; thin lines: ${c0.word} ${st0.horizon}s at the same point (${num(c0.n)}).`)),
         el("div", { class: "money__odds" },
-          el("div", { class: "table-wrap" }, el("table", { class: "mtable" }, el("thead", {}, head), el("tbody", {}, ...rows, ...costRows))),
+          wrap,
+          foldLine,
           el("div", { class: "cost" }, el("label", {}, "Your trading cost", select), custom),
           note,
-          el("p", { class: "tile__line" }, "Each cell: past periods in the same position as today (bar) against the other periods at the same point (line), with the grade. Graded rows are gross; only the two cost rows apply your cost. Percentages are ATR multiples at the ATR at the start of each period."),
+          el("p", { class: "tile__line" }, `Each cell: past periods in the same position as today (bar) against ${c0.word === "all" ? "all" : "the other"} periods at the same point (line), with the grade. Percentages are ATR multiples at the ATR at the start of each period.`),
           el("a", { class: "tile__more", href }, "Method and numbers for every horizon"))));
   }
 
@@ -1130,6 +1158,53 @@
           el("a", { class: "tile__more", href: "#markets" }, "Every finding, with method and numbers"))));
   }
 
+  // Today: at most three facts that apply to the current position, each linked to its tile (specification
+  // 0006). Only strong evidence (A) leads the board; measurements are labelled as such; nothing is shown
+  // that is not on a tile.
+  const MONEY_PHRASES = {
+    up_1: "reached 1 ATR above the close", down_1: "reached 1 ATR below the close",
+    up_2: "reached 2 ATR above the close", down_2: "reached 2 ATR below the close",
+    end_up: "ended above the close", end_down: "ended below the close",
+  };
+
+  function todayPanel(inst, clk, crypto, unit) {
+    const facts = [];
+    for (const h of ["week", "month", "quarter"]) {
+      const c = findCard(inst, `money.${h}`);
+      const best = (c?.items || []).filter((i) => i.grade === "A" && i.observed !== null && i.baseline !== null)
+        .sort((a, b) => Math.abs(b.estimate) - Math.abs(a.estimate))[0];
+      if (!best) continue;
+      const st = c.state, g = ctl(st);
+      const where = st.broke_prior_high && !st.broke_prior_low ? `above last ${h}'s high, not its low`
+        : st.broke_prior_low && !st.broke_prior_high ? `below last ${h}'s low, not its high`
+        : st.broke_prior_high ? `through last ${h}'s high and low` : `inside last ${h}'s range`;
+      facts.push({ fig: `${best.observed.toFixed(0)}%`, grade: best.grade, card: c, href: "#tile-money",
+        text: `of past ${h}s in today's position (${where}) ${MONEY_PHRASES[best.extra?.outcome] || best.label.toLowerCase()} before the ${h} ended, against ${best.baseline.toFixed(0)}% of ${g.word} ${h}s` });
+      break;
+    }
+    const vc = crypto ? findCard(inst, "volatility.hour") : findCard(inst, "volatility.halfhour");
+    const now = vc?.items?.find((i) => i.label === (crypto ? clk.hour : clk.slot));
+    if (now && now.grade === "A") {
+      const slot = crypto ? "hour" : "half-hour";
+      facts.push({ fig: rel(now.estimate), grade: now.grade, card: vc, href: "#tile-when",
+        text: `range in the ${now.label} ${slot}, ${crypto || clk.open ? "now" : "when the next session opens"}, against the average ${slot}` });
+    }
+    const p = inst.position || {};
+    if (p.atr_pct !== null && p.atr_pct !== undefined) {
+      const pctl = p.atr_percentile;
+      facts.push({ fig: `${p.atr_pct.toFixed(2)}%`, grade: null, href: "#tile-move",
+        text: `average daily range over the last 14 ${unit} (ATR)${pctl === null || pctl === undefined ? "" : `, higher than ${pctl.toFixed(0)}% of ${unit} since ${String(p.atr_history_from).slice(0, 4)}`}` });
+    }
+    if (!facts.length) return null;
+    return el("section", { class: "today", "aria-labelledby": "today-title" },
+      el("h3", { class: "today__title", id: "today-title" }, "Today"),
+      el("div", { class: "today__list" }, ...facts.slice(0, 3).map((f) => el("a", { class: "today__fact", href: f.href },
+        el("span", { class: "today__fig" }, f.fig),
+        el("span", { class: "today__text" }, f.text),
+        f.grade ? gradeTag(f.grade, confidence(f.card, f.grade)) : el("span", { class: "today__measured" }, "Measured, not graded")))),
+      facts.some((f) => f.grade) ? null : el("p", { class: "tile__line" }, "No strong effect applies to today's position; the tiles below give the context and the weaker evidence."));
+  }
+
   function renderBoard(inst) {
     const box = document.getElementById("board");
     if (!inst || inst.status !== "ok") { box.replaceChildren(); box.hidden = true; return; }
@@ -1150,6 +1225,7 @@
         el("h2", { id: "board-title" }, "At a glance"),
         el("p", {}, `${marketName(inst.code)}, ${inst.code}: ${when}`),
         st ? el("span", { class: "board__status" }, el("span", { class: `dot dot--${st.status}` }), word[st.status] || st.status) : null),
+      closeOnly ? null : todayPanel(inst, clk, crypto, unit),
       el("div", { class: "board__grid" }, ...tiles),
       el("p", { class: "board__foot" }, closeOnly
         ? `${marketName(inst.code)} is published as closes only, so positions, levels and intraday timing are shown for the tradable funds (SPY, QQQ); its long-history statistics are listed below.`

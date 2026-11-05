@@ -1,6 +1,6 @@
 # 0003 Money terms: all horizons side by side, gross grades and cost profiles
 
-**Status:** shipped (0.2.16), approved by the founder on 2026-11-05 · supersedes items 5 and 6 and the cost of 0001
+**Status:** shipped (0.2.16), approved by the founder on 2026-11-05 · supersedes items 5 and 6 and the cost of 0001 · cost rows shown only once a cost is chosen and compared with all periods from 0.2.17 (`0006`)
 **Level:** 2 study (change of graded items) · **Open work:** W-48 · **Decisions:** ADR 0065
 
 ## Problem and decision supported
