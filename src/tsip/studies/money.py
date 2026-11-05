@@ -27,9 +27,20 @@ HORIZONS = ("week", "month", "quarter")
 BLOCK = {"week": 8, "month": 6, "quarter": 4}
 ATR_WINDOW = 14
 THRESHOLDS = (1.0, 2.0)
-# Changes to the period's end, in percent, at which the share of past periods beyond each is published,
-# so that readers can apply their own trading costs on the page (specification 0003). Grades use none.
-NET_THRESHOLDS_PCT = (0.0, 0.04, 0.1, 0.15, 0.2, 0.4, 0.5, 0.8, 1.0, 1.2, 1.5, 1.6, 2.0, 3.0)
+# Changes to the period's end, in ATR at the start of the period, at which the share of past periods beyond
+# each is published, so that the page can apply the reader's trading cost converted with the current period's
+# own yardstick (specification 0003). In ATR, past periods of high and low volatility are comparable; in
+# percent, the share beyond a fixed cost would depend on how volatile the past was. Grades use none.
+NET_THRESHOLDS_ATR = (
+    *(round(0.025 * i, 3) for i in range(21)),  # 0 to 0.5 ATR, where trading costs fall
+    *(round(0.5 + 0.05 * i, 2) for i in range(1, 11)),  # 0.55 to 1 ATR
+    1.25,
+    1.5,
+    1.75,
+    2.0,
+    2.5,
+    3.0,
+)
 ITEMS = (
     ("up_1", "Reached 1 ATR above the close before the {h} ended"),
     ("down_1", "Reached 1 ATR below the close before the {h} ended"),
@@ -108,13 +119,13 @@ def _summary(frame: pd.DataFrame) -> dict:
 
 
 def _net_thresholds(frame: pd.DataFrame) -> dict:
-    """Share of periods (percent) whose change to the period's end exceeded each threshold, each way."""
-    net = frame["net_pct"].to_numpy(float) if len(frame) else np.array([])
+    """Share of periods (percent) whose change to the period's end exceeded each ATR threshold, each way."""
+    net = frame["net_atr"].to_numpy(float) if len(frame) else np.array([])
     if not len(net):
         return {"above": [], "below": []}
     return {
-        "above": [round(float((net > t).mean() * PP), 1) for t in NET_THRESHOLDS_PCT],
-        "below": [round(float((net < -t).mean() * PP), 1) for t in NET_THRESHOLDS_PCT],
+        "above": [round(float((net > t).mean() * PP), 1) for t in NET_THRESHOLDS_ATR],
+        "below": [round(float((net < -t).mean() * PP), 1) for t in NET_THRESHOLDS_ATR],
     }
 
 
@@ -178,7 +189,7 @@ def money_card(ctx: StudyContext, horizon: str) -> EvidenceCard | None:
         "as_of": str(state["as_of"].date()),
         "excursions": {"same": _summary(same), "others": _summary(others)},
         "net_thresholds": {
-            "pct": list(NET_THRESHOLDS_PCT),
+            "atr": list(NET_THRESHOLDS_ATR),
             "same": _net_thresholds(same),
             "others": _net_thresholds(others),
         },
@@ -226,4 +237,4 @@ def run(ctx: StudyContext) -> list[EvidenceCard]:
     return [c for c in cards if c is not None]
 
 
-__all__ = ["money_events", "money_card", "run", "atr_percent", "NET_THRESHOLDS_PCT"]
+__all__ = ["money_events", "money_card", "run", "atr_percent", "NET_THRESHOLDS_ATR"]

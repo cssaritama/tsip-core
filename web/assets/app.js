@@ -916,7 +916,7 @@
     const span = Math.max(2, val(same, "up_atr", "q3") ?? 0, val(same, "down_atr", "q3") ?? 0) * 1.12;
     const x = (a) => mid + (a / span) * (mid - 12);
     const root = svg("svg", { viewBox: `0 0 ${w} ${h}`, class: "fan", role: "img",
-      "aria-label": `Median move above the close ${val(same, "up_atr")?.toFixed(1)} ATR, below ${val(same, "down_atr")?.toFixed(1)} ATR` });
+      "aria-label": `Median move above the close ${val(same, "up_atr")?.toFixed(2)} ATR, below ${val(same, "down_atr")?.toFixed(2)} ATR` });
     for (let t = -Math.floor(span); t <= Math.floor(span); t++) {
       root.append(svg("line", { x1: x(t), x2: x(t), y1: cy - 22, y2: cy + 22, class: t === 0 ? "fan__close" : "fan__grid" }));
       const lab = svg("text", { x: x(t), y: h - 6, "text-anchor": "middle" });
@@ -936,7 +936,7 @@
       const o = val(others, key);
       if (o !== undefined && o !== null) root.append(svg("line", { x1: x(sign * o), x2: x(sign * o), y1: cy - bar / 2 - 5, y2: cy + bar / 2 + 5, class: "fan__ctl" }));
       const lab = svg("text", { x: x(sign * Math.max(m, q3 ?? m)) + sign * 6, y: cy + 4, "text-anchor": sign > 0 ? "start" : "end", class: "fan__value" });
-      lab.textContent = `${sign > 0 ? "+" : "−"}${m.toFixed(1)}${atr ? ` (${(m * atr).toFixed(2)}%)` : ""}`;
+      lab.textContent = `${sign > 0 ? "+" : "−"}${m.toFixed(2)}${atr ? ` (${(m * atr).toFixed(2)}%)` : ""}`;
       if (x(sign * Math.max(m, q3 ?? m)) + sign * 70 > 0 && x(sign * Math.max(m, q3 ?? m)) + sign * 70 < w) root.append(lab);
     }
     return root;
@@ -954,28 +954,29 @@
   const COST_PROFILES = {
     crypto: [
       { id: "gross", label: "No costs (gross)", pct: 0, source: "" },
-      { id: "binance", label: "Binance spot, 0.10% per side", pct: 0.2, source: "Binance standard fee (CryptoPotato, 2025-10-21)" },
-      { id: "binance-bnb", label: "Binance paying in BNB, 0.075% per side", pct: 0.15, source: "Binance with the BNB discount (CryptoPotato, 2025-10-21)" },
-      { id: "coinbase-maker", label: "Coinbase Advanced, limit 0.40% per side", pct: 0.8, source: "Lowest tier, maker (Datawallet, 2026-08-20)" },
-      { id: "coinbase-taker", label: "Coinbase Advanced, market 0.60% per side", pct: 1.2, source: "Lowest tier, taker (Datawallet, 2026-08-20)" },
-      { id: "kraken-maker", label: "Kraken Pro, limit 0.40% per side", pct: 0.8, source: "Lowest tier, maker (kraken.com, 2026-11-04)" },
-      { id: "kraken-taker", label: "Kraken Pro, market 0.80% per side", pct: 1.6, source: "Lowest tier, taker (kraken.com, 2026-11-04)" },
+      { id: "binance", label: "Binance spot, 0.10% per side", pct: 0.2, source: "Binance standard spot fee, as summarised by CryptoPotato (2025-10-21)" },
+      { id: "binance-bnb", label: "Binance paying in BNB, 0.075% per side", pct: 0.15, source: "Binance standard spot fee with the 25% BNB discount, as summarised by CryptoPotato (2025-10-21)" },
+      { id: "coinbase-maker", label: "Coinbase Advanced, limit 0.40% per side", pct: 0.8, source: "Coinbase Advanced lowest tier, maker, as summarised by Datawallet (2026-08-20); Coinbase shows the fee on each order preview" },
+      { id: "coinbase-taker", label: "Coinbase Advanced, market 0.60% per side", pct: 1.2, source: "Coinbase Advanced lowest tier, taker, as summarised by Datawallet (2026-08-20); Coinbase shows the fee on each order preview" },
+      { id: "kraken-maker", label: "Kraken Pro, limit 0.40% per side", pct: 0.8, source: "Kraken Pro fee schedule, lowest tier, maker (kraken.com, read 2026-11-04)" },
+      { id: "kraken-taker", label: "Kraken Pro, market 0.80% per side", pct: 1.6, source: "Kraken Pro fee schedule, lowest tier, taker (kraken.com, read 2026-11-04)" },
     ],
     etf: [
       { id: "gross", label: "No costs (gross)", pct: 0, source: "" },
-      { id: "eu-5000", label: "EU broker, EUR 1 per order, EUR 5,000", pct: 0.04, source: "Trade Republic EUR 1.00, Scalable Capital EUR 0.99 per order (justETF, 2026-05-06)" },
-      { id: "eu-1000", label: "EU broker, EUR 1 per order, EUR 1,000", pct: 0.2, source: "Same fee on a smaller order (justETF, 2026-05-06)" },
-      { id: "eu-500", label: "EU broker, EUR 1 per order, EUR 500", pct: 0.4, source: "Same fee on a smaller order (justETF, 2026-05-06)" },
+      { id: "eu-5000", label: "EU broker, EUR 1 per order, EUR 5,000", pct: 0.04, source: "Trade Republic EUR 1.00 and Scalable Capital EUR 0.99 per order (justETF broker comparison, 2026-05-06)" },
+      { id: "eu-1000", label: "EU broker, EUR 1 per order, EUR 1,000", pct: 0.2, source: "Trade Republic EUR 1.00 and Scalable Capital EUR 0.99 per order (justETF broker comparison, 2026-05-06)" },
+      { id: "eu-500", label: "EU broker, EUR 1 per order, EUR 500", pct: 0.4, source: "Trade Republic EUR 1.00 and Scalable Capital EUR 0.99 per order (justETF broker comparison, 2026-05-06)" },
     ],
   };
 
-  // Share of past periods that ended beyond a cost, from the published thresholds: the first threshold at or
-  // above the cost, so the share shown never flatters the reader's cost.
-  function beyondCost(nt, group, side, cost) {
-    const k = (nt?.pct || []).findIndex((t) => t >= cost - 1e-9);
+  // Share of past periods that ended beyond a cost. The report publishes thresholds in ATR at the start of each
+  // period; the cost is converted with the current period's own starting ATR, and the first threshold at or above
+  // it is used, so the share shown never flatters the reader's cost.
+  function beyondCost(nt, group, side, costAtr) {
+    const k = (nt?.atr || []).findIndex((t) => t >= costAtr - 1e-9);
     if (k < 0) return null;
     const v = nt?.[group]?.[side]?.[k];
-    return v === undefined ? null : { threshold: nt.pct[k], share: v };
+    return v === undefined ? null : { threshold: nt.atr[k], share: v };
   }
 
   function loadCost(kind) {
@@ -1004,12 +1005,13 @@
       const m = st.excursions?.same?.[key]?.median;
       if (m === undefined || m === null) return "–";
       const pctv = st.atr_start_pct ? ` (${(m * st.atr_start_pct).toFixed(2)}%)` : "";
-      return `${sign}${m.toFixed(1)} ATR${pctv}`;
+      return `${sign}${m.toFixed(2)} ATR${pctv}`;
     };
     const head = el("tr", {}, el("th", {}, ""), ...cards.map((c) => el("th", { scope: "col" },
       el("b", {}, capital(c.state.horizon)),
       el("span", {}, `${c.state.sessions_elapsed} of about ${c.state.typical_sessions} ${c.state.session_unit}`),
-      el("span", {}, `${num(c.state.analogs)} past ${c.state.horizon}s like this`))));
+      el("span", {}, `${num(c.state.analogs)} past ${c.state.horizon}s like this`),
+      c.state.atr_start_pct ? el("span", {}, `1 ATR = ${c.state.atr_start_pct.toFixed(2)}%`) : null)));
     const rows = [
       el("tr", { class: "mtable__move" }, el("th", { scope: "row" }, "Typical move above"), ...cards.map((c) => el("td", {}, move(c.state, "up_atr", "+")))),
       el("tr", { class: "mtable__move" }, el("th", { scope: "row" }, "Typical move below"), ...cards.map((c) => el("td", {}, move(c.state, "down_atr", "−")))),
@@ -1031,17 +1033,19 @@
       for (const tr of costRows) {
         tr.querySelectorAll("td").forEach((td) => td.remove());
         for (const c of cards) {
-          const nt = c.state.net_thresholds;
-          if (!nt?.pct?.length) { tr.append(el("td", {}, "–")); continue; }
-          const mine = beyondCost(nt, "same", tr.dataset.side, cost.pct), other = beyondCost(nt, "others", tr.dataset.side, cost.pct);
-          tr.append(mine ? el("td", { class: "mcell", title: `Share of past ${c.state.horizon}s that ended more than ${mine.threshold}% ${tr.dataset.side} the close (descriptive, not graded)` },
-            el("span", { class: "mcell__top" }, el("b", {}, `${mine.share.toFixed(0)}%`), el("span", { class: "mcell__t" }, `>${mine.threshold}%`)),
-            other ? bullet(mine.share, other.share, 100, "D") : null) : el("td", {}, "beyond 3%"));
+          const nt = c.state.net_thresholds, atr0 = c.state.atr_start_pct;
+          if (!nt?.atr?.length || !atr0) { tr.append(el("td", {}, "–")); continue; }
+          const costAtr = cost.pct / atr0, h = c.state.horizon;
+          const mine = beyondCost(nt, "same", tr.dataset.side, costAtr), other = beyondCost(nt, "others", tr.dataset.side, costAtr);
+          tr.append(mine ? el("td", { class: "mcell", title: `Share of past ${h}s like this that ended more than ${mine.threshold} ATR ${tr.dataset.side} the close; your cost of ${cost.pct.toFixed(2)}% is ${costAtr.toFixed(2)} ATR at this ${h}'s starting ATR of ${atr0.toFixed(2)}% (descriptive, not graded)` },
+            el("span", { class: "mcell__top" }, el("b", {}, `${mine.share.toFixed(0)}%`), el("span", { class: "mcell__t" }, `>${mine.threshold} ATR`)),
+            other ? bullet(mine.share, other.share, 100, "D") : null) : el("td", { title: `Your cost is ${costAtr.toFixed(2)} ATR of this ${h}, beyond the published range` }, "beyond 3 ATR"));
         }
       }
+      const inAtr = cards.filter((c) => c.state.atr_start_pct).map((c) => `${(cost.pct / c.state.atr_start_pct).toFixed(2)} (${c.state.horizon})`).join(", ");
       note.textContent = cost.pct
-        ? `Cost: ${cost.pct.toFixed(2)}% per round trip${cost.source ? `, ${cost.source}` : ""}. Shares use the first published threshold at or above it; descriptive, not graded.`
-        : "No cost applied: the shares beyond 0% are the graded rows above. Choose a profile to apply your own cost.";
+        ? `Cost: ${cost.pct.toFixed(2)}% per round trip${cost.source ? `. Source: ${cost.source}` : ""}. In ATR at the start of each period it is ${inAtr}; each share uses the first published threshold at or above it. Descriptive, not graded.`
+        : "No cost applied: the shares beyond 0 ATR are the graded rows above. Choose a profile to apply your own cost.";
     };
     const select = el("select", { class: "cost__select", "aria-label": "Trading cost per round trip" },
       ...profiles.map((p) => el("option", { value: p.id, selected: p.id === cost.id ? "selected" : null }, `${p.label}${p.pct ? ` (${p.pct}% round trip)` : ""}`)),
@@ -1060,7 +1064,7 @@
     return tile("tile--money", "What can be made or lost from here?",
       el("div", { class: "money__body" },
         el("div", { class: "money__main" },
-          figure(up0 === undefined || down0 === undefined ? "–" : `+${up0.toFixed(1)} / −${down0.toFixed(1)}`,
+          figure(up0 === undefined || down0 === undefined ? "–" : `+${up0.toFixed(2)} / −${down0.toFixed(2)}`,
             `ATR: the median move above and below the last close before the ${st0.horizon} ended, in ${num(st0.analogs)} past ${st0.horizon}s in the same position after ${st0.sessions_elapsed} ${plural(st0.sessions_elapsed, st0.session_unit)}. 1 ATR at the start of the ${st0.horizon} = ${st0.atr_start_pct?.toFixed(2)}%.`),
           moneyFan(same0, others0, st0.atr_start_pct),
           el("p", { class: "tile__line" }, `Bars: median move; whiskers: middle half of past ${st0.horizon}s; thin lines: other ${st0.horizon}s at the same point (${num(st0.others)}).`)),
@@ -1068,7 +1072,7 @@
           el("div", { class: "table-wrap" }, el("table", { class: "mtable" }, el("thead", {}, head), el("tbody", {}, ...rows, ...costRows))),
           el("div", { class: "cost" }, el("label", {}, "Your trading cost", select), custom),
           note,
-          el("p", { class: "tile__line" }, "Each cell: past periods in the same position as today (bar) against the other periods at the same point (line), with the grade. Figures are gross unless a cost is chosen."),
+          el("p", { class: "tile__line" }, "Each cell: past periods in the same position as today (bar) against the other periods at the same point (line), with the grade. Graded rows are gross; only the two cost rows apply your cost. Percentages are ATR multiples at the ATR at the start of each period."),
           el("a", { class: "tile__more", href }, "Method and numbers for every horizon"))));
   }
 

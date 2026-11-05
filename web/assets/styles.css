@@ -166,6 +166,8 @@ p { margin: 0; }
 .mtable td { text-align: left; min-width: 92px; }
 .mtable__move td { color: var(--text); font-weight: 500; white-space: nowrap; }
 .mtable__cost th, .mtable__cost td { border-top: 1px solid var(--line); }
+/* Row labels stay in view when the table scrolls sideways on a narrow screen. */
+.mtable thead th:first-child, .mtable tbody th { position: sticky; left: 0; z-index: 1; background: var(--raise); }
 .mcell { display: table-cell; }
 .mcell__top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 5px; }
 .mcell__top b { font-size: 14px; font-weight: 500; color: var(--text); }

@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 from tsip.report import InstrumentInput, build_report
-from tsip.studies.money import money_events
+from tsip.studies.money import NET_THRESHOLDS_ATR, _net_thresholds, money_events
 
 
 def _flat_week_days(weeks=8):
@@ -93,11 +93,11 @@ def test_money_card_for_the_current_period(rw_report):
     assert "cost_pct" not in st and not any("cost" in it["label"] for it in card["items"])  # grades carry no cost
     assert st["atr_start_pct"] > 0 and st["analogs"] > 30 and st["others"] > 30
     nt = st["net_thresholds"]
-    assert nt["pct"][0] == 0.0 and nt["pct"] == sorted(nt["pct"])
+    assert nt["atr"] == list(NET_THRESHOLDS_ATR) and nt["atr"][0] == 0.0 and nt["atr"] == sorted(nt["atr"])
     for group in ("same", "others"):
         for side in ("above", "below"):
             values = nt[group][side]
-            assert len(values) == len(nt["pct"]) and values == sorted(values, reverse=True)
+            assert len(values) == len(nt["atr"]) and values == sorted(values, reverse=True)
     by_outcome = {it["extra"]["outcome"]: it for it in card["items"]}
     assert nt["same"]["above"][0] == pytest.approx(by_outcome["end_up"]["observed"], abs=0.05)
     assert nt["others"]["below"][0] == pytest.approx(by_outcome["end_down"]["baseline"], abs=0.05)
@@ -105,6 +105,19 @@ def test_money_card_for_the_current_period(rw_report):
         med = st["excursions"][group]["up_atr"]
         assert med["q1"] <= med["median"] <= med["q3"]
     json.dumps(rw_report, allow_nan=False)
+
+
+def test_net_thresholds_are_in_atr_of_each_period():
+    # Two past weeks both ended 1% higher: one in a calm market (ATR 2%, so 0.5 ATR) and one in a volatile
+    # market (ATR 5%, so 0.2 ATR). Against a cost worth 0.3 ATR today, only the calm week cleared it.
+    frame = pd.DataFrame({"net_pct": [1.0, 1.0, -0.6], "net_atr": [0.5, 0.2, -0.3]})
+    nt = _net_thresholds(frame)
+    at = NET_THRESHOLDS_ATR.index
+    assert nt["above"][at(0.0)] == pytest.approx(66.7)  # 0 ATR: ended above
+    assert nt["above"][at(0.3)] == pytest.approx(33.3)
+    assert nt["below"][at(0.25)] == pytest.approx(33.3)
+    assert nt["below"][at(0.3)] == 0.0  # a change of exactly -0.3 ATR is not beyond 0.3 ATR
+    assert len(NET_THRESHOLDS_ATR) == len(set(NET_THRESHOLDS_ATR)) and max(NET_THRESHOLDS_ATR) == 3.0
 
 
 def test_money_skips_close_only_series():
