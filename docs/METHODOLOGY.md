@@ -119,6 +119,10 @@ Windows (sessions; calendar days for crypto): week 5/10/20, month 10/20/60, quar
 
 **Revisit curves.** Each card also carries, on the first item of each side, the full curve behind the graded windows: the share of real levels revisited within k sessions and the share for the control, for k = 1 up to the longest window (at most 40 evenly spaced values of k). At each k only fully observed windows count, exactly as in the graded items, so the curve passes through the graded points. The curve is descriptive: grades apply to the listed windows only, not to every point of the curve.
 
+### Monday's low and the last three lows
+
+*When Monday's low is still untested later in the week, does price come back to it? Does it come back to the last three weekly or monthly lows?* (specification 0010). Events are the close of each day after Monday with Monday's low not yet traded again (equities Tuesday to Thursday, crypto Tuesday to Saturday), and each week or month close for the lows of the last three complete periods (the nearest below the close, and the lowest of the three). The control is the one of the revisit study: the share of all other events' paths that travelled at least the same distance downwards, in 60-session volatility units, within the same number of sessions. Windows are the rest of the week, 5 and 10 sessions for Monday's low, and 5, 10, 20 (weeks) or 10, 20, 60 sessions (months) for the recent lows; only fully observed windows count. Monthly items are B at best on the histories from 2016 (section 5).
+
 ### Position
 
 The report states, for each horizon, the distance from the last close to the reference range's high and low in percent and in multiples of the 14-session average true range, and the position of the close within that range (0% at the low, 100% at the high). For a period in progress the reference is the prior complete period; once a period has ended, the reference is the period that just closed and the row describes the next period's starting position. Price levels are not published.

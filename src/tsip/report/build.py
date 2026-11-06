@@ -31,6 +31,7 @@ from tsip.studies import (
     money,
     period_extremes,
     plan,
+    recent_lows,
     revisit,
     volatility,
 )
@@ -47,7 +48,7 @@ SECTIONS = [
     ("volatility", "Volatility clock", ("volatility",)),
     ("weekly", "Weekly structure", ("weekly",)),
     ("extremes", "Month and quarter extremes", ("extremes",)),
-    ("revisits", "Time to revisit", ("revisits",)),
+    ("revisits", "Time to revisit", ("revisits", "recent_lows")),
     ("paths", "Paths and entries", ("paths", "entries")),
     ("calendar", "Calendar", ("calendar",)),
 ]
@@ -63,6 +64,7 @@ STUDIES = (
     entry_timing,
     calendar,
     period_extremes,
+    recent_lows,
 )
 
 

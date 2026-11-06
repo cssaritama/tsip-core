@@ -154,5 +154,17 @@
     "evaluation_start": "2026-12-01",
     "evaluation_end": "2028-11-30",
     "status": "open"
+  },
+  {
+    "id": "H-2026-014",
+    "instrument": "SPY",
+    "statement": "When SPY's Monday low is still untested at the close of Tuesday, Wednesday or Thursday, it is traded again before the week ends about as often as an equally distant arbitrary level: the real level adds little beyond distance.",
+    "metric": "Item 'Before the week ends' of card SPY.recent_lows.monday: observed share minus the distance control, in percentage points (specification 0010).",
+    "criterion": "Estimate between -5 and +5 percentage points and grade C or weaker in the first report that includes specification 0010.",
+    "basis": "Founder's thesis that a market rising without touching its lows comes back at least to Monday's low; the expected answer was written before the study ran on real data. Criteria: the recommended options of specification 0010, taken when the founder asked to continue on 2026-11-06.",
+    "registered": "2026-11-06",
+    "evaluation_start": "2026-11-06",
+    "evaluation_end": "2026-11-30",
+    "status": "open"
   }
 ]

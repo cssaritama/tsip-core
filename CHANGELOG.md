@@ -4,9 +4,15 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.2.23] – 2026-11-06
+
 ### Added
-- Specification 0010 (draft): revisit of Monday's low and of the last three lows, against distance-matched levels (W-72).
+- Back to Monday's low and to the last three lows (specification 0010, W-72): when Monday's low is untested later in the week, how often price trades back at it before the week ends and within 5 and 10 sessions; after each week and month close, how often price reaches the nearest and the lowest of the last three periods' lows; all against distance-matched arbitrary levels. Fifteen graded items per market. The Day of the week coordinate shows this week's Monday low when it is still untested.
+- Hypothesis H-2026-014 (SPY: Monday's low adds little beyond distance), registered before the first run on real data.
 - Hypotheses H-2026-012 and H-2026-013 (Bitcoin month high and Ether month low rarely in the month's last week), registered for evaluation on months from December 2026 only.
+
+### Changed
+- The contributor guide is `CONTRIBUTING.md` only; the separate automation guide was merged into it.
 
 ## [0.2.22] – 2026-11-06
 

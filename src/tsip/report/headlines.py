@@ -122,7 +122,7 @@ def headline(card: EvidenceCard) -> str:
             f"No plan differs reliably from {card.contrast}; a long held to the {h}'s end returned "
             f"{hold.observed:+.2f} ATR on average, against {hold.baseline:+.2f} ATR ({grade})."
         )
-    if card.family == "revisits":
+    if card.family in ("revisits", "recent_lows"):
         x = best.extra
         median = x.get("median_sessions")
         when = f"; median time {median:.0f} {x.get('unit_word', 'sessions')}" if median else ""

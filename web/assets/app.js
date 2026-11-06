@@ -519,6 +519,16 @@
     return { text, value: fmt(item.estimate, card.unit), grade: item.grade, href: `#${card.id.replaceAll(".", "-")}`, control: card.contrast || "control" };
   }
 
+  // Monday's low this week: still untested, and how often it was reached again before the week ended.
+  function mondayFact(card) {
+    const st = card?.state;
+    if (!st || st.monday_low_untested !== true) return null;
+    const it = card.items[0], x = it.extra || {};
+    const dist = st.distance_atr != null ? `${st.distance_atr.toFixed(1)} ATR below; ` : "";
+    return { text: `Monday's low still untested (${dist}reached again before the week ended in ${Math.round(x.observed_pct)}% of such days, ${Math.round(x.control_pct)}% for equally distant levels)`,
+      value: fmt(it.estimate, card.unit), grade: it.grade, href: `#${card.id.replaceAll(".", "-")}` };
+  }
+
   // How much price moves at this coordinate against the average one (volatility clock).
   function volFact(card, item, text) {
     if (!card || !item) return null;
@@ -592,6 +602,7 @@
       fact(wh, findItem(wh, (l) => l.label === clk.weekday), "Week high forms on this day, against a random walk"),
       fact(wl, findItem(wl, (l) => l.label === clk.weekday), "Week low forms on this day, against a random walk"),
       fact(wd, findItem(wd, (l) => l.label === clk.weekday), `Return on ${clk.weekday}, versus ${wd?.contrast || "the other days"}`),
+      mondayFact(findCard(inst, "recent_lows.monday")),
     ] });
     // month
     const mo = findCard(inst, "calendar.month"), tom = findCard(inst, "calendar.turn_of_month");
@@ -812,6 +823,7 @@
     }
     if (card.family === "sessions" && /day_(high|low)$/.test(id)) return `Day ${id.endsWith("high") ? "high" : "low"} forms ${sessionPhrase(item.label)}`;
     if (card.family === "weekly") return `Week ${id.endsWith("high") ? "high" : "low"} forms on ${label}`;
+    if (card.family === "recent_lows") return card.id.endsWith(".monday") ? `Back to Monday's low: ${label.charAt(0).toLowerCase()}${label.slice(1)}` : `Last three ${card.state?.horizon || "period"}ly lows: ${label.charAt(0).toLowerCase()}${label.slice(1)}`;
     if (card.family === "extremes") return `${capital(card.state?.scope || "month")}'s ${id.endsWith("high") ? "highest" : "lowest"} close in the ${label.toLowerCase()}`;
     if (card.family === "money") return `${capital(card.state?.horizon || "period")}: ${(MONEY_TITLES[item.extra?.outcome] || label).toLowerCase()}`;
     if (card.family === "plan_regime") return `${capital(card.state?.horizon || "period")} started ${card.state?.regime}: ${(PLAN_ROWS.find(([k]) => k === item.extra?.plan)?.[1] || label).toLowerCase()}`;
@@ -1260,7 +1272,7 @@
 
   // Strongest graded effects with a measurable control, one per family, timing families first.
   function strongest(inst, n = 3) {
-    const order = ["volatility", "sessions", "money", "plan", "plan_regime", "revisits", "weekly", "extremes", "paths"];
+    const order = ["volatility", "sessions", "money", "plan", "plan_regime", "revisits", "recent_lows", "weekly", "extremes", "paths"];
     const pool = cardsOf(inst).filter((c) => c.kind === "edge" && ["A", "B"].includes(c.grade));
     const strength = (c) => {
       const it = c.items[c.primary ?? 0];
