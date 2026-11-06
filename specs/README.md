@@ -54,4 +54,5 @@ R1. When ..., the report (or page) shall ...
 | [0006](0006-honest-baselines-and-board-triage.md) | Honest baselines and board triage | shipped (0.2.17) |
 | [0007](0007-trade-plans-by-volatility-regime.md) | Trade plans by volatility regime | shipped (0.2.19) |
 | [0008](0008-time-of-period-extremes.md) | Time of the period's extremes (month and quarter) | shipped 0.2.22 |
-| [0009](0009-test-budget.md) | Test budget: which conditions the history can support | shipped (unreleased) |
+| [0009](0009-test-budget.md) | Test budget: which conditions the history can support | shipped 0.2.22 |
+| [0010](0010-revisit-of-monday-and-recent-lows.md) | Revisit of Monday's low and of the recent lows | draft |

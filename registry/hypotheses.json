@@ -130,5 +130,29 @@
     "evaluation_start": "2026-11-06",
     "evaluation_end": "2026-11-30",
     "status": "open"
+  },
+  {
+    "id": "H-2026-012",
+    "instrument": "BTC-USD",
+    "statement": "Bitcoin's month high forms in the last seven days of the month less often than when each month's own daily returns are shuffled.",
+    "metric": "Item 'Last week' of card BTC-USD.extremes.month_high computed on the complete months of the evaluation window only: observed share minus shuffled share, in percentage points (specification 0008).",
+    "criterion": "Estimate below zero over the 24 months of the evaluation window.",
+    "basis": "Found in-sample on 2026-11-06 (25.7% against 38.9%, grade B, 109 months; RESULTS_2026-11-06_EXTREMES). Registered for evaluation on later months only; 24 months give little power, so a failure to confirm is not a refutation.",
+    "registered": "2026-11-06",
+    "evaluation_start": "2026-12-01",
+    "evaluation_end": "2028-11-30",
+    "status": "open"
+  },
+  {
+    "id": "H-2026-013",
+    "instrument": "ETH-USD",
+    "statement": "Ether's month low forms in the last seven days of the month less often than when each month's own daily returns are shuffled.",
+    "metric": "Item 'Last week' of card ETH-USD.extremes.month_low computed on the complete months of the evaluation window only: observed share minus shuffled share, in percentage points (specification 0008).",
+    "criterion": "Estimate below zero over the 24 months of the evaluation window.",
+    "basis": "Found in-sample on 2026-11-06 (21.2% against 30.5%, grade B, 104 months; RESULTS_2026-11-06_EXTREMES). Registered for evaluation on later months only; 24 months give little power, so a failure to confirm is not a refutation.",
+    "registered": "2026-11-06",
+    "evaluation_start": "2026-12-01",
+    "evaluation_end": "2028-11-30",
+    "status": "open"
   }
 ]

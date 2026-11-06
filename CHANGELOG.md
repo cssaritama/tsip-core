@@ -4,6 +4,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Added
+- Specification 0010 (draft): revisit of Monday's low and of the last three lows, against distance-matched levels (W-72).
+- Hypotheses H-2026-012 and H-2026-013 (Bitcoin month high and Ether month low rarely in the month's last week), registered for evaluation on months from December 2026 only.
+
 ## [0.2.22] – 2026-11-06
 
 ### Added
