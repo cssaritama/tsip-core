@@ -1,6 +1,6 @@
 # 0008 Time of the period's extremes
 
-**Status:** ready for approval (criteria proposed on 2026-11-06; the study does not run on real data before the founder approves them)
+**Status:** shipped in 0.2.22 with the recommended options (shuffle control, closing prices graded, five-session windows), taken when the founder asked to continue on 2026-11-06; hypothesis H-2026-011 registered before the first run on real data
 **Level:** 2 study · **Open work:** W-63
 
 ## Problem and decision supported
@@ -39,8 +39,22 @@ Every month and quarter has an open, a high, a low and a close. If a market rise
 - **Sample and test budget (specification 0009):** the histories from 2016 hold about 130 months and 43 quarters, so no item on them can reach grade A (200 units); they are graded B at best and shown as such. The graded monthly test that can reach A uses the NDX daily history from 1986 (about 490 months); quarters (163 on NDX) are B at best everywhere. Each market adds 3 month items (first week, middle, last week) and 3 quarter items (one per month) for the low, and as many for the high (12 tests), counted in the instrument's tests.
 - **Hypothesis before the run (to be registered as H-2026-011 when approved):** on NDX, the share of months whose closing low falls in the first five sessions is within 3 percentage points of the shuffled control (no timing effect beyond drift); most of the "early low" pattern is drift plus the arcsine law. Expected grades: D or C on most items, B at most on one.
 
-## Decisions for the founder
+## Decisions (recommended options taken; any of them can still be changed before results are used in claims)
 
 1. **Control:** shuffle each period's own days (proposed) or a plain random walk. The shuffle answers "does the timing matter beyond the fact that the market rises", which is the useful question for a buyer.
 2. **Price:** closing prices graded everywhere, intraday lows as context (proposed), or intraday lows graded on the markets that have them.
 3. **Windows:** first five sessions, middle, last five sessions (proposed), or calendar weeks of the month.
+
+## Data
+
+NDX is the Nasdaq-100 price index (FRED series `NASDAQ100`, daily close from 1986-01-02). It is the longest free history of the index that QQQ and the NQ futures track, and the only one long enough for an A grade on months. Other variants were considered: the total-return index XNDX (FRED `NASDAQXNDX`) starts in 1999 and its use needs the provider's pre-approval; equal-weight and sector variants measure a different basket. Dividends add less than a hundredth of a percent a day, too little to move the session of a month's low in more than a few months.
+
+## Verification
+
+| ID | Result | Evidence |
+|---|---|---|
+| T1 | pass | `tests/test_period_extremes.py::test_ties_take_the_first_session` |
+| T2 | pass | `tests/test_period_extremes.py::test_random_walk_shows_no_timing_effect` (NDX length, with drift: 12 items, none A or B) |
+| T3 | pass | `tests/test_period_extremes.py::test_control_keeps_each_period_returns_and_only_changes_their_order` |
+| T4 | pass | render check, 0 problems (SPY, Bitcoin, NDX, six widths, light and dark) on a labelled preview; the Month and Quarter coordinates and the new section show the window, the grade and "B at best with this history" where it applies |
+| T5 | pass | `tests/test_period_extremes.py::test_lows_on_the_first_session_are_found` (A on NDX length); `test_short_histories_cannot_reach_grade_a` (the same pattern on a 2016 history: B) |

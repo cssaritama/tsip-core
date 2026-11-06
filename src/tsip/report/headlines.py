@@ -136,6 +136,14 @@ def headline(card: EvidenceCard) -> str:
             f"{best.label}: {x['observed_pct']:.0f}% of {card.n_label}, {verdict} equally distant arbitrary levels "
             f"({x['control_pct']:.0f}%){when} ({grade})."
         )
+    if card.family == "extremes":
+        side = "lowest" if card.id.endswith("_low") else "highest"
+        cap = " B at best with this history." if card.state.get("periods", 0) < 200 else ""
+        verdict = "" if best.grade in {"A", "B", "C"} else "no reliable timing effect; "
+        return (
+            f"{best.label}: the {side} close in {best.observed:.0f}% of {card.n_label}, against "
+            f"{best.baseline:.0f}% with the same days in random order ({verdict}{grade}).{cap}"
+        )
     contrast = card.contrast or "the control"
     if best.grade in {"A", "B", "C"}:
         return f"{best.label}: {_fmt(best.estimate, card.unit)} versus {contrast} ({grade})."

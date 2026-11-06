@@ -4,7 +4,11 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.2.22] – 2026-11-06
+
 ### Added
+- Month and quarter extremes (specification 0008, W-63): in which part of the month (first five sessions, middle, last five; seven days for crypto) and of the quarter (each month) the lowest and highest close form, against the same days in random order (10,000 shuffles per period, which keeps drift, volatility and fat tails), with a driftless random walk as a second reference and the intraday low and high as context. Twelve graded items per market; on the histories from 2016 they are B at best and the page says so; NDX from 1986 can reach A on months. The Time panel shows the current window of the month and quarter with its grade; new section "Month and quarter extremes".
+- Hypothesis H-2026-011 (NDX: no timing effect of the month's low beyond the shuffled control), registered before the first run on real data.
 - `tools/test_budget.py` (specification 0009): edge tests per instrument by study and grade, and for each horizon the cells a condition can be split into while still able to reach grade A and the smallest effect an A grade can detect. Methodology section 5 states the test budget: every test counted, conditions sized to the history, and conditions revised after their results were seen treated as exploratory.
 
 ### Changed

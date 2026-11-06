@@ -118,5 +118,17 @@
     "evaluation_start": "2026-11-09",
     "evaluation_end": "2027-11-05",
     "status": "open"
+  },
+  {
+    "id": "H-2026-011",
+    "instrument": "NDX",
+    "statement": "Over the NDX history from 1986, the share of months whose lowest close falls in the first five sessions is within 3 percentage points of the share obtained when each month's own daily returns are shuffled: no timing effect beyond drift, volatility and the arcsine law.",
+    "metric": "Item 'First week' of card NDX.extremes.month_low: observed share minus shuffled share, in percentage points (specification 0008).",
+    "criterion": "Estimate between -3 and +3 percentage points and grade C or weaker in the first report that includes specification 0008.",
+    "basis": "Founder's thesis that the month's low can be anticipated (power of three); the expected answer was written before the study ran on real data. Criteria: the recommended options of specification 0008 (shuffle control, closing prices, five-session windows), taken when the founder asked to continue on 2026-11-06.",
+    "registered": "2026-11-06",
+    "evaluation_start": "2026-11-06",
+    "evaluation_end": "2026-11-30",
+    "status": "open"
   }
 ]

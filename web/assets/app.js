@@ -605,6 +605,19 @@
       fact(mo, findItem(mo, (l) => l.label === clk.month), `Return in ${clk.month}, versus ${mo?.contrast || "the other months"}`),
     ];
     if (tom && inTurn) monthFacts.push(fact(tom, tom.items[0], `Turn-of-month days, versus ${tom?.contrast || "the other days"}`));
+    // when in the month (and quarter) the lowest and highest close form, against the same days in random order
+    const ml = findCard(inst, "extremes.month_low"), mh = findCard(inst, "extremes.month_high");
+    const capNote = (card) => (card?.state?.periods < 200 ? "; B at best with this history" : "");
+    const monthWindow = (st) => {
+      if (!st?.sessions_elapsed || !st?.typical_sessions) return null;
+      const edge = crypto ? 7 : 5;
+      return st.sessions_elapsed <= edge ? "First week" : st.sessions_elapsed > st.typical_sessions - edge ? "Last week" : "Middle";
+    };
+    const mw = monthWindow(ml?.state);
+    if (mw) {
+      monthFacts.push(fact(ml, findItem(ml, (l) => l.label === mw), `Month's lowest close forms in this part (${mw.toLowerCase()}), against the same days in random order${capNote(ml)}`));
+      monthFacts.push(fact(mh, findItem(mh, (l) => l.label === mw), `Month's highest close forms in this part, against the same days in random order${capNote(mh)}`));
+    }
     coords.push({ name: "Month", value: `${clk.month}, day ${clk.dom}`,
       note: [!clk.open && "Next session", inTurn && "inside the turn-of-month window"].filter(Boolean).join(", ").replace(/^i/, "I"), facts: monthFacts,
       chart: small(vm, clk.month, { name: "month", label: (l) => l.charAt(0) }) });
@@ -617,6 +630,9 @@
     const vq = findCard(inst, "volatility.quarter");
     const qLabel = `Q${Math.floor((clk.m - 1) / 3) + 1}`;
     const qFacts = [volFact(vq, findItem(vq, (l) => l.label === qLabel), `Movement in ${qLabel} against the average day`)];
+    const ql = findCard(inst, "extremes.quarter_low");
+    const qWindow = ["1st month", "2nd month", "3rd month"][(clk.m - 1) % 3];
+    if (ql) qFacts.push(fact(ql, findItem(ql, (l) => l.label === qWindow), `Quarter's lowest close forms in its ${qWindow}, against the same days in random order${capNote(ql)}`));
     coords.push({ name: "Quarter and year", value: q?.period || "–",
       note: [prog(mapQ) && `Quarter: ${prog(mapQ)}`, prog(mapY) && `Year ${yr?.period}: ${prog(mapY)}`].filter(Boolean).join(". "), facts: qFacts, link: "#space",
       chart: small(vq, qLabel, { name: "quarter" }) });
@@ -796,6 +812,7 @@
     }
     if (card.family === "sessions" && /day_(high|low)$/.test(id)) return `Day ${id.endsWith("high") ? "high" : "low"} forms ${sessionPhrase(item.label)}`;
     if (card.family === "weekly") return `Week ${id.endsWith("high") ? "high" : "low"} forms on ${label}`;
+    if (card.family === "extremes") return `${capital(card.state?.scope || "month")}'s ${id.endsWith("high") ? "highest" : "lowest"} close in the ${label.toLowerCase()}`;
     if (card.family === "money") return `${capital(card.state?.horizon || "period")}: ${(MONEY_TITLES[item.extra?.outcome] || label).toLowerCase()}`;
     if (card.family === "plan_regime") return `${capital(card.state?.horizon || "period")} started ${card.state?.regime}: ${(PLAN_ROWS.find(([k]) => k === item.extra?.plan)?.[1] || label).toLowerCase()}`;
     if (card.family === "plan") return `${capital(card.state?.horizon || "period")}: ${(PLAN_ROWS.find(([k]) => k === item.extra?.plan)?.[1] || label).toLowerCase()}`;
@@ -1243,7 +1260,7 @@
 
   // Strongest graded effects with a measurable control, one per family, timing families first.
   function strongest(inst, n = 3) {
-    const order = ["volatility", "sessions", "money", "plan", "plan_regime", "revisits", "weekly", "paths"];
+    const order = ["volatility", "sessions", "money", "plan", "plan_regime", "revisits", "weekly", "extremes", "paths"];
     const pool = cardsOf(inst).filter((c) => c.kind === "edge" && ["A", "B"].includes(c.grade));
     const strength = (c) => {
       const it = c.items[c.primary ?? 0];
@@ -1469,7 +1486,7 @@
     const span = [cov.daily && `Daily ${cov.daily.start} to ${cov.daily.end}`, cov.intraday && `${cov.intraday.timeframe} bars from ${cov.intraday.start}`].filter(Boolean);
     document.getElementById("index-refs").replaceChildren(...span.map((s) => el("div", {}, s)),
       el("div", {}, `Source: ${inst.sources.map((s) => s.name || s.source).join(", ")}`));
-    const AXIS = { now: "Space", money: "Space", plan: "Space", levels: "Space", revisits: "Space", paths: "Space", sessions: "Time", volatility: "Time", weekly: "Time", calendar: "Time" };
+    const AXIS = { now: "Space", money: "Space", plan: "Space", levels: "Space", revisits: "Space", paths: "Space", sessions: "Time", volatility: "Time", weekly: "Time", extremes: "Time", calendar: "Time" };
     const groups = ["Time", "Space"].map((axis) => [axis, inst.sections.filter((s) => (AXIS[s.id] || "Space") === axis)]).filter(([, list]) => list.length);
     index.replaceChildren(...groups.flatMap(([axis, list]) => [el("span", { class: "index__axis" }, axis),
       ...list.map((s) => el("a", { href: `#sec-${code}-${s.id}` }, s.title))]));

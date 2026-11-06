@@ -29,6 +29,7 @@ from tsip.studies import (
     level_map,
     level_memory,
     money,
+    period_extremes,
     plan,
     revisit,
     volatility,
@@ -45,11 +46,24 @@ SECTIONS = [
     ("sessions", "Sessions and intraday", ("sessions", "intraday")),
     ("volatility", "Volatility clock", ("volatility",)),
     ("weekly", "Weekly structure", ("weekly",)),
+    ("extremes", "Month and quarter extremes", ("extremes",)),
     ("revisits", "Time to revisit", ("revisits",)),
     ("paths", "Paths and entries", ("paths", "entries")),
     ("calendar", "Calendar", ("calendar",)),
 ]
-STUDIES = (level_map, money, plan, level_memory, revisit, intraday, volatility, first_passage, entry_timing, calendar)
+STUDIES = (
+    level_map,
+    money,
+    plan,
+    level_memory,
+    revisit,
+    intraday,
+    volatility,
+    first_passage,
+    entry_timing,
+    calendar,
+    period_extremes,
+)
 
 
 @dataclass

@@ -53,5 +53,5 @@ R1. When ..., the report (or page) shall ...
 | [0005](0005-trade-plan-from-here.md) | Trade plan from here: stop, target and expected result against all periods | shipped (0.2.18) |
 | [0006](0006-honest-baselines-and-board-triage.md) | Honest baselines and board triage | shipped (0.2.17) |
 | [0007](0007-trade-plans-by-volatility-regime.md) | Trade plans by volatility regime | shipped (0.2.19) |
-| [0008](0008-time-of-period-extremes.md) | Time of the period's extremes (month and quarter) | ready for approval |
+| [0008](0008-time-of-period-extremes.md) | Time of the period's extremes (month and quarter) | shipped 0.2.22 |
 | [0009](0009-test-budget.md) | Test budget: which conditions the history can support | shipped (unreleased) |
