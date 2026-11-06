@@ -4,6 +4,12 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.2.24] – 2026-11-06
+
+### Added
+- Evaluation record for the hypothesis register (`registry/evaluations.json`, W-77): outcome, result, archived report and its fingerprint, attached only when the fingerprint it names matches the registered entry; the register page shows it. First entries: H-2026-011 and H-2026-014, both supported.
+- Hypothesis H-2026-015 (Bitcoin and Ether: an untested Monday low is reached before the week ends less often than an equally distant level), registered for evaluation on weeks from 2026-11-09.
+
 ## [0.2.23] – 2026-11-06
 
 ### Added

@@ -1,0 +1,22 @@
+[
+  {
+    "hypothesis": "H-2026-011",
+    "hypothesis_sha256": "18e50b12497f8a2fd34e8459a2e6a5c6eddb771fcbfc4c69aa1cc09518645d72",
+    "evaluated": "2026-11-06",
+    "outcome": "supported",
+    "result": "First week of NDX months: 42.7% observed against 42.2% with each month's days shuffled, +0.6 percentage points, grade D (489 months).",
+    "report": "reports/2026/11/2026-11-06T1525Z.json.gz",
+    "report_sha256": "f5b4bfe7f781a1265dd8829ed63ff00c3e34cd62159b400d0b8486bb1d85b204",
+    "version": "0.2.22"
+  },
+  {
+    "hypothesis": "H-2026-014",
+    "hypothesis_sha256": "d7372bb37c35dd15ab2a65b92f724adb3706f9d5d0aa3db48a4a876752631092",
+    "evaluated": "2026-11-06",
+    "outcome": "supported",
+    "result": "SPY Monday low untested later in the week, reached before the week ends: 26.9% against 25.1% for equally distant levels, +1.8 percentage points, grade D (654 days).",
+    "report": "reports/2026/11/2026-11-06T1600Z.json.gz",
+    "report_sha256": "8db6fe4b79e67832750552383c3e343b9d4ca61c0b3f502105a17d44746a170f",
+    "version": "0.2.23"
+  }
+]

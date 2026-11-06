@@ -165,3 +165,47 @@ def test_site_has_the_decision_board(tmp_path, report):
         assert anchor in html
     for name in ("renderBoard", "renderCurves", "tileMove", "tileWhen", "tilePosition", "tileLevels", "tileEvidence"):
         assert f"function {name}(" in script
+
+
+def test_evaluations_attach_only_to_the_registered_fingerprint(tmp_path):
+    import hashlib
+    import json
+
+    from tsip.report.build import load_hypotheses
+
+    entry = {"id": "H-1", "instrument": "SPY", "statement": "s", "metric": "m", "criterion": "c", "status": "open"}
+    canonical = json.dumps(entry, sort_keys=True, separators=(",", ":"))
+    sha = hashlib.sha256(canonical.encode()).hexdigest()
+    (tmp_path / "hypotheses.json").write_text(json.dumps([entry, {**entry, "id": "H-2"}]))
+    (tmp_path / "evaluations.json").write_text(
+        json.dumps(
+            [
+                {
+                    "hypothesis": "H-1",
+                    "hypothesis_sha256": sha,
+                    "evaluated": "2026-11-06",
+                    "outcome": "supported",
+                    "result": "r",
+                },
+                {
+                    "hypothesis": "H-2",
+                    "hypothesis_sha256": sha,
+                    "evaluated": "2026-11-06",
+                    "outcome": "supported",
+                    "result": "r",
+                },
+            ]
+        )
+    )
+    h1, h2 = load_hypotheses(tmp_path / "hypotheses.json")
+    assert h1["sha256"] == sha and h1["status"] == "open"  # the registered entry is unchanged
+    assert h1["evaluations"][0]["valid"] is True and h1["evaluations"][0]["outcome"] == "supported"
+    assert h2["evaluations"][0]["valid"] is False  # the fingerprint names a different entry
+
+
+def test_registered_evaluations_match_the_register():
+    from tsip.report.build import load_hypotheses
+
+    entries = load_hypotheses("registry/hypotheses.json")
+    evaluated = [e for e in entries if e.get("evaluations")]
+    assert evaluated and all(ev["valid"] for e in evaluated for ev in e["evaluations"])

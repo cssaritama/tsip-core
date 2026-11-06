@@ -528,6 +528,7 @@ th { color: var(--muted); font-weight: 500; }
 .hyp { padding: 24px 0; border-bottom: 1px solid var(--line-soft); }
 .hyp__head { display: flex; gap: 16px; align-items: baseline; font-size: 13px; color: var(--muted); }
 .hyp__id { font-weight: 600; color: var(--text); font-size: 14px; }
+.hyp__eval { font-size: 14px; color: var(--text); border-left: 3px solid var(--line); padding-left: 10px; margin: 8px 0; }
 .hyp p { margin-top: 8px; max-width: 75ch; }
 
 .about__inner { display: grid; grid-template-columns: 1.3fr 1fr; gap: 48px; align-items: end; }

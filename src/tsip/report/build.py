@@ -182,13 +182,37 @@ def _safe(fn, *args, **kwargs) -> dict:
         return {}
 
 
-def load_hypotheses(path: str | Path | None) -> list[dict]:
+EVALUATION_OUTCOMES = {"supported", "not supported", "inconclusive"}
+
+
+def load_hypotheses(path: str | Path | None, evaluations_path: str | Path | None = None) -> list[dict]:
+    """Registered hypotheses with their fingerprints and, when recorded, their evaluations.
+
+    Evaluations live in their own file (``evaluations.json`` next to the register by default), so
+    the registered entries and their fingerprints never change. An evaluation is attached only
+    when the fingerprint it names matches the entry as registered; otherwise it is reported as
+    not applicable, because the hypothesis was changed after it was evaluated.
+    """
     if path is None or not Path(path).exists():
         return []
     entries = json.loads(Path(path).read_text())
     for entry in entries:
         canonical = json.dumps({k: v for k, v in entry.items() if k != "sha256"}, sort_keys=True, separators=(",", ":"))
         entry["sha256"] = hashlib.sha256(canonical.encode()).hexdigest()
+    ev_path = Path(evaluations_path) if evaluations_path else Path(path).with_name("evaluations.json")
+    if ev_path.exists():
+        by_id = {e["id"]: e for e in entries}
+        for ev in json.loads(ev_path.read_text()):
+            entry = by_id.get(ev.get("hypothesis"))
+            if entry is None:
+                continue
+            if ev.get("outcome") not in EVALUATION_OUTCOMES:
+                raise ValueError(f"unknown evaluation outcome {ev.get('outcome')!r} for {ev.get('hypothesis')}")
+            record = {
+                k: ev[k] for k in ("evaluated", "outcome", "result", "report", "report_sha256", "version") if k in ev
+            }
+            record["valid"] = ev.get("hypothesis_sha256") == entry["sha256"]
+            entry.setdefault("evaluations", []).append(record)
     return entries
 
 

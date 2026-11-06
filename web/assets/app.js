@@ -1580,8 +1580,11 @@
       return;
     }
     panel.replaceChildren(...hyps.map((h) => el("article", { class: "hyp" },
-      el("div", { class: "hyp__head" }, el("span", { class: "hyp__id" }, h.id), el("span", {}, capital(h.status || "open")), el("span", {}, `Evaluated on data from ${h.evaluation_start} to ${h.evaluation_end}`)),
+      el("div", { class: "hyp__head" }, el("span", { class: "hyp__id" }, h.id), el("span", {}, capital((h.evaluations || []).filter((e) => e.valid).slice(-1)[0]?.outcome || h.status || "open")), el("span", {}, `Evaluated on data from ${h.evaluation_start} to ${h.evaluation_end}`)),
       el("p", {}, h.statement),
+      ...(h.evaluations || []).map((e) => el("p", { class: "hyp__eval" },
+        el("b", {}, e.valid ? `${capital(e.outcome)} (${e.evaluated})` : `Evaluation of ${e.evaluated} not applicable: the entry changed after it`),
+        e.valid ? ` ${e.result} Report ${e.report}, version ${e.version}.` : "")),
       el("dl", { class: "kv" },
         el("dt", {}, "Instrument"), el("dd", {}, h.instrument),
         el("dt", {}, "Metric"), el("dd", {}, h.metric),

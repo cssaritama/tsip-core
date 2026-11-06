@@ -145,7 +145,7 @@ The baseline buys at the first session's open every month. The rule places a lim
 
 ## 8. Hypothesis register
 
-`registry/hypotheses.json` holds statements written before the evaluation data exist. Each entry is fingerprinted (SHA-256 of its canonical JSON, shown on the site) and its git commit timestamps it. Evaluation uses only data from the stated window.
+`registry/hypotheses.json` holds statements written before the evaluation data exist. Each entry is fingerprinted (SHA-256 of its canonical JSON, shown on the site) and its git commit timestamps it. Evaluation uses only data from the stated window. Results are recorded in `registry/evaluations.json` (outcome: supported, not supported or inconclusive; the result; the archived report and its fingerprint), never by editing the entry: an evaluation is shown only when the fingerprint it names matches the entry as registered.
 
 ## 9. What the report does not do
 
