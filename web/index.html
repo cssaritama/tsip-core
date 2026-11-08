@@ -37,19 +37,24 @@
   <main id="main">
     <section class="hero" id="top">
       <div class="wrap">
-        <h1 class="hero__title">Time–Space Intelligence</h1>
-        <p class="hero__lede">Where each market stands in <b>time</b> and in <b>price</b>, what has followed from the same place before, and how strong the evidence is.</p>
+        <div class="hero__head">
+          <h1 class="hero__title">Time–Space Intelligence</h1>
+          <p class="hero__lede">Where each market stands in <b>time</b> and in <b>price</b>, what has followed from the same place before, and how strong the evidence is.</p>
+        </div>
 
-        <div class="switch" role="tablist" id="market-switch" aria-label="Market"></div>
+        <aside class="desk-rail">
+          <div class="switch" role="tablist" id="market-switch" aria-label="Market"></div>
 
-        <nav class="view-switch" role="tablist" id="view-switch" aria-label="View Mode">
-          <button class="view-tab" role="tab" aria-selected="true" data-view="cockpit">Executive Cockpit</button>
-          <button class="view-tab" role="tab" aria-selected="false" data-view="chart">Candlestick & Liquidity Flow</button>
-          <button class="view-tab" role="tab" aria-selected="false" data-view="studies">Detailed Studies</button>
-          <button class="view-tab" role="tab" aria-selected="false" data-view="registry">Methodology & Register</button>
-        </nav>
+          <nav class="view-switch" role="tablist" id="view-switch" aria-label="View Mode">
+            <button class="view-tab" role="tab" aria-selected="true" data-view="cockpit">Executive Cockpit</button>
+            <button class="view-tab" role="tab" aria-selected="false" data-view="chart">Candlestick & Liquidity Flow</button>
+            <button class="view-tab" role="tab" aria-selected="false" data-view="studies">Detailed Studies</button>
+            <button class="view-tab" role="tab" aria-selected="false" data-view="registry">Methodology & Register</button>
+          </nav>
+        </aside>
 
-        <section class="board" id="board" aria-labelledby="board-title" aria-live="polite"></section>
+        <div class="desk-main">
+          <section class="board" id="board" aria-labelledby="board-title" aria-live="polite"></section>
 
         <section class="chart-section" id="chart-section" hidden>
           <div class="chart-section__head">
@@ -97,6 +102,7 @@
         <section class="open-levels" id="open-levels" hidden></section>
         <section class="open-levels revisit-curves" id="revisit-curves" hidden></section>
         </section>
+        </div>
       </div>
     </section>
 
