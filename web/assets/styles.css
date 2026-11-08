@@ -107,74 +107,6 @@ p { margin: 0; }
 .hero__lede { margin-top: 16px; max-width: 60ch; font-size: 18px; line-height: 1.6; color: var(--text-2); }
 
 .hero__head { margin-bottom: 24px; }
-.desk-rail { display: flex; flex-direction: column; gap: 14px; }
-.desk-main { min-width: 0; }
-
-@media (min-width: 1080px) {
-  .hero .wrap {
-    display: grid;
-    grid-template-columns: 220px minmax(0, 1fr);
-    column-gap: 40px;
-    align-items: start;
-  }
-  .hero__head {
-    grid-column: 1 / -1;
-    margin-bottom: 32px;
-  }
-  .desk-rail {
-    position: sticky;
-    top: 24px;
-    z-index: 20;
-    max-height: calc(100vh - 48px);
-    overflow-y: auto;
-    padding-right: 12px;
-    border-right: 1px solid var(--line-soft);
-  }
-  .desk-rail .switch {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-    margin: 0 0 16px;
-  }
-  .desk-rail .switch__opt {
-    padding: 8px 12px;
-    border-radius: 6px;
-    border: 1px solid transparent;
-    border-bottom: 1px solid transparent;
-    transition: all 0.15s ease;
-  }
-  .desk-rail .switch__opt:hover {
-    background: var(--raise);
-  }
-  .desk-rail .switch__opt[aria-selected="true"] {
-    background: var(--raise);
-    border-color: var(--line);
-    border-left: 3px solid var(--brass);
-  }
-  .desk-rail .switch__refs {
-    flex-direction: column;
-    gap: 6px;
-    margin-top: 8px;
-    padding-top: 8px;
-    border-top: 1px solid var(--line-soft);
-  }
-  .desk-rail .view-switch {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    width: 100%;
-    margin: 0;
-    padding: 4px;
-    gap: 3px;
-  }
-  .desk-rail .view-tab {
-    text-align: left;
-    width: 100%;
-    padding: 8px 12px;
-    font-size: 13px;
-  }
-}
 
 .switch { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 28px; margin: 32px 0 16px; }
 .switch__opt {
@@ -245,6 +177,35 @@ p { margin: 0; }
 .c-hud-text { font-family: var(--font); font-size: 11px; }
 .c-hud-text--primary { fill: var(--text); font-weight: 600; }
 .c-hud-text--secondary { fill: var(--brass); font-weight: 500; }
+
+.chart-table-wrap {
+  margin-top: 18px;
+  background: var(--sunk);
+  border: 1px solid var(--line-soft);
+  border-radius: 6px;
+  overflow-x: auto;
+}
+.chart-mtable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.chart-mtable th, .chart-mtable td {
+  padding: 8px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--line-soft);
+}
+.chart-mtable th {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  font-weight: 600;
+}
+.chart-tbl-lvl {
+  font-weight: 500;
+  color: var(--text);
+}
 
 /* Time-Space Accumulation Alpha Panel */
 .alpha-panel {

@@ -1669,8 +1669,8 @@
       };
     });
 
-    const w = 920, h = 420;
-    const padL = 60, padR = 220, padT = 30, padB = 40;
+    const w = 1040, h = 460;
+    const padL = 65, padR = 250, padT = 32, padB = 40;
     const chartW = w - padL - padR;
     const chartH = h - padT - padB;
 
@@ -1752,6 +1752,9 @@
       }
     });
 
+    // Collect all rays and tags for collision-free layout
+    const labelItems = [];
+
     activeLevels.slice(0, 6).forEach((l) => {
       const atrDist = l.distance_atr;
       if (atrDist === null || Math.abs(atrDist) > span) return;
@@ -1759,30 +1762,21 @@
       const isHigh = l.side === "high";
 
       root.append(svg("line", {
-        x1: padL, x2: padL + chartW + 15, y1: y, y2: y,
+        x1: padL, x2: padL + chartW + 10, y1: y, y2: y,
         class: `c-ray c-ray--${isHigh ? "high" : "low"}`
       }));
 
-      const badgeX = padL + chartW + 20;
       const conf = l.confluence > 1 ? ` · ${l.confluence}x Conf` : "";
       const odds = l.reach?.p20 ? ` · ${l.reach.p20}% 20d` : "";
       const labelText = `${levelName(l)}: ${signed(l.distance_pct)}% (${signed(l.distance_atr, 1)} ATR)${odds}${conf}`;
 
-      const tagBg = svg("rect", {
-        x: badgeX, y: y - 10, width: padR - 30, height: 20, rx: 3,
-        fill: isHigh ? "rgba(74, 155, 142, 0.15)" : "rgba(205, 174, 114, 0.15)",
-        stroke: isHigh ? "var(--time)" : "var(--brass)",
-        "stroke-width": 1
+      labelItems.push({
+        rayY: y,
+        targetY: y,
+        text: labelText,
+        isHigh: isHigh,
+        type: "level"
       });
-      root.append(tagBg);
-
-      const tagText = svg("text", {
-        x: badgeX + 6, y: y + 4,
-        fill: isHigh ? "var(--time)" : "var(--brass)",
-        class: "c-ray-tag"
-      });
-      tagText.textContent = labelText;
-      root.append(tagText);
     });
 
     if (activeChartFilter === "all" || activeChartFilter === "voids") {
@@ -1795,50 +1789,103 @@
       const vStartX = xIdx(10, candleCount);
 
       root.append(svg("rect", {
-        x: vStartX, y: yTop, width: padL + chartW + 15 - vStartX, height: yBot - yTop, rx: 2,
+        x: vStartX, y: yTop, width: padL + chartW + 10 - vStartX, height: yBot - yTop, rx: 2,
         class: "c-void"
       }));
 
       root.append(svg("line", {
-        x1: vStartX, x2: padL + chartW + 15, y1: yMid, y2: yMid,
+        x1: vStartX, x2: padL + chartW + 10, y1: yMid, y2: yMid,
         class: "c-void-mid"
       }));
 
-      const badgeX = padL + chartW + 20;
-      const voidBg = svg("rect", {
-        x: badgeX, y: yMid - 10, width: padR - 30, height: 20, rx: 3,
-        fill: "rgba(205, 174, 114, 0.22)", stroke: "var(--brass)", "stroke-width": 1
+      labelItems.push({
+        rayY: yMid,
+        targetY: yMid,
+        text: "Auction Void 50% Eq (71% 20d)",
+        isHigh: false,
+        type: "void"
       });
-      root.append(voidBg);
-
-      const voidTxt = svg("text", {
-        x: badgeX + 6, y: yMid + 4, fill: "var(--brass)", class: "c-ray-tag"
-      });
-      voidTxt.textContent = "Auction Void 50% Eq (71% 20d)";
-      root.append(voidTxt);
     }
 
     if (activeChartFilter === "all" || activeChartFilter === "tail") {
       const eqAtr = -1.4;
       const eqY = yAtr(eqAtr);
       root.append(svg("line", {
-        x1: padL, x2: padL + chartW + 15, y1: eqY, y2: eqY,
+        x1: padL, x2: padL + chartW + 10, y1: eqY, y2: eqY,
         class: "c-ray c-ray--eq"
       }));
 
-      const badgeX = padL + chartW + 20;
-      const eqBg = svg("rect", {
-        x: badgeX, y: eqY - 10, width: padR - 30, height: 20, rx: 3,
-        fill: "rgba(212, 163, 89, 0.18)", stroke: "#d4a359", "stroke-width": 1
+      labelItems.push({
+        rayY: eqY,
+        targetY: eqY,
+        text: "50% Impulse Eq (Median: 2.0s)",
+        isHigh: false,
+        type: "eq"
       });
-      root.append(eqBg);
-
-      const eqText = svg("text", {
-        x: badgeX + 6, y: eqY + 4, fill: "#d4a359", class: "c-ray-tag"
-      });
-      eqText.textContent = "50% Impulse Eq (Median: 2.0s)";
-      root.append(eqText);
     }
+
+    // Sort ascending by target Y (top to bottom)
+    labelItems.sort((a, b) => a.targetY - b.targetY);
+
+    // Anti-collision algorithm: guarantee minimum 24px clearance between badge centers
+    const minSpacing = 24;
+    const tagHeight = 18;
+    labelItems.forEach((item) => { item.y = item.targetY; });
+
+    for (let iter = 0; iter < 10; iter++) {
+      for (let i = 1; i < labelItems.length; i++) {
+        const prev = labelItems[i - 1];
+        const cur = labelItems[i];
+        if (cur.y < prev.y + minSpacing) {
+          cur.y = prev.y + minSpacing;
+        }
+      }
+    }
+
+    // Boundary containment within chart height
+    const maxBottom = padT + chartH - 12;
+    if (labelItems.length && labelItems[labelItems.length - 1].y > maxBottom) {
+      const shiftUp = labelItems[labelItems.length - 1].y - maxBottom;
+      labelItems.forEach((item) => { item.y -= shiftUp; });
+      for (let i = 0; i < labelItems.length; i++) {
+        if (labelItems[i].y < padT + 12) labelItems[i].y = padT + 12;
+        if (i > 0 && labelItems[i].y < labelItems[i - 1].y + minSpacing) {
+          labelItems[i].y = labelItems[i - 1].y + minSpacing;
+        }
+      }
+    }
+
+    // Render anti-collided badges with connector links
+    labelItems.forEach((item) => {
+      const badgeX = padL + chartW + 16;
+      const badgeW = padR - 24;
+
+      if (Math.abs(item.y - item.rayY) > 2) {
+        root.append(svg("path", {
+          d: `M ${padL + chartW + 8} ${item.rayY} L ${badgeX - 4} ${item.y}`,
+          fill: "none",
+          stroke: item.isHigh ? "var(--time)" : item.type === "eq" ? "#d4a359" : "var(--brass)",
+          "stroke-width": 0.8,
+          "stroke-dasharray": "2,2",
+          opacity: 0.7
+        }));
+      }
+
+      const strokeColor = item.isHigh ? "var(--time)" : item.type === "eq" ? "#d4a359" : "var(--brass)";
+      const fillColor = item.isHigh ? "rgba(74, 155, 142, 0.16)" : item.type === "eq" ? "rgba(212, 163, 89, 0.20)" : "rgba(205, 174, 114, 0.16)";
+
+      const tagBg = svg("rect", {
+        x: badgeX, y: item.y - tagHeight / 2, width: badgeW, height: tagHeight, rx: 3,
+        fill: fillColor, stroke: strokeColor, "stroke-width": 1
+      });
+      root.append(tagBg);
+
+      const tagText = svg("text", {
+        x: badgeX + 6, y: item.y + 4, fill: strokeColor, class: "c-ray-tag"
+      });
+      tagText.textContent = item.text;
+      root.append(tagText);
+    });
 
     // Dynamic Crosshair and Floating Inspection HUD
     const crosshairX = svg("line", { class: "c-crosshair", y1: padT, y2: padT + chartH });
@@ -1892,7 +1939,25 @@
       hudGroup.style.display = "none";
     });
 
-    wrap.replaceChildren(root);
+    // Render clean structural confluence table below the chart
+    const tableWrap = el("div", { class: "chart-table-wrap" },
+      el("table", { class: "mtable chart-mtable" },
+        el("thead", {},
+          el("tr", {},
+            el("th", {}, "Structural Level"),
+            el("th", {}, "Distance"),
+            el("th", {}, "ATR Offset"),
+            el("th", {}, "20-Day Reach Odds"),
+            el("th", {}, "Confluence"))),
+        el("tbody", {},
+          ...activeLevels.slice(0, 6).map((l) => el("tr", {},
+            el("td", { class: "chart-tbl-lvl" }, levelName(l)),
+            el("td", { class: l.distance_pct >= 0 ? "up" : "down" }, `${signed(l.distance_pct)}%`),
+            el("td", {}, `${signed(l.distance_atr, 1)} ATR`),
+            el("td", {}, l.reach?.p20 ? `${l.reach.p20}% reached` : "–"),
+            el("td", {}, l.confluence > 1 ? `${l.confluence}x Conf` : "1x Standard"))))));
+
+    wrap.replaceChildren(root, tableWrap);
   }
 
   function selectMarket(code) {
@@ -2022,8 +2087,10 @@
   function initViewSwitch() {
     const tabs = document.querySelectorAll(".view-tab");
     if (!tabs.length) return;
-    function setView(viewName) {
+    function setView(viewName, scroll = true) {
       tabs.forEach((t) => t.setAttribute("aria-selected", String(t.dataset.view === viewName)));
+      const boardSec = document.getElementById("board");
+      const chartSec = document.getElementById("chart-section");
       const timeSec = document.getElementById("time");
       const spaceSec = document.getElementById("space");
       const marketsSec = document.getElementById("markets");
@@ -2031,68 +2098,47 @@
       const dataSec = document.getElementById("data");
       const regSec = document.getElementById("register");
       const aboutSec = document.getElementById("about");
-      const boardSec = document.getElementById("board");
-      const chartSec = document.getElementById("chart-section");
 
-      if (viewName === "cockpit") {
-        if (boardSec) boardSec.hidden = false;
-        if (chartSec) chartSec.hidden = true;
-        if (timeSec) timeSec.hidden = true;
-        if (spaceSec) spaceSec.hidden = true;
-        if (marketsSec) marketsSec.hidden = true;
-        if (methodSec) methodSec.hidden = true;
-        if (dataSec) dataSec.hidden = true;
-        if (regSec) regSec.hidden = true;
-        if (aboutSec) aboutSec.hidden = true;
-      } else if (viewName === "chart") {
-        if (boardSec) boardSec.hidden = true;
-        if (chartSec) chartSec.hidden = false;
-        if (timeSec) timeSec.hidden = true;
-        if (spaceSec) spaceSec.hidden = true;
-        if (marketsSec) marketsSec.hidden = true;
-        if (methodSec) methodSec.hidden = true;
-        if (dataSec) dataSec.hidden = true;
-        if (regSec) regSec.hidden = true;
-        if (aboutSec) aboutSec.hidden = true;
-      } else if (viewName === "studies") {
-        if (boardSec) boardSec.hidden = false;
-        if (chartSec) chartSec.hidden = true;
-        if (timeSec) timeSec.hidden = false;
-        if (spaceSec) spaceSec.hidden = false;
-        if (marketsSec) marketsSec.hidden = false;
-        if (methodSec) methodSec.hidden = true;
-        if (dataSec) dataSec.hidden = true;
-        if (regSec) regSec.hidden = true;
-        if (aboutSec) aboutSec.hidden = true;
-      } else if (viewName === "registry") {
-        if (boardSec) boardSec.hidden = true;
-        if (chartSec) chartSec.hidden = true;
-        if (timeSec) timeSec.hidden = true;
-        if (spaceSec) spaceSec.hidden = true;
-        if (marketsSec) marketsSec.hidden = true;
-        if (methodSec) methodSec.hidden = false;
-        if (dataSec) dataSec.hidden = false;
-        if (regSec) regSec.hidden = false;
-        if (aboutSec) aboutSec.hidden = false;
+      // Ensure all sections are active and accessible
+      if (boardSec) boardSec.hidden = false;
+      if (chartSec) chartSec.hidden = false;
+      if (timeSec) timeSec.hidden = false;
+      if (spaceSec) spaceSec.hidden = false;
+      if (marketsSec) marketsSec.hidden = false;
+      if (methodSec) methodSec.hidden = false;
+      if (dataSec) dataSec.hidden = false;
+      if (regSec) regSec.hidden = false;
+      if (aboutSec) aboutSec.hidden = false;
+
+      if (scroll) {
+        if (viewName === "cockpit" && boardSec) {
+          boardSec.scrollIntoView({ behavior: "smooth", block: "start" });
+        } else if (viewName === "chart" && chartSec) {
+          chartSec.scrollIntoView({ behavior: "smooth", block: "start" });
+        } else if (viewName === "studies" && marketsSec) {
+          marketsSec.scrollIntoView({ behavior: "smooth", block: "start" });
+        } else if (viewName === "registry" && methodSec) {
+          methodSec.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
       }
     }
     tabs.forEach((btn) => {
-      btn.addEventListener("click", () => setView(btn.dataset.view));
+      btn.addEventListener("click", () => setView(btn.dataset.view, true));
     });
     window.addEventListener("hashchange", () => {
       const h = window.location.hash;
-      if (["#method", "#data", "#register", "#about"].includes(h)) setView("registry");
-      else if (h === "#chart" || h === "#candlestick") setView("chart");
-      else if (["#time", "#space", "#markets"].some((p) => h.startsWith(p))) setView("studies");
-      else if (h === "#top" || h === "#board") setView("cockpit");
+      if (["#method", "#data", "#register", "#about"].includes(h)) setView("registry", false);
+      else if (h === "#chart" || h === "#candlestick") setView("chart", false);
+      else if (["#time", "#space", "#markets"].some((p) => h.startsWith(p))) setView("studies", false);
+      else if (h === "#top" || h === "#board") setView("cockpit", false);
     });
     if (window.location.hash) {
       const h = window.location.hash;
-      if (["#method", "#data", "#register", "#about"].includes(h)) setView("registry");
-      else if (h === "#chart" || h === "#candlestick") setView("chart");
-      else if (["#time", "#space", "#markets"].some((p) => h.startsWith(p))) setView("studies");
+      if (["#method", "#data", "#register", "#about"].includes(h)) setView("registry", false);
+      else if (h === "#chart" || h === "#candlestick") setView("chart", false);
+      else if (["#time", "#space", "#markets"].some((p) => h.startsWith(p))) setView("studies", false);
     } else {
-      setView("cockpit");
+      setView("cockpit", false);
     }
   }
 
