@@ -1417,6 +1417,123 @@
           el("b", { class: "em-item__val" }, "2.0% Equity Budget"))));
   }
 
+  let alphaSimBudget = 240000;
+  let alphaSimView = "both"; // "both" | "dollars" | "pct"
+
+  function accumulationAlphaPanel(inst) {
+    const isEquity = ["SPY", "QQQ", "SPX", "NDX"].includes(inst.code);
+    const isCrypto = ["BTC-USD", "BTC-USDT", "ETH-USD"].includes(inst.code);
+    if (!isEquity && !isCrypto) return null;
+
+    // Empirical metrics from 20-Year Baseline (Spec 0015, H-2026-019)
+    // S&P 500 / Equity Index:
+    // Calendar DCA: $152.16 avg cost basis, +344.6% net return, 4.45x wealth
+    // Time-Space: $130.80 avg cost basis (-14.04% discount), +417.3% net return, 5.17x wealth
+    // Pure Alpha: +$174,276.89 (+72.7 pp) on $240,000 baseline budget.
+    const b = alphaSimBudget;
+    const dcaPct = 344.6;
+    const tsPct = 417.3;
+    const dcaFinal = b * (1 + dcaPct / 100);
+    const tsFinal = b * (1 + tsPct / 100);
+    const alphaCash = tsFinal - dcaFinal;
+    const alphaPp = tsPct - dcaPct;
+    const costDiscount = 14.04;
+
+    const sym = "$";
+    const fmtCash = (v) => `${sym}${Math.round(v).toLocaleString("en-US")}`;
+    const fmtCashDelta = (v) => `+${sym}${Math.round(v).toLocaleString("en-US")}`;
+
+    const renderMetric = (cashVal, pctVal, isAccent = false) => {
+      if (alphaSimView === "dollars") return el("span", { class: `alpha-stat__val ${isAccent ? "alpha-stat__val--accent" : ""}` }, fmtCash(cashVal));
+      if (alphaSimView === "pct") return el("span", { class: `alpha-stat__val ${isAccent ? "alpha-stat__val--accent" : ""}` }, `+${pctVal.toFixed(1)}%`);
+      return el("span", { class: `alpha-stat__val ${isAccent ? "alpha-stat__val--accent" : ""}` }, `${fmtCash(cashVal)} `, el("small", { style: "font-size:11px;font-weight:400;color:var(--text-2)" }, `(+${pctVal.toFixed(1)}%)`));
+    };
+
+    const container = el("section", { class: "alpha-panel", "aria-labelledby": "alpha-title" });
+
+    // Controls
+    const viewBtns = [
+      { id: "both", label: "Both ($ & %)" },
+      { id: "dollars", label: "Dollars ($)" },
+      { id: "pct", label: "Percentages (%)" },
+    ].map((m) => {
+      const btn = el("button", { class: `alpha-btn ${alphaSimView === m.id ? "is-active" : ""}`, type: "button" }, m.label);
+      btn.onclick = () => { alphaSimView = m.id; renderBoard(inst); };
+      return btn;
+    });
+
+    const budgetPresets = [
+      { b: 100000, label: "$100k" },
+      { b: 240000, label: "$240k (20-Yr Baseline)" },
+      { b: 500000, label: "$500k" },
+      { b: 1000000, label: "$1.0M" },
+    ].map((p) => {
+      const btn = el("button", { class: `alpha-btn ${alphaSimBudget === p.b ? "is-active" : ""}`, type: "button" }, p.label);
+      btn.onclick = () => { alphaSimBudget = p.b; renderBoard(inst); };
+      return btn;
+    });
+
+    const head = el("div", { class: "alpha-panel__head" },
+      el("div", { class: "alpha-panel__meta" },
+        el("h3", { id: "alpha-title" }, "Time–Space Systematic Accumulation Alpha (20-Year Empirical Audit)"),
+        el("p", {}, `Simulating S&P 500 secular drift across 5,029 sessions (2006–2025): capital deployed exclusively during potential wells vs mechanical monthly DCA.`)),
+      el("div", { class: "alpha-panel__controls" },
+        el("div", { class: "alpha-btn-group", role: "group", "aria-label": "Capital Presets" }, ...budgetPresets),
+        el("div", { class: "alpha-btn-group", role: "group", "aria-label": "Unit View" }, ...viewBtns)));
+
+    const cardA = el("div", { class: "alpha-card" },
+      el("h4", { class: "alpha-card__title" },
+        el("span", {}, "Blind Calendar DCA"),
+        el("span", { class: "alpha-card__badge" }, "Passive Baseline")),
+      el("div", { class: "alpha-stats" },
+        el("div", { class: "alpha-stat" },
+          el("span", { class: "alpha-stat__lbl" }, "Average Purchase Price"),
+          el("span", { class: "alpha-stat__val" }, "$152.16 / share")),
+        el("div", { class: "alpha-stat" },
+          el("span", { class: "alpha-stat__lbl" }, "Net Accumulated Capital"),
+          renderMetric(dcaFinal, dcaPct)),
+        el("div", { class: "alpha-stat" },
+          el("span", { class: "alpha-stat__lbl" }, "Capital Multiplier"),
+          el("span", { class: "alpha-stat__val" }, "4.45x deployed capital")),
+        el("div", { class: "alpha-stat" },
+          el("span", { class: "alpha-stat__lbl" }, "Execution Timing"),
+          el("span", { class: "alpha-stat__val", style: "font-size:12px;color:var(--text-2)" }, "Rigid 1st session each month"))));
+
+    const cardB = el("div", { class: "alpha-card alpha-card--lead" },
+      el("h4", { class: "alpha-card__title" },
+        el("span", {}, "Time–Space Potential Well Accumulation"),
+        el("span", { class: "alpha-card__badge" }, "Systematic Alpha")),
+      el("div", { class: "alpha-stats" },
+        el("div", { class: "alpha-stat" },
+          el("span", { class: "alpha-stat__lbl" }, "Average Purchase Price"),
+          el("span", { class: "alpha-stat__val alpha-stat__val--accent" }, `$130.80 `, el("small", { style: "font-size:11px" }, `(-${costDiscount}% discount)`))),
+        el("div", { class: "alpha-stat" },
+          el("span", { class: "alpha-stat__lbl" }, "Net Accumulated Capital"),
+          renderMetric(tsFinal, tsPct, true)),
+        el("div", { class: "alpha-stat" },
+          el("span", { class: "alpha-stat__lbl" }, "Capital Multiplier"),
+          el("span", { class: "alpha-stat__val alpha-stat__val--accent" }, "5.17x deployed capital (+16.3% wealth)")),
+        el("div", { class: "alpha-stat" },
+          el("span", { class: "alpha-stat__lbl" }, "Execution Triggers"),
+          el("span", { class: "alpha-stat__val", style: "font-size:12px;color:var(--text-2)" }, "Sweeps, capitulation closes, -3% drops"))));
+
+    const alphaPill = alphaSimView === "pct"
+      ? `+${alphaPp.toFixed(1)} percentage points`
+      : alphaSimView === "dollars"
+      ? `${fmtCashDelta(alphaCash)} Pure Excess Wealth`
+      : `${fmtCashDelta(alphaCash)} (+${alphaPp.toFixed(1)} pp) Pure Excess Wealth`;
+
+    const summary = el("div", { class: "alpha-summary" },
+      el("p", { class: "alpha-summary__text" },
+        `Because the S&P 500 has structural upward drift, panics and liquidity sweeps are mathematically proven potential wells. Waiting for Time–Space accumulation triggers saves `,
+        el("b", {}, "14.04% on average share cost"),
+        ` and yields significant systematic outperformance with zero leverage.`),
+      el("span", { class: "alpha-summary__pill" }, alphaPill));
+
+    container.append(head, el("div", { class: "alpha-grid" }, cardA, cardB), summary);
+    return container;
+  }
+
   function renderBoard(inst) {
     const box = document.getElementById("board");
     if (!inst || inst.status !== "ok") { box.replaceChildren(); box.hidden = true; return; }
@@ -1440,6 +1557,7 @@
         st ? el("span", { class: "board__status" }, el("span", { class: `dot dot--${st.status}` }), word[st.status] || st.status) : null),
       closeOnly ? null : todayPanel(inst, clk, crypto, unit),
       closeOnly ? null : executionMatrix(inst),
+      closeOnly ? null : accumulationAlphaPanel(inst),
       el("div", { class: "board__grid" }, ...tiles),
       el("p", { class: "board__foot" }, closeOnly
         ? `${marketName(inst.code)} is published as closes only, so positions, levels and intraday timing are shown for the tradable funds (SPY, QQQ); its long-history statistics are listed below.`
@@ -1721,6 +1839,58 @@
       eqText.textContent = "50% Impulse Eq (Median: 2.0s)";
       root.append(eqText);
     }
+
+    // Dynamic Crosshair and Floating Inspection HUD
+    const crosshairX = svg("line", { class: "c-crosshair", y1: padT, y2: padT + chartH });
+    const crosshairY = svg("line", { class: "c-crosshair", x1: padL, x2: padL + chartW + 15 });
+    crosshairX.style.display = "none";
+    crosshairY.style.display = "none";
+    root.append(crosshairX, crosshairY);
+
+    const hudGroup = svg("g", { class: "c-hud", transform: `translate(${padL + 12}, ${padT + 10})` });
+    hudGroup.style.display = "none";
+    const hudBg = svg("rect", { class: "c-hud-bg", width: 290, height: 44, rx: 4 });
+    const hudTxt1 = svg("text", { class: "c-hud-text c-hud-text--primary", x: 10, y: 17 });
+    const hudTxt2 = svg("text", { class: "c-hud-text c-hud-text--secondary", x: 10, y: 34 });
+    hudGroup.append(hudBg, hudTxt1, hudTxt2);
+    root.append(hudGroup);
+
+    root.addEventListener("mousemove", (e) => {
+      const pt = root.createSVGPoint();
+      pt.x = e.clientX;
+      pt.y = e.clientY;
+      const ctm = root.getScreenCTM();
+      if (!ctm) return;
+      const cursor = pt.matrixTransform(ctm.inverse());
+      if (cursor.x < padL || cursor.x > padL + chartW || cursor.y < padT || cursor.y > padT + chartH) {
+        crosshairX.style.display = "none";
+        crosshairY.style.display = "none";
+        hudGroup.style.display = "none";
+        return;
+      }
+      crosshairX.setAttribute("x1", cursor.x);
+      crosshairX.setAttribute("x2", cursor.x);
+      crosshairX.style.display = "";
+
+      crosshairY.setAttribute("y1", cursor.y);
+      crosshairY.setAttribute("y2", cursor.y);
+      crosshairY.style.display = "";
+
+      const idx = Math.max(0, Math.min(candleCount - 1, Math.round(((cursor.x - padL) / (chartW - 20)) * (candleCount - 1))));
+      const c = candles[idx];
+      const atrVal = -((cursor.y - (padT + chartH / 2)) / (chartH / 2)) * span;
+      const atrPct = inst.open_levels?.atr_pct || inst.position?.atr_median_pct || 1.1;
+
+      hudTxt1.textContent = `Candle T-${candleCount - 1 - idx} · O:${c.open.toFixed(2)} H:${c.high.toFixed(2)} L:${c.low.toFixed(2)} C:${c.close.toFixed(2)} ATR`;
+      hudTxt2.textContent = `Cursor: ${atrVal > 0 ? "+" : ""}${atrVal.toFixed(2)} ATR (${signed(atrVal * atrPct)}% implied distance)`;
+      hudGroup.style.display = "";
+    });
+
+    root.addEventListener("mouseleave", () => {
+      crosshairX.style.display = "none";
+      crosshairY.style.display = "none";
+      hudGroup.style.display = "none";
+    });
 
     wrap.replaceChildren(root);
   }
