@@ -58,3 +58,5 @@ R1. When ..., the report (or page) shall ...
 | [0010](0010-revisit-of-monday-and-recent-lows.md) | Revisit of Monday's low and of the recent lows | shipped 0.2.23 |
 | [0011](0011-hypothesis-evaluations.md) | Evaluation record for the hypothesis register | shipped 0.2.24 |
 | [0012](0012-extreme-tail-expansions-and-reversion.md) | Extreme multi-session expansions, trapped volume and retracement velocities | open (W-78) |
+| [0013](0013-liquidity-voids-and-auction-imbalances.md) | Liquidity voids, auction imbalances and mean fill dynamics | open (W-79) |
+| [0014](0014-session-momentum-and-overnight-transitions.md) | Session-to-session momentum and overnight transitions | open (W-58) |

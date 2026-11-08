@@ -222,6 +222,7 @@ p { margin: 0; }
 .cleg::before { content: ""; display: inline-block; width: 14px; height: 3px; border-radius: 1.5px; }
 .cleg--high::before { background: var(--time); }
 .cleg--low::before { background: var(--brass); }
+.cleg--void::before { background: rgba(205, 174, 114, 0.4); border: 1px dashed var(--brass); }
 .cleg--eq::before { background: #d4a359; }
 .cleg--session::before { background: rgba(255,255,255,0.4); }
 .c-wick { stroke-width: 1.25; }
@@ -229,6 +230,8 @@ p { margin: 0; }
 .c-wick--down { stroke: var(--brass); }
 .c-body--up { fill: var(--raise); stroke: var(--text); stroke-width: 1.25; }
 .c-body--down { fill: var(--brass); stroke: var(--brass); stroke-width: 1.25; }
+.c-void { fill: rgba(205, 174, 114, 0.08); stroke: rgba(205, 174, 114, 0.35); stroke-dasharray: 2, 2; }
+.c-void-mid { stroke: var(--brass); stroke-dasharray: 4, 3; stroke-width: 1; opacity: 0.85; }
 .c-ray { stroke-dasharray: 4, 4; stroke-width: 1.25; }
 .c-ray--high { stroke: var(--time); opacity: 0.85; }
 .c-ray--low { stroke: var(--brass); opacity: 0.85; }

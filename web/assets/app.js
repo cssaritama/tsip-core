@@ -1623,6 +1623,39 @@
       root.append(tagText);
     });
 
+    if (activeChartFilter === "all" || activeChartFilter === "voids") {
+      const vTopAtr = -0.5;
+      const vBotAtr = -1.7;
+      const vMidAtr = -1.1;
+      const yTop = yAtr(vTopAtr);
+      const yBot = yAtr(vBotAtr);
+      const yMid = yAtr(vMidAtr);
+      const vStartX = xIdx(10, candleCount);
+
+      root.append(svg("rect", {
+        x: vStartX, y: yTop, width: padL + chartW + 15 - vStartX, height: yBot - yTop, rx: 2,
+        class: "c-void"
+      }));
+
+      root.append(svg("line", {
+        x1: vStartX, x2: padL + chartW + 15, y1: yMid, y2: yMid,
+        class: "c-void-mid"
+      }));
+
+      const badgeX = padL + chartW + 20;
+      const voidBg = svg("rect", {
+        x: badgeX, y: yMid - 10, width: padR - 30, height: 20, rx: 3,
+        fill: "rgba(205, 174, 114, 0.22)", stroke: "var(--brass)", "stroke-width": 1
+      });
+      root.append(voidBg);
+
+      const voidTxt = svg("text", {
+        x: badgeX + 6, y: yMid + 4, fill: "var(--brass)", class: "c-ray-tag"
+      });
+      voidTxt.textContent = "Auction Void 50% Eq (71% 20d)";
+      root.append(voidTxt);
+    }
+
     if (activeChartFilter === "all" || activeChartFilter === "tail") {
       const eqAtr = -1.4;
       const eqY = yAtr(eqAtr);
