@@ -1391,8 +1391,8 @@
     const biasText = isAccumulation ? "LONG ACCUMULATION" : "NEUTRAL / HOLD";
     const biasClass = isAccumulation ? "em-item__val--long" : "";
     const winRate = "71.0% (20-Year Baseline)";
-    const stopText = nearestLow ? `${signed(nearestLow.distance_pct - 1.2 * atrPct)}% (-1.5 ATR)` : "-1.50 ATR";
-    const targetText = nearestHigh ? `${signed(nearestHigh.distance_pct)}% (+1.8 ATR)` : "+1.80 ATR";
+    const stopText = nearestLow ? `${signed(nearestLow.distance_pct - 1.2 * atrPct)}%` : "-1.65%";
+    const targetText = nearestHigh ? `+${nearestHigh.distance_pct.toFixed(2)}%` : "+1.98%";
 
     return el("section", { class: "exec-matrix", "aria-labelledby": "exec-title" },
       el("div", { class: "exec-matrix__left" },
@@ -1557,7 +1557,6 @@
         st ? el("span", { class: "board__status" }, el("span", { class: `dot dot--${st.status}` }), word[st.status] || st.status) : null),
       closeOnly ? null : todayPanel(inst, clk, crypto, unit),
       closeOnly ? null : executionMatrix(inst),
-      closeOnly ? null : accumulationAlphaPanel(inst),
       el("div", { class: "board__grid" }, ...tiles),
       el("p", { class: "board__foot" }, closeOnly
         ? `${marketName(inst.code)} is published as closes only, so positions, levels and intraday timing are shown for the tradable funds (SPY, QQQ); its long-history statistics are listed below.`
@@ -1683,6 +1682,7 @@
       activeLevels = levels.filter((l) => Math.abs(l.distance_atr || 0) >= 1.8 || (l.confluence && l.confluence > 1));
     }
 
+    const atrPct = inst.open_levels?.atr_pct || inst.position?.atr_median_pct || 1.1;
     const maxAtr = Math.max(3.0, ...activeLevels.map((l) => Math.abs(l.distance_atr || 0) + 0.6));
     const span = Math.min(5.5, maxAtr);
     const yAtr = (atr) => padT + chartH / 2 - (atr / span) * (chartH / 2);
@@ -1695,14 +1695,15 @@
       const y = yAtr(a);
       root.append(svg("line", { x1: padL, x2: padL + chartW, y1: y, y2: y, class: "c-grid-line" }));
       const txt = svg("text", { x: padL - 10, y: y + 4, "text-anchor": "end", class: "c-axis-text" });
-      txt.textContent = `${a > 0 ? "+" : ""}${a} ATR`;
+      const pctValue = a * atrPct;
+      txt.textContent = `${pctValue > 0 ? "+" : ""}${pctValue.toFixed(1)}%`;
       root.append(txt);
     }
 
     const zeroY = yAtr(0);
     root.append(svg("line", { x1: padL, x2: padL + chartW, y1: zeroY, y2: zeroY, stroke: "var(--line)", "stroke-width": 1.5 }));
     const zeroTxt = svg("text", { x: padL - 10, y: zeroY + 4, "text-anchor": "end", fill: "var(--text)", "font-size": "11px", "font-weight": "600" });
-    zeroTxt.textContent = "Close (0)";
+    zeroTxt.textContent = "Close (0.0%)";
     root.append(zeroTxt);
 
     let seed = inst.code.split("").reduce((acc, c) => acc + c.charCodeAt(0), 101);
@@ -1766,9 +1767,7 @@
         class: `c-ray c-ray--${isHigh ? "high" : "low"}`
       }));
 
-      const conf = l.confluence > 1 ? ` · ${l.confluence}x Conf` : "";
-      const odds = l.reach?.p20 ? ` · ${l.reach.p20}% 20d` : "";
-      const labelText = `${levelName(l)}: ${signed(l.distance_pct)}% (${signed(l.distance_atr, 1)} ATR)${odds}${conf}`;
+      const labelText = `${levelName(l)}: ${signed(l.distance_pct)}%`;
 
       labelItems.push({
         rayY: y,
@@ -1801,7 +1800,7 @@
       labelItems.push({
         rayY: yMid,
         targetY: yMid,
-        text: "Auction Void 50% Eq (71% 20d)",
+        text: `Auction Void Midpoint: ${signed(vMidAtr * atrPct)}% (71% 20d fill)`,
         isHigh: false,
         type: "void"
       });
@@ -1818,7 +1817,7 @@
       labelItems.push({
         rayY: eqY,
         targetY: eqY,
-        text: "50% Impulse Eq (Median: 2.0s)",
+        text: `50% Impulse Eq: ${signed(eqAtr * atrPct)}% (Median 2.0s)`,
         isHigh: false,
         type: "eq"
       });
@@ -1939,23 +1938,21 @@
       hudGroup.style.display = "none";
     });
 
-    // Render clean structural confluence table below the chart
+    // Render clean structural levels table below the chart
     const tableWrap = el("div", { class: "chart-table-wrap" },
       el("table", { class: "mtable chart-mtable" },
         el("thead", {},
           el("tr", {},
             el("th", {}, "Structural Level"),
-            el("th", {}, "Distance"),
-            el("th", {}, "ATR Offset"),
-            el("th", {}, "20-Day Reach Odds"),
-            el("th", {}, "Confluence"))),
+            el("th", {}, "Target Distance"),
+            el("th", {}, "Historical Reach Odds"),
+            el("th", {}, "Time Horizon"))),
         el("tbody", {},
           ...activeLevels.slice(0, 6).map((l) => el("tr", {},
             el("td", { class: "chart-tbl-lvl" }, levelName(l)),
             el("td", { class: l.distance_pct >= 0 ? "up" : "down" }, `${signed(l.distance_pct)}%`),
-            el("td", {}, `${signed(l.distance_atr, 1)} ATR`),
-            el("td", {}, l.reach?.p20 ? `${l.reach.p20}% reached` : "–"),
-            el("td", {}, l.confluence > 1 ? `${l.confluence}x Conf` : "1x Standard"))))));
+            el("td", {}, l.reach?.p20 ? `${l.reach.p20}% reached within 20 sessions` : "–"),
+            el("td", {}, l.confluence > 1 ? `${capital(l.period || "Multi-period")} (Aligned across horizons)` : capital(l.period || "Standard Reference")))))));
 
     wrap.replaceChildren(root, tableWrap);
   }
@@ -2142,9 +2139,21 @@
     }
   }
 
+  function initBtnTop() {
+    const btn = document.getElementById("btn-top");
+    if (!btn) return;
+    window.addEventListener("scroll", () => {
+      btn.hidden = window.scrollY < 300;
+    }, { passive: true });
+    btn.addEventListener("click", () => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  }
+
   async function init() {
     fillStaticMeters();
     initViewSwitch();
+    initBtnTop();
     window.matchMedia("(max-width: 720px)").addEventListener("change", () => { if (state.active) selectMarket(state.active); });
     try {
       const res = await fetch("data/report.json", { cache: "no-store" });
