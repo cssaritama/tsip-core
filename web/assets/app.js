@@ -1235,13 +1235,16 @@
       : null;
     const costNote = cost.pct > 0
       ? `Your cost: ${cost.pct.toFixed(2)}% per round trip, ${cards.map((c) => `${costAtr(c).toFixed(2)} ATR of the ${c.state.horizon}`).join(" and ")}${cost.source ? `. Source: ${cost.source}` : ""}.`
-      : "No cost applied. Set your trading cost at the top of the board to see each result after it.";
+      : "Gross of execution friction. Results describe the structural price asymmetry between known levels.";
+    const isUngraded = lead.grade === "N/A" || !st0.analogs || st0.analogs < 30;
+    const planHeroFig = isUngraded ? "N/A" : `${signed(c0 ? lead.observed - c0 : lead.observed, 2)} ATR`;
+    const planHeroSub = isUngraded
+      ? `Too few past ${st0.horizon}s like this (${num(st0.analogs || 0)} analogs; 30 required) to grade a plan from the last close. 1 ATR at period start = ${st0.atr_start_pct?.toFixed(2)}%.`
+      : `${leadText}, from the last close: average result${c0 ? " after your cost" : ""} in ${num(st0.analogs)} past ${st0.horizon}s like this, against ${signed(lead.baseline - c0, 2)} ATR in all ${num(st0.all_periods)} ${st0.horizon}s at the same point. 1 ATR at the start of the ${st0.horizon} = ${st0.atr_start_pct?.toFixed(2)}%.`;
     return tile("tile--plan", "What would a simple plan have made from here?",
       el("div", { class: "money__body" },
         el("div", { class: "money__main" },
-          figure(`${signed(c0 ? lead.observed - c0 : lead.observed, 2)} ATR`,
-            `${leadText}, from the last close: average result${c0 ? " after your cost" : ""} in ${num(st0.analogs)} past ${st0.horizon}s like this, against ${signed(lead.baseline - c0, 2)} ATR in all ${num(st0.all_periods)} ${st0.horizon}s at the same point. 1 ATR at the start of the ${st0.horizon} = ${st0.atr_start_pct?.toFixed(2)}%.`,
-            gradeTag(lead.grade, confidence(first, lead.grade))),
+          figure(planHeroFig, planHeroSub, gradeTag(lead.grade, confidence(first, lead.grade))),
           split,
           el("p", { class: "tile__line" }, "Bar: average result in today's position; line: all periods at the same point; zero in the middle.")),
         el("div", { class: "money__odds" },
@@ -1345,8 +1348,9 @@
     const now = vc?.items?.find((i) => i.label === (crypto ? clk.hour : clk.slot));
     if (now && now.grade === "A") {
       const slot = crypto ? "hour" : "half-hour";
-      facts.push({ fig: rel(now.estimate), grade: now.grade, card: vc, href: "#tile-when",
-        text: `range in the ${now.label} ${slot}, ${crypto || clk.open ? "now" : "when the next session opens"}, against the average ${slot}` });
+      const factor = ((100 + (now.estimate || 0)) / 100).toFixed(2);
+      facts.push({ fig: `${factor}x`, grade: now.grade, card: vc, href: "#tile-when",
+        text: `historical volatility in the ${now.label} ${slot} (${crypto || clk.open ? "now" : "when the next session opens"}) relative to the average ${slot}` });
     }
     const p = inst.position || {};
     if (p.atr_pct !== null && p.atr_pct !== undefined) {
@@ -1356,7 +1360,7 @@
     }
     if (!facts.length) return null;
     return el("section", { class: "today", "aria-labelledby": "today-title" },
-      el("h3", { class: "today__title", id: "today-title" }, "Today"),
+      el("h3", { class: "today__title", id: "today-title" }, "Session Context & Historical Profile"),
       el("div", { class: "today__list" }, ...facts.slice(0, 3).map((f) => el("a", { class: "today__fact", href: f.href },
         el("span", { class: "today__fig" }, f.fig),
         el("span", { class: "today__text" }, f.text),
@@ -1386,7 +1390,6 @@
         el("p", {}, `${marketName(inst.code)}, ${inst.code}: ${when}`),
         st ? el("span", { class: "board__status" }, el("span", { class: `dot dot--${st.status}` }), word[st.status] || st.status) : null),
       closeOnly ? null : todayPanel(inst, clk, crypto, unit),
-      costs && !closeOnly ? el("div", { class: "board__tools" }, costControl(inst)) : null,
       el("div", { class: "board__grid" }, ...tiles),
       el("p", { class: "board__foot" }, closeOnly
         ? `${marketName(inst.code)} is published as closes only, so positions, levels and intraday timing are shown for the tradable funds (SPY, QQQ); its long-history statistics are listed below.`
