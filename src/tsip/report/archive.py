@@ -38,7 +38,7 @@ def archive_report(report_path: str | Path, archive_dir: str | Path) -> dict:
         with index.open(newline="", encoding="utf-8") as handle:
             rows = list(csv.DictReader(handle))
     if any(r["generated_at"] == generated for r in rows):
-        return {"added": False, "path": str(rel), "sha256": digest}
+        return {"added": False, "path": rel.as_posix(), "sha256": digest}
     target.parent.mkdir(parents=True, exist_ok=True)
     buffer = io.BytesIO()
     with gzip.GzipFile(fileobj=buffer, mode="wb", mtime=0) as gz:  # mtime 0: same bytes for the same report
@@ -59,7 +59,7 @@ def archive_report(report_path: str | Path, archive_dir: str | Path) -> dict:
         writer = csv.DictWriter(handle, fieldnames=INDEX_FIELDS)
         writer.writeheader()
         writer.writerows(rows)
-    return {"added": True, "path": str(rel), "sha256": digest}
+    return {"added": True, "path": rel.as_posix(), "sha256": digest}
 
 
 def verify_archive(archive_dir: str | Path) -> list[str]:
