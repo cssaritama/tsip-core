@@ -5,7 +5,7 @@
   const PRIMARY = ["SPY", "QQQ", "BTC-USD", "ETH-USD", "BTC-USDT"];
   const REFERENCES = ["SPX", "NDX"];
   const MARKET_NAMES = {
-    SPY: "S&P 500", SPX: "S&P 500 index", QQQ: "Nasdaq-100", NDX: "Nasdaq-100 index", "BTC-USD": "Bitcoin", "BTC-USDT": "Bitcoin", "ETH-USD": "Ether",
+    SPY: "S&P 500", SPX: "S&P 500 index", QQQ: "Nasdaq-100", NDX: "Nasdaq-100 index", "BTC-USD": "Bitcoin", "BTC-USDT": "Bitcoin", "ETH-USD": "Ethereum",
   };
   const SHORT_CODE = { "BTC-USD": "BTC", "BTC-USDT": "BTC", "ETH-USD": "ETH" };
   const HORIZONS = ["day", "week", "month", "quarter", "half-year", "year"];
@@ -1374,51 +1374,6 @@
       facts.some((f) => f.grade) ? null : el("p", { class: "tile__line" }, "No strong effect applies to today's position; the tiles below give the context and the weaker evidence."));
   }
 
-  function executionMatrix(inst) {
-    const levels = inst.open_levels?.levels || [];
-    const pos = inst.position || {};
-    const atrPct = inst.open_levels?.atr_pct || pos.atr_median_pct || 1.1;
-
-    const nearestLow = levels.find((l) => l.distance_pct < 0);
-    const nearestHigh = levels.find((l) => l.distance_pct > 0);
-
-    const isAccumulation = !nearestLow || Math.abs(nearestLow.distance_atr || 1.5) <= 1.8;
-    const postureTitle = isAccumulation ? "ACCUMULATION WELL · HIGH CONFLUENCE" : "EXPANSION CONTINUATION";
-    const postureDesc = isAccumulation
-      ? "Price is oscillating inside an institutional liquidity absorption well. Empirical 20-year baseline shows 71.0% mean-reversion reach to the 50% impulse midpoint within 20 sessions."
-      : "Price is trending above local structural support. Monitoring overhead untested liquidity pools for exhaustion and mean-reversion setups.";
-
-    const biasText = isAccumulation ? "LONG ACCUMULATION" : "NEUTRAL / HOLD";
-    const biasClass = isAccumulation ? "em-item__val--long" : "";
-    const winRate = "71.0% (20-Year Baseline)";
-    const stopText = nearestLow ? `${signed(nearestLow.distance_pct - 1.2 * atrPct)}%` : "-1.65%";
-    const targetText = nearestHigh ? `+${nearestHigh.distance_pct.toFixed(2)}%` : "+1.98%";
-
-    return el("section", { class: "exec-matrix", "aria-labelledby": "exec-title" },
-      el("div", { class: "exec-matrix__left" },
-        el("span", { class: "exec-matrix__tag" }, "Institutional Posture & Synthesis"),
-        el("h3", { class: "exec-matrix__status", id: "exec-title" }, postureTitle),
-        el("p", { class: "exec-matrix__desc" }, postureDesc)),
-      el("div", { class: "exec-matrix__metrics" },
-        el("div", { class: "em-item" },
-          el("span", { class: "em-item__lbl" }, "Execution Bias"),
-          el("b", { class: `em-item__val ${biasClass}` }, biasText)),
-        el("div", { class: "em-item" },
-          el("span", { class: "em-item__lbl" }, "Win Probability"),
-          el("b", { class: "em-item__val" }, winRate)),
-        el("div", { class: "em-item" },
-          el("span", { class: "em-item__lbl" }, "Bounded Stop"),
-          el("b", { class: "em-item__val em-item__val--stop" }, stopText)),
-        el("div", { class: "em-item" },
-          el("span", { class: "em-item__lbl" }, "Profit Target"),
-          el("b", { class: "em-item__val em-item__val--tgt" }, targetText)),
-        el("div", { class: "em-item" },
-          el("span", { class: "em-item__lbl" }, "Kelly Risk Sizing"),
-          el("b", { class: "em-item__val" }, "2.0% Equity Budget"))));
-  }
-
-
-
   function renderBoard(inst) {
     const box = document.getElementById("board");
     if (!inst || inst.status !== "ok") { box.replaceChildren(); box.hidden = true; return; }
@@ -1441,7 +1396,6 @@
         el("p", {}, `${marketName(inst.code)}, ${inst.code}: ${when}`),
         st ? el("span", { class: "board__status" }, el("span", { class: `dot dot--${st.status}` }), word[st.status] || st.status) : null),
       closeOnly ? null : todayPanel(inst, clk, crypto, unit),
-      closeOnly ? null : executionMatrix(inst),
       el("div", { class: "board__grid" }, ...tiles),
       el("p", { class: "board__foot" }, closeOnly
         ? `${marketName(inst.code)} is published as closes only, so positions, levels and intraday timing are shown for the tradable funds (SPY, QQQ); its long-history statistics are listed below.`
