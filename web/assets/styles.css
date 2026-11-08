@@ -239,6 +239,36 @@ p { margin: 0; }
 .c-ray-tag { font-size: 10.5px; font-weight: 500; font-family: var(--font); }
 .c-grid-line { stroke: var(--line-soft); stroke-width: 1; }
 .c-axis-text { font-size: 10.5px; fill: var(--muted); font-family: var(--font); }
+
+/* Institutional Execution & Risk Matrix Banner */
+.exec-matrix {
+  margin-bottom: 16px;
+  padding: 20px 24px 22px;
+  background: var(--raise);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--brass);
+  border-radius: var(--radius);
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 2fr);
+  gap: 28px;
+  align-items: center;
+}
+.exec-matrix__left { display: grid; gap: 6px; }
+.exec-matrix__tag { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--brass); }
+.exec-matrix__status { font-size: 20px; font-weight: 500; font-stretch: 85%; color: var(--text); margin: 0; }
+.exec-matrix__desc { font-size: 13px; color: var(--text-2); margin: 0; line-height: 1.5; }
+.exec-matrix__metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 14px 18px; }
+.em-item { display: grid; gap: 3px; }
+.em-item__lbl { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+.em-item__val { font-size: 13.5px; font-weight: 500; color: var(--text); font-variant-numeric: tabular-nums; }
+.em-item__val--long { color: #5bc49b; font-weight: 600; }
+.em-item__val--stop { color: #e06c75; font-weight: 500; }
+.em-item__val--tgt { color: #d4a359; font-weight: 600; }
+
+@media (max-width: 900px) {
+  .exec-matrix { grid-template-columns: 1fr; gap: 20px; }
+}
+
 /* Today: the graded facts that apply to the current position (specification 0006). */
 .today { margin-bottom: 12px; padding: 14px 20px 16px; background: var(--raise); border: 1px solid var(--line); border-radius: var(--radius); }
 .today__title { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }

@@ -62,3 +62,4 @@ R1. When ..., the report (or page) shall ...
 | [0014](0014-session-momentum-and-overnight-transitions.md) | Session-to-session momentum and overnight transitions | open (W-58) |
 | [0015](0015-time-space-opportunistic-accumulation.md) | Time–Space opportunistic liquidity accumulation and 20-year alpha proof | open (W-80) |
 | [0016](0016-microstructure-sweep-and-absorption.md) | Microstructure sweep signatures: absorption versus breakout acceptance | open (W-81) |
+| [0017](0017-institutional-execution-and-risk-matrix.md) | Institutional execution and risk matrix: posture synthesis, bounded stops, and Kelly sizing | open (W-82) |
