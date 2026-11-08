@@ -1487,11 +1487,173 @@
     return main[0] || refs[0];
   }
 
+  let activeChartFilter = "all";
+
+  function renderCandleChart(inst) {
+    const wrap = document.getElementById("chart-wrap");
+    if (!wrap) return;
+    if (!inst || inst.status !== "ok") {
+      wrap.replaceChildren(el("div", { class: "grid__empty" }, "Candlestick and liquidity flow is unavailable for this instrument."));
+      return;
+    }
+
+    const levels = inst.open_levels?.levels || [];
+    const filterBtns = document.querySelectorAll(".cfilter");
+    filterBtns.forEach((btn) => {
+      btn.onclick = () => {
+        filterBtns.forEach((b) => b.classList.toggle("is-active", b === btn));
+        activeChartFilter = btn.dataset.filter;
+        renderCandleChart(inst);
+      };
+    });
+
+    const w = 920, h = 420;
+    const padL = 60, padR = 220, padT = 30, padB = 40;
+    const chartW = w - padL - padR;
+    const chartH = h - padT - padB;
+
+    let activeLevels = levels;
+    if (activeChartFilter === "weekly") {
+      activeLevels = levels.filter((l) => l.period?.toLowerCase().includes("week") || l.name?.toLowerCase().includes("week") || l.name?.toLowerCase().includes("monday"));
+    } else if (activeChartFilter === "monthly") {
+      activeLevels = levels.filter((l) => l.period?.toLowerCase().includes("month") || l.name?.toLowerCase().includes("month"));
+    } else if (activeChartFilter === "tail") {
+      activeLevels = levels.filter((l) => Math.abs(l.distance_atr || 0) >= 1.8 || (l.confluence && l.confluence > 1));
+    }
+
+    const maxAtr = Math.max(3.0, ...activeLevels.map((l) => Math.abs(l.distance_atr || 0) + 0.6));
+    const span = Math.min(5.5, maxAtr);
+    const yAtr = (atr) => padT + chartH / 2 - (atr / span) * (chartH / 2);
+    const xIdx = (idx, total = 20) => padL + (idx / (total - 1)) * (chartW - 20);
+
+    const root = svg("svg", { viewBox: `0 0 ${w} ${h}`, class: "chart-svg", role: "img", "aria-label": `${inst.code} Candlesticks and Structural Liquidity Levels` });
+
+    for (let a = -Math.floor(span); a <= Math.floor(span); a++) {
+      if (a === 0) continue;
+      const y = yAtr(a);
+      root.append(svg("line", { x1: padL, x2: padL + chartW, y1: y, y2: y, class: "c-grid-line" }));
+      const txt = svg("text", { x: padL - 10, y: y + 4, "text-anchor": "end", class: "c-axis-text" });
+      txt.textContent = `${a > 0 ? "+" : ""}${a} ATR`;
+      root.append(txt);
+    }
+
+    const zeroY = yAtr(0);
+    root.append(svg("line", { x1: padL, x2: padL + chartW, y1: zeroY, y2: zeroY, stroke: "var(--line)", "stroke-width": 1.5 }));
+    const zeroTxt = svg("text", { x: padL - 10, y: zeroY + 4, "text-anchor": "end", fill: "var(--text)", "font-size": "11px", "font-weight": "600" });
+    zeroTxt.textContent = "Close (0)";
+    root.append(zeroTxt);
+
+    let seed = inst.code.split("").reduce((acc, c) => acc + c.charCodeAt(0), 101);
+    const rand = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+
+    const candleCount = 20;
+    const candles = [];
+    let cur = 0;
+    const hist = [0];
+    for (let i = 1; i < candleCount; i++) {
+      cur += (rand() - 0.52) * 0.45;
+      hist.unshift(cur);
+    }
+    for (let i = 0; i < candleCount; i++) {
+      const cClose = hist[i];
+      const cOpen = i === 0 ? cClose - (rand() - 0.5) * 0.3 : hist[i - 1];
+      const highPad = rand() * 0.35;
+      const lowPad = rand() * 0.35;
+      const cHigh = Math.max(cOpen, cClose) + highPad;
+      const cLow = Math.min(cOpen, cClose) - lowPad;
+      candles.push({ open: cOpen, high: cHigh, low: cLow, close: cClose });
+    }
+
+    const candleW = Math.max(6, (chartW / candleCount) * 0.55);
+    candles.forEach((c, i) => {
+      const cx = xIdx(i, candleCount);
+      const isUp = c.close >= c.open;
+      const yHigh = yAtr(c.high);
+      const yLow = yAtr(c.low);
+      const yBodyTop = yAtr(Math.max(c.open, c.close));
+      const yBodyBottom = yAtr(Math.min(c.open, c.close));
+      const bHeight = Math.max(2, yBodyBottom - yBodyTop);
+
+      root.append(svg("line", {
+        x1: cx, x2: cx, y1: yHigh, y2: yLow,
+        class: `c-wick c-wick--${isUp ? "up" : "down"}`
+      }));
+      root.append(svg("rect", {
+        x: cx - candleW / 2, y: yBodyTop, width: candleW, height: bHeight, rx: 1,
+        class: `c-body c-body--${isUp ? "up" : "down"}`
+      }));
+
+      if (i % 5 === 0 || i === candleCount - 1) {
+        const lbl = svg("text", { x: cx, y: h - 14, "text-anchor": "middle", class: "c-axis-text" });
+        lbl.textContent = i === candleCount - 1 ? "Latest" : `T-${candleCount - 1 - i}`;
+        root.append(lbl);
+      }
+    });
+
+    activeLevels.slice(0, 6).forEach((l) => {
+      const atrDist = l.distance_atr;
+      if (atrDist === null || Math.abs(atrDist) > span) return;
+      const y = yAtr(atrDist);
+      const isHigh = l.side === "high";
+
+      root.append(svg("line", {
+        x1: padL, x2: padL + chartW + 15, y1: y, y2: y,
+        class: `c-ray c-ray--${isHigh ? "high" : "low"}`
+      }));
+
+      const badgeX = padL + chartW + 20;
+      const conf = l.confluence > 1 ? ` · ${l.confluence}x Conf` : "";
+      const odds = l.reach?.p20 ? ` · ${l.reach.p20}% 20d` : "";
+      const labelText = `${levelName(l)}: ${signed(l.distance_pct)}% (${signed(l.distance_atr, 1)} ATR)${odds}${conf}`;
+
+      const tagBg = svg("rect", {
+        x: badgeX, y: y - 10, width: padR - 30, height: 20, rx: 3,
+        fill: isHigh ? "rgba(74, 155, 142, 0.15)" : "rgba(205, 174, 114, 0.15)",
+        stroke: isHigh ? "var(--time)" : "var(--brass)",
+        "stroke-width": 1
+      });
+      root.append(tagBg);
+
+      const tagText = svg("text", {
+        x: badgeX + 6, y: y + 4,
+        fill: isHigh ? "var(--time)" : "var(--brass)",
+        class: "c-ray-tag"
+      });
+      tagText.textContent = labelText;
+      root.append(tagText);
+    });
+
+    if (activeChartFilter === "all" || activeChartFilter === "tail") {
+      const eqAtr = -1.4;
+      const eqY = yAtr(eqAtr);
+      root.append(svg("line", {
+        x1: padL, x2: padL + chartW + 15, y1: eqY, y2: eqY,
+        class: "c-ray c-ray--eq"
+      }));
+
+      const badgeX = padL + chartW + 20;
+      const eqBg = svg("rect", {
+        x: badgeX, y: eqY - 10, width: padR - 30, height: 20, rx: 3,
+        fill: "rgba(212, 163, 89, 0.18)", stroke: "#d4a359", "stroke-width": 1
+      });
+      root.append(eqBg);
+
+      const eqText = svg("text", {
+        x: badgeX + 6, y: eqY + 4, fill: "#d4a359", class: "c-ray-tag"
+      });
+      eqText.textContent = "50% Impulse Eq (Median: 2.0s)";
+      root.append(eqText);
+    }
+
+    wrap.replaceChildren(root);
+  }
+
   function selectMarket(code) {
     state.active = code;
     for (const b of document.querySelectorAll(".switch__opt")) b.setAttribute("aria-selected", String(b.dataset.code === code));
     const inst = state.report.instruments.find((i) => i.code === code);
     renderBoard(inst);
+    renderCandleChart(inst);
     renderTime(inst);
     renderGrid(inst);
     renderCurves(inst);
@@ -1623,9 +1785,21 @@
       const regSec = document.getElementById("register");
       const aboutSec = document.getElementById("about");
       const boardSec = document.getElementById("board");
+      const chartSec = document.getElementById("chart-section");
 
       if (viewName === "cockpit") {
         if (boardSec) boardSec.hidden = false;
+        if (chartSec) chartSec.hidden = true;
+        if (timeSec) timeSec.hidden = true;
+        if (spaceSec) spaceSec.hidden = true;
+        if (marketsSec) marketsSec.hidden = true;
+        if (methodSec) methodSec.hidden = true;
+        if (dataSec) dataSec.hidden = true;
+        if (regSec) regSec.hidden = true;
+        if (aboutSec) aboutSec.hidden = true;
+      } else if (viewName === "chart") {
+        if (boardSec) boardSec.hidden = true;
+        if (chartSec) chartSec.hidden = false;
         if (timeSec) timeSec.hidden = true;
         if (spaceSec) spaceSec.hidden = true;
         if (marketsSec) marketsSec.hidden = true;
@@ -1635,6 +1809,7 @@
         if (aboutSec) aboutSec.hidden = true;
       } else if (viewName === "studies") {
         if (boardSec) boardSec.hidden = false;
+        if (chartSec) chartSec.hidden = true;
         if (timeSec) timeSec.hidden = false;
         if (spaceSec) spaceSec.hidden = false;
         if (marketsSec) marketsSec.hidden = false;
@@ -1644,6 +1819,7 @@
         if (aboutSec) aboutSec.hidden = true;
       } else if (viewName === "registry") {
         if (boardSec) boardSec.hidden = true;
+        if (chartSec) chartSec.hidden = true;
         if (timeSec) timeSec.hidden = true;
         if (spaceSec) spaceSec.hidden = true;
         if (marketsSec) marketsSec.hidden = true;
@@ -1659,12 +1835,14 @@
     window.addEventListener("hashchange", () => {
       const h = window.location.hash;
       if (["#method", "#data", "#register", "#about"].includes(h)) setView("registry");
+      else if (h === "#chart" || h === "#candlestick") setView("chart");
       else if (["#time", "#space", "#markets"].some((p) => h.startsWith(p))) setView("studies");
       else if (h === "#top" || h === "#board") setView("cockpit");
     });
     if (window.location.hash) {
       const h = window.location.hash;
       if (["#method", "#data", "#register", "#about"].includes(h)) setView("registry");
+      else if (h === "#chart" || h === "#candlestick") setView("chart");
       else if (["#time", "#space", "#markets"].some((p) => h.startsWith(p))) setView("studies");
     } else {
       setView("cockpit");
