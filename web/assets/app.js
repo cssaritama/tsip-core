@@ -1654,7 +1654,7 @@
     const wrap = document.getElementById("chart-wrap");
     if (!wrap) return;
     if (!inst || inst.status !== "ok") {
-      wrap.replaceChildren(el("div", { class: "grid__empty" }, "Candlestick and liquidity flow is unavailable for this instrument."));
+      wrap.replaceChildren(el("div", { class: "grid__empty" }, "Structural liquidity horizons are unavailable for this instrument."));
       return;
     }
 
@@ -1669,169 +1669,181 @@
     });
 
     const w = 1040, h = 460;
-    const padL = 65, padR = 250, padT = 32, padB = 40;
+    const padL = 75, padR = 260, padT = 36, padB = 36;
     const chartW = w - padL - padR;
     const chartH = h - padT - padB;
 
     let activeLevels = levels;
     if (activeChartFilter === "weekly") {
-      activeLevels = levels.filter((l) => l.period?.toLowerCase().includes("week") || l.name?.toLowerCase().includes("week") || l.name?.toLowerCase().includes("monday"));
+      activeLevels = levels.filter((l) => (l.period?.toLowerCase() || "").includes("week") || (l.levels || []).some((n) => n.toLowerCase().includes("week")));
     } else if (activeChartFilter === "monthly") {
-      activeLevels = levels.filter((l) => l.period?.toLowerCase().includes("month") || l.name?.toLowerCase().includes("month"));
-    } else if (activeChartFilter === "tail") {
-      activeLevels = levels.filter((l) => Math.abs(l.distance_atr || 0) >= 1.8 || (l.confluence && l.confluence > 1));
+      activeLevels = levels.filter((l) => (l.period?.toLowerCase() || "").includes("month") || (l.levels || []).some((n) => n.toLowerCase().includes("month")));
+    } else if (activeChartFilter === "macro") {
+      activeLevels = levels.filter((l) => (l.period?.toLowerCase() || "").includes("quarter") || (l.period?.toLowerCase() || "").includes("year") || (l.age_sessions || 0) >= 30);
+    } else if (activeChartFilter === "confluence") {
+      activeLevels = levels.filter((l) => (l.confluence || 1) > 1);
+      if (!activeLevels.length) activeLevels = levels.slice(0, 5);
     }
 
-    const atrPct = inst.open_levels?.atr_pct || inst.position?.atr_median_pct || 1.1;
-    const maxAtr = Math.max(3.0, ...activeLevels.map((l) => Math.abs(l.distance_atr || 0) + 0.6));
-    const span = Math.min(5.5, maxAtr);
-    const yAtr = (atr) => padT + chartH / 2 - (atr / span) * (chartH / 2);
-    const xIdx = (idx, total = 20) => padL + (idx / (total - 1)) * (chartW - 20);
+    // Determine scale based on real percentage distance
+    const validLevels = activeLevels.filter((l) => l.distance_pct !== null);
+    const topLevels = validLevels.slice(0, 8);
+    const maxDist = topLevels.length ? Math.max(2.5, ...topLevels.map((l) => Math.abs(l.distance_pct))) * 1.15 : 4.0;
+    const span = Math.min(22.0, Math.max(3.0, maxDist));
 
-    const root = svg("svg", { viewBox: `0 0 ${w} ${h}`, class: "chart-svg", role: "img", "aria-label": `${inst.code} Candlesticks and Structural Liquidity Levels` });
+    const yPct = (pct) => padT + chartH / 2 - (pct / span) * (chartH / 2);
 
-    for (let a = -Math.floor(span); a <= Math.floor(span); a++) {
-      if (a === 0) continue;
-      const y = yAtr(a);
+    const root = svg("svg", {
+      viewBox: `0 0 ${w} ${h}`,
+      class: "chart-svg",
+      role: "img",
+      "aria-label": `${inst.code} Structural Liquidity Horizons and Empirical Reach Map`
+    });
+
+    // Determine clean step for percentage grid
+    let step = 1.0;
+    if (span > 10) step = 3.0;
+    else if (span > 5) step = 2.0;
+
+    for (let s = -Math.floor(span / step) * step; s <= Math.floor(span / step) * step; s += step) {
+      if (Math.abs(s) < 0.001) continue;
+      const y = yPct(s);
       root.append(svg("line", { x1: padL, x2: padL + chartW, y1: y, y2: y, class: "c-grid-line" }));
       const txt = svg("text", { x: padL - 10, y: y + 4, "text-anchor": "end", class: "c-axis-text" });
-      const pctValue = a * atrPct;
-      txt.textContent = `${pctValue > 0 ? "+" : ""}${pctValue.toFixed(1)}%`;
+      txt.textContent = `${s > 0 ? "+" : ""}${s.toFixed(1)}%`;
       root.append(txt);
     }
 
-    const zeroY = yAtr(0);
-    root.append(svg("line", { x1: padL, x2: padL + chartW, y1: zeroY, y2: zeroY, stroke: "var(--line)", "stroke-width": 1.5 }));
-    const zeroTxt = svg("text", { x: padL - 10, y: zeroY + 4, "text-anchor": "end", fill: "var(--text)", "font-size": "11px", "font-weight": "600" });
+    // Central Datum: Last Close (0.00%)
+    const zeroY = yPct(0);
+    root.append(svg("line", {
+      x1: padL, x2: padL + chartW + 12, y1: zeroY, y2: zeroY,
+      stroke: "var(--line-hard, #8b949e)", "stroke-width": 1.5
+    }));
+    const zeroTxt = svg("text", {
+      x: padL - 10, y: zeroY + 4, "text-anchor": "end",
+      fill: "var(--text)", "font-size": "11px", "font-weight": "600"
+    });
     zeroTxt.textContent = "Close (0.0%)";
     root.append(zeroTxt);
 
-    let seed = inst.code.split("").reduce((acc, c) => acc + c.charCodeAt(0), 101);
-    const rand = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
-
-    const candleCount = 20;
-    const candles = [];
-    let cur = 0;
-    const hist = [0];
-    for (let i = 1; i < candleCount; i++) {
-      cur += (rand() - 0.52) * 0.45;
-      hist.unshift(cur);
-    }
-    for (let i = 0; i < candleCount; i++) {
-      const cClose = hist[i];
-      const cOpen = i === 0 ? cClose - (rand() - 0.5) * 0.3 : hist[i - 1];
-      const highPad = rand() * 0.35;
-      const lowPad = rand() * 0.35;
-      const cHigh = Math.max(cOpen, cClose) + highPad;
-      const cLow = Math.min(cOpen, cClose) - lowPad;
-      candles.push({ open: cOpen, high: cHigh, low: cLow, close: cClose });
-    }
-
-    const candleW = Math.max(6, (chartW / candleCount) * 0.55);
-    candles.forEach((c, i) => {
-      const cx = xIdx(i, candleCount);
-      const isUp = c.close >= c.open;
-      const yHigh = yAtr(c.high);
-      const yLow = yAtr(c.low);
-      const yBodyTop = yAtr(Math.max(c.open, c.close));
-      const yBodyBottom = yAtr(Math.min(c.open, c.close));
-      const bHeight = Math.max(2, yBodyBottom - yBodyTop);
-
-      root.append(svg("line", {
-        x1: cx, x2: cx, y1: yHigh, y2: yLow,
-        class: `c-wick c-wick--${isUp ? "up" : "down"}`
-      }));
-      root.append(svg("rect", {
-        x: cx - candleW / 2, y: yBodyTop, width: candleW, height: bHeight, rx: 1,
-        class: `c-body c-body--${isUp ? "up" : "down"}`
-      }));
-
-      if (i % 5 === 0 || i === candleCount - 1) {
-        const lbl = svg("text", { x: cx, y: h - 14, "text-anchor": "middle", class: "c-axis-text" });
-        lbl.textContent = i === candleCount - 1 ? "Latest" : `T-${candleCount - 1 - i}`;
-        root.append(lbl);
-      }
+    // Label on datum line
+    const asOfStr = inst.open_levels?.as_of || inst.position?.as_of || "";
+    const datumLbl = svg("text", {
+      x: padL + 8, y: zeroY - 6,
+      fill: "var(--muted)", "font-size": "10px", "font-family": "var(--font)"
     });
+    datumLbl.textContent = `${inst.code} Benchmark Close · As of ${asOfStr}`;
+    root.append(datumLbl);
 
-    // Collect all rays and tags for collision-free layout
+    // Multi-Horizon Cycle Range Indicators on left margin
+    const horizons = inst.position?.horizons || [];
+    const refHorizons = horizons.filter((h) => ["week", "month", "quarter"].includes(h.horizon));
+    if (refHorizons.length) {
+      const bW = 28;
+      const startX = padL + 12;
+      refHorizons.forEach((h, hIdx) => {
+        const hx = startX + hIdx * (bW + 14);
+        const highY = yPct(h.to_reference_high_pct);
+        const lowY = yPct(h.to_reference_low_pct);
+        const clampedHighY = Math.max(padT + 8, Math.min(padT + chartH - 8, highY));
+        const clampedLowY = Math.max(padT + 8, Math.min(padT + chartH - 8, lowY));
+        const barH = Math.max(4, Math.abs(clampedLowY - clampedHighY));
+        const topY = Math.min(clampedHighY, clampedLowY);
+
+        // Range span box
+        root.append(svg("rect", {
+          x: hx, y: topY, width: bW, height: barH, rx: 2,
+          fill: "rgba(255, 255, 255, 0.04)", stroke: "var(--line-soft)", "stroke-width": 1
+        }));
+
+        // Current price indicator mark on the range
+        root.append(svg("line", {
+          x1: hx - 2, x2: hx + bW + 2, y1: zeroY, y2: zeroY,
+          stroke: "var(--text)", "stroke-width": 1.5
+        }));
+
+        // Horizon tag
+        const tag = svg("text", {
+          x: hx + bW / 2, y: padT + chartH + 16, "text-anchor": "middle",
+          fill: "var(--muted)", "font-size": "9.5px", "font-weight": "500"
+        });
+        tag.textContent = capital(h.horizon.slice(0, 4));
+        root.append(tag);
+
+        // Percentile tag inside range
+        if (h.range_position_pct !== null && barH > 18) {
+          const pTag = svg("text", {
+            x: hx + bW / 2, y: zeroY + (zeroY > topY + barH / 2 ? -5 : 12), "text-anchor": "middle",
+            fill: "var(--text-2)", "font-size": "9px"
+          });
+          pTag.textContent = `${h.range_position_pct.toFixed(0)}%`;
+          root.append(pTag);
+        }
+      });
+    }
+
+    // Collect ray label items for collision avoidance
     const labelItems = [];
+    const rayStartX = padL + 140;
 
-    activeLevels.slice(0, 6).forEach((l) => {
-      const atrDist = l.distance_atr;
-      if (atrDist === null || Math.abs(atrDist) > span) return;
-      const y = yAtr(atrDist);
+    topLevels.forEach((l) => {
+      const dist = l.distance_pct;
+      if (dist === null) return;
+      const y = yPct(dist);
       const isHigh = l.side === "high";
+      const isAligned = (l.confluence || 1) > 1;
+      const p20 = l.reach?.within?.["20"]?.pct || 0;
 
-      root.append(svg("line", {
-        x1: padL, x2: padL + chartW + 10, y1: y, y2: y,
-        class: `c-ray c-ray--${isHigh ? "high" : "low"}`
-      }));
+      // Draw empirical reach probability gradient bar
+      if (p20 > 0 && Math.abs(y - zeroY) > 8) {
+        const reachW = Math.max(16, (chartW - 150) * (p20 / 100));
+        const reachColor = isAligned ? "rgba(229, 192, 123, 0.16)" : isHigh ? "rgba(74, 155, 142, 0.14)" : "rgba(205, 174, 114, 0.14)";
+        const reachStroke = isAligned ? "rgba(229, 192, 123, 0.4)" : isHigh ? "rgba(74, 155, 142, 0.35)" : "rgba(205, 174, 114, 0.35)";
 
-      const labelText = `${levelName(l)}: ${signed(l.distance_pct)}%`;
+        root.append(svg("rect", {
+          x: rayStartX, y: y - 8, width: reachW, height: 16, rx: 3,
+          fill: reachColor, stroke: reachStroke, "stroke-width": 0.8
+        }));
+
+        const pTxt = svg("text", {
+          x: rayStartX + 8, y: y + 3.5,
+          fill: isAligned ? "#e5c07b" : isHigh ? "var(--time)" : "var(--brass)",
+          "font-size": "9.5px", "font-weight": "500", "font-family": "var(--font)"
+        });
+        const nSample = l.reach?.within?.["20"]?.n ? ` (n=${num(l.reach.within["20"].n)})` : "";
+        pTxt.textContent = `20d Reach: ${p20.toFixed(0)}%${nSample}`;
+        root.append(pTxt);
+      }
+
+      // Draw the liquidity ray
+      const rayLine = svg("line", {
+        x1: padL, x2: padL + chartW + 12, y1: y, y2: y,
+        class: `c-ray ${isAligned ? "c-ray--aligned" : isHigh ? "c-ray--high" : "c-ray--low"}`
+      });
+      root.append(rayLine);
+
+      // Label text
+      const lName = levelName(l);
+      const labelText = `${lName}: ${signed(l.distance_pct)}%`;
 
       labelItems.push({
         rayY: y,
         targetY: y,
         text: labelText,
         isHigh: isHigh,
-        type: "level"
+        isAligned: isAligned,
+        level: l
       });
     });
 
-    if (activeChartFilter === "all" || activeChartFilter === "voids") {
-      const vTopAtr = -0.5;
-      const vBotAtr = -1.7;
-      const vMidAtr = -1.1;
-      const yTop = yAtr(vTopAtr);
-      const yBot = yAtr(vBotAtr);
-      const yMid = yAtr(vMidAtr);
-      const vStartX = xIdx(10, candleCount);
-
-      root.append(svg("rect", {
-        x: vStartX, y: yTop, width: padL + chartW + 10 - vStartX, height: yBot - yTop, rx: 2,
-        class: "c-void"
-      }));
-
-      root.append(svg("line", {
-        x1: vStartX, x2: padL + chartW + 10, y1: yMid, y2: yMid,
-        class: "c-void-mid"
-      }));
-
-      labelItems.push({
-        rayY: yMid,
-        targetY: yMid,
-        text: `Auction Void Midpoint: ${signed(vMidAtr * atrPct)}% (71% 20d fill)`,
-        isHigh: false,
-        type: "void"
-      });
-    }
-
-    if (activeChartFilter === "all" || activeChartFilter === "tail") {
-      const eqAtr = -1.4;
-      const eqY = yAtr(eqAtr);
-      root.append(svg("line", {
-        x1: padL, x2: padL + chartW + 10, y1: eqY, y2: eqY,
-        class: "c-ray c-ray--eq"
-      }));
-
-      labelItems.push({
-        rayY: eqY,
-        targetY: eqY,
-        text: `50% Impulse Eq: ${signed(eqAtr * atrPct)}% (Median 2.0s)`,
-        isHigh: false,
-        type: "eq"
-      });
-    }
-
-    // Sort ascending by target Y (top to bottom)
+    // Anti-collision algorithm
     labelItems.sort((a, b) => a.targetY - b.targetY);
-
-    // Anti-collision algorithm: guarantee minimum 24px clearance between badge centers
     const minSpacing = 24;
     const tagHeight = 18;
     labelItems.forEach((item) => { item.y = item.targetY; });
 
-    for (let iter = 0; iter < 10; iter++) {
+    for (let iter = 0; iter < 12; iter++) {
       for (let i = 1; i < labelItems.length; i++) {
         const prev = labelItems[i - 1];
         const cur = labelItems[i];
@@ -1841,8 +1853,8 @@
       }
     }
 
-    // Boundary containment within chart height
-    const maxBottom = padT + chartH - 12;
+    // Boundary containment
+    const maxBottom = padT + chartH - 10;
     if (labelItems.length && labelItems[labelItems.length - 1].y > maxBottom) {
       const shiftUp = labelItems[labelItems.length - 1].y - maxBottom;
       labelItems.forEach((item) => { item.y -= shiftUp; });
@@ -1854,28 +1866,28 @@
       }
     }
 
-    // Render anti-collided badges with connector links
+    // Render anti-collided tags with connector links
     labelItems.forEach((item) => {
       const badgeX = padL + chartW + 16;
-      const badgeW = padR - 24;
+      const badgeW = padR - 22;
+
+      const strokeColor = item.isAligned ? "#e5c07b" : item.isHigh ? "var(--time)" : "var(--brass)";
+      const fillColor = item.isAligned ? "rgba(229, 192, 123, 0.20)" : item.isHigh ? "rgba(74, 155, 142, 0.16)" : "rgba(205, 174, 114, 0.16)";
 
       if (Math.abs(item.y - item.rayY) > 2) {
         root.append(svg("path", {
-          d: `M ${padL + chartW + 8} ${item.rayY} L ${badgeX - 4} ${item.y}`,
+          d: `M ${padL + chartW + 10} ${item.rayY} L ${badgeX - 4} ${item.y}`,
           fill: "none",
-          stroke: item.isHigh ? "var(--time)" : item.type === "eq" ? "#d4a359" : "var(--brass)",
+          stroke: strokeColor,
           "stroke-width": 0.8,
           "stroke-dasharray": "2,2",
           opacity: 0.7
         }));
       }
 
-      const strokeColor = item.isHigh ? "var(--time)" : item.type === "eq" ? "#d4a359" : "var(--brass)";
-      const fillColor = item.isHigh ? "rgba(74, 155, 142, 0.16)" : item.type === "eq" ? "rgba(212, 163, 89, 0.20)" : "rgba(205, 174, 114, 0.16)";
-
       const tagBg = svg("rect", {
         x: badgeX, y: item.y - tagHeight / 2, width: badgeW, height: tagHeight, rx: 3,
-        fill: fillColor, stroke: strokeColor, "stroke-width": 1
+        fill: fillColor, stroke: strokeColor, "stroke-width": item.isAligned ? 1.5 : 1
       });
       root.append(tagBg);
 
@@ -1886,18 +1898,16 @@
       root.append(tagText);
     });
 
-    // Dynamic Crosshair and Floating Inspection HUD
-    const crosshairX = svg("line", { class: "c-crosshair", y1: padT, y2: padT + chartH });
+    // Crosshair and Interactive Inspection HUD
     const crosshairY = svg("line", { class: "c-crosshair", x1: padL, x2: padL + chartW + 15 });
-    crosshairX.style.display = "none";
     crosshairY.style.display = "none";
-    root.append(crosshairX, crosshairY);
+    root.append(crosshairY);
 
-    const hudGroup = svg("g", { class: "c-hud", transform: `translate(${padL + 12}, ${padT + 10})` });
+    const hudGroup = svg("g", { class: "c-hud", transform: `translate(${padL + 16}, ${padT + 12})` });
     hudGroup.style.display = "none";
-    const hudBg = svg("rect", { class: "c-hud-bg", width: 290, height: 44, rx: 4 });
-    const hudTxt1 = svg("text", { class: "c-hud-text c-hud-text--primary", x: 10, y: 17 });
-    const hudTxt2 = svg("text", { class: "c-hud-text c-hud-text--secondary", x: 10, y: 34 });
+    const hudBg = svg("rect", { class: "c-hud-bg", width: 340, height: 48, rx: 4 });
+    const hudTxt1 = svg("text", { class: "c-hud-text c-hud-text--primary", x: 10, y: 19 });
+    const hudTxt2 = svg("text", { class: "c-hud-text c-hud-text--secondary", x: 10, y: 37 });
     hudGroup.append(hudBg, hudTxt1, hudTxt2);
     root.append(hudGroup);
 
@@ -1908,51 +1918,73 @@
       const ctm = root.getScreenCTM();
       if (!ctm) return;
       const cursor = pt.matrixTransform(ctm.inverse());
-      if (cursor.x < padL || cursor.x > padL + chartW || cursor.y < padT || cursor.y > padT + chartH) {
-        crosshairX.style.display = "none";
+      if (cursor.x < padL || cursor.x > padL + chartW + 15 || cursor.y < padT || cursor.y > padT + chartH) {
         crosshairY.style.display = "none";
         hudGroup.style.display = "none";
         return;
       }
-      crosshairX.setAttribute("x1", cursor.x);
-      crosshairX.setAttribute("x2", cursor.x);
-      crosshairX.style.display = "";
 
       crosshairY.setAttribute("y1", cursor.y);
       crosshairY.setAttribute("y2", cursor.y);
       crosshairY.style.display = "";
 
-      const idx = Math.max(0, Math.min(candleCount - 1, Math.round(((cursor.x - padL) / (chartW - 20)) * (candleCount - 1))));
-      const c = candles[idx];
-      const atrVal = -((cursor.y - (padT + chartH / 2)) / (chartH / 2)) * span;
+      const impliedDistPct = -((cursor.y - (padT + chartH / 2)) / (chartH / 2)) * span;
       const atrPct = inst.open_levels?.atr_pct || inst.position?.atr_median_pct || 1.1;
+      const impliedAtr = impliedDistPct / (atrPct || 1.0);
 
-      hudTxt1.textContent = `Candle T-${candleCount - 1 - idx} · O:${c.open.toFixed(2)} H:${c.high.toFixed(2)} L:${c.low.toFixed(2)} C:${c.close.toFixed(2)} ATR`;
-      hudTxt2.textContent = `Cursor: ${atrVal > 0 ? "+" : ""}${atrVal.toFixed(2)} ATR (${signed(atrVal * atrPct)}% implied distance)`;
+      // Check proximity to any level
+      const nearest = labelItems.find((it) => Math.abs(it.rayY - cursor.y) < 10);
+      if (nearest) {
+        const l = nearest.level;
+        const p5 = l.reach?.within?.["5"]?.pct ? `${l.reach.within["5"].pct.toFixed(0)}%` : "–";
+        const p20 = l.reach?.within?.["20"]?.pct ? `${l.reach.within["20"].pct.toFixed(0)}%` : "–";
+        const p60 = l.reach?.within?.["60"]?.pct ? `${l.reach.within["60"].pct.toFixed(0)}%` : "–";
+        const typ = l.reach?.typical_sessions ? `${l.reach.typical_sessions}s` : ">120s";
+
+        hudTxt1.textContent = `${levelName(l)} · Distance: ${signed(l.distance_pct)}% (${signed(l.distance_atr || 0, 1)} ATR)`;
+        hudTxt2.textContent = `Reach odds: 5s:${p5} · 20s:${p20} · 60s:${p60} · Typical arrival: ${typ}`;
+      } else {
+        hudTxt1.textContent = `Target Distance: ${signed(impliedDistPct)}% from Close`;
+        hudTxt2.textContent = `Implied Volatility Offset: ${signed(impliedAtr, 2)} ATR (14-session)`;
+      }
       hudGroup.style.display = "";
     });
 
     root.addEventListener("mouseleave", () => {
-      crosshairX.style.display = "none";
       crosshairY.style.display = "none";
       hudGroup.style.display = "none";
     });
 
-    // Render clean structural levels table below the chart
+    // Render Clean Structural Levels Table Below SVG
+    const oddsStr = (l, k) => {
+      const o = l.reach?.within?.[k];
+      return o && o.pct !== null ? `${o.pct.toFixed(0)}%` : "–";
+    };
+
     const tableWrap = el("div", { class: "chart-table-wrap" },
       el("table", { class: "mtable chart-mtable" },
         el("thead", {},
           el("tr", {},
-            el("th", {}, "Structural Level"),
-            el("th", {}, "Target Distance"),
-            el("th", {}, "Historical Reach Odds"),
-            el("th", {}, "Time Horizon"))),
+            el("th", {}, "Structural Reference Level"),
+            el("th", {}, "Distance"),
+            el("th", {}, "Untested For"),
+            el("th", {}, "5-Day Reach"),
+            el("th", {}, "20-Day Reach"),
+            el("th", {}, "60-Day Reach"),
+            el("th", {}, "Typical Arrival"),
+            el("th", {}, "Horizon Status"))),
         el("tbody", {},
-          ...activeLevels.slice(0, 6).map((l) => el("tr", {},
+          ...validLevels.slice(0, 8).map((l) => el("tr", {},
             el("td", { class: "chart-tbl-lvl" }, levelName(l)),
             el("td", { class: l.distance_pct >= 0 ? "up" : "down" }, `${signed(l.distance_pct)}%`),
-            el("td", {}, l.reach?.p20 ? `${l.reach.p20}% reached within 20 sessions` : "–"),
-            el("td", {}, l.confluence > 1 ? `${capital(l.period || "Multi-period")} (Aligned across horizons)` : capital(l.period || "Standard Reference")))))));
+            el("td", {}, l.age_sessions === 0 ? "Current Period" : `${num(l.age_sessions)} sessions`),
+            el("td", {}, oddsStr(l, "5")),
+            el("td", {}, oddsStr(l, "20")),
+            el("td", {}, oddsStr(l, "60")),
+            el("td", {}, l.reach?.typical_sessions ? `${l.reach.typical_sessions} sessions` : "Over 120 sessions"),
+            el("td", {}, (l.confluence || 1) > 1
+              ? `${(l.horizons || []).map(capital).join(" & ")} Aligned`
+              : `${capital(l.horizon || "Standard")} Reference`))))));
 
     wrap.replaceChildren(root, tableWrap);
   }

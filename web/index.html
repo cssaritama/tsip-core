@@ -48,7 +48,7 @@
 
         <nav class="view-switch" role="tablist" id="view-switch" aria-label="View Mode">
           <button class="view-tab" role="tab" aria-selected="true" data-view="cockpit">Executive Cockpit</button>
-          <button class="view-tab" role="tab" aria-selected="false" data-view="chart">Candlestick & Liquidity Flow</button>
+          <button class="view-tab" role="tab" aria-selected="false" data-view="chart">Liquidity Horizon Map</button>
           <button class="view-tab" role="tab" aria-selected="false" data-view="studies">Detailed Studies</button>
           <button class="view-tab" role="tab" aria-selected="false" data-view="registry">Methodology & Register</button>
         </nav>
@@ -58,24 +58,23 @@
         <section class="chart-section" id="chart-section" hidden>
           <div class="chart-section__head">
             <div class="chart-section__meta">
-              <h2 id="chart-section-title">Structural Liquidity & Price Action</h2>
-              <p class="chart-section__lede">Normalized multi-session candlesticks with dynamic institutional liquidity horizons, session openings, and mean-reversion equilibrium rays.</p>
+              <h2 id="chart-section-title">Structural Liquidity & Empirical Reach Horizons</h2>
+              <p class="chart-section__lede">Audited price levels from closed periods that remain untested, paired with empirical reach probabilities across 5, 20, and 60 sessions from historical starting points.</p>
             </div>
             <div class="chart-section__filters" id="chart-filters" role="group" aria-label="Liquidity Layer Filters">
-              <button class="cfilter is-active" data-filter="all">All Horizons</button>
-              <button class="cfilter" data-filter="weekly">Weekly Pools</button>
-              <button class="cfilter" data-filter="monthly">Monthly Pools</button>
-              <button class="cfilter" data-filter="voids">Auction Voids</button>
-              <button class="cfilter" data-filter="tail">Tail Equilibrium</button>
+              <button class="cfilter is-active" data-filter="all">All Untested Horizons</button>
+              <button class="cfilter" data-filter="weekly">Weekly Reference</button>
+              <button class="cfilter" data-filter="monthly">Monthly Reference</button>
+              <button class="cfilter" data-filter="macro">Quarterly & Macro</button>
+              <button class="cfilter" data-filter="confluence">Multi-Horizon Aligned</button>
             </div>
           </div>
           <div class="chart-wrap" id="chart-wrap" aria-live="polite"></div>
           <div class="chart-legend" id="chart-legend">
-            <span class="cleg cleg--high">Overhead Liquidity (Untested Highs)</span>
-            <span class="cleg cleg--low">Downside Liquidity (Untested Lows)</span>
-            <span class="cleg cleg--void">Auction Void (Fair Value Gap)</span>
-            <span class="cleg cleg--eq">50% Retracement Equilibrium</span>
-            <span class="cleg cleg--session">Cash Open / Key Fix (09:30 ET)</span>
+            <span class="cleg cleg--high">Overhead Reference (Untested Highs)</span>
+            <span class="cleg cleg--low">Downside Reference (Untested Lows)</span>
+            <span class="cleg cleg--aligned">Multi-Horizon Aligned (Confluence)</span>
+            <span class="cleg cleg--reach">Horizontal Bar: 20-Day Empirical Reach Probability</span>
           </div>
         </section>
 
