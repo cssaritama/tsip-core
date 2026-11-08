@@ -1604,8 +1604,70 @@
     }
   }
 
+  function initViewSwitch() {
+    const tabs = document.querySelectorAll(".view-tab");
+    if (!tabs.length) return;
+    function setView(viewName) {
+      tabs.forEach((t) => t.setAttribute("aria-selected", String(t.dataset.view === viewName)));
+      const timeSec = document.getElementById("time");
+      const spaceSec = document.getElementById("space");
+      const marketsSec = document.getElementById("markets");
+      const methodSec = document.getElementById("method");
+      const dataSec = document.getElementById("data");
+      const regSec = document.getElementById("register");
+      const aboutSec = document.getElementById("about");
+      const boardSec = document.getElementById("board");
+
+      if (viewName === "cockpit") {
+        if (boardSec) boardSec.hidden = false;
+        if (timeSec) timeSec.hidden = true;
+        if (spaceSec) spaceSec.hidden = true;
+        if (marketsSec) marketsSec.hidden = true;
+        if (methodSec) methodSec.hidden = true;
+        if (dataSec) dataSec.hidden = true;
+        if (regSec) regSec.hidden = true;
+        if (aboutSec) aboutSec.hidden = true;
+      } else if (viewName === "studies") {
+        if (boardSec) boardSec.hidden = false;
+        if (timeSec) timeSec.hidden = false;
+        if (spaceSec) spaceSec.hidden = false;
+        if (marketsSec) marketsSec.hidden = false;
+        if (methodSec) methodSec.hidden = true;
+        if (dataSec) dataSec.hidden = true;
+        if (regSec) regSec.hidden = true;
+        if (aboutSec) aboutSec.hidden = true;
+      } else if (viewName === "registry") {
+        if (boardSec) boardSec.hidden = true;
+        if (timeSec) timeSec.hidden = true;
+        if (spaceSec) spaceSec.hidden = true;
+        if (marketsSec) marketsSec.hidden = true;
+        if (methodSec) methodSec.hidden = false;
+        if (dataSec) dataSec.hidden = false;
+        if (regSec) regSec.hidden = false;
+        if (aboutSec) aboutSec.hidden = false;
+      }
+    }
+    tabs.forEach((btn) => {
+      btn.addEventListener("click", () => setView(btn.dataset.view));
+    });
+    window.addEventListener("hashchange", () => {
+      const h = window.location.hash;
+      if (["#method", "#data", "#register", "#about"].includes(h)) setView("registry");
+      else if (["#time", "#space", "#markets"].some((p) => h.startsWith(p))) setView("studies");
+      else if (h === "#top" || h === "#board") setView("cockpit");
+    });
+    if (window.location.hash) {
+      const h = window.location.hash;
+      if (["#method", "#data", "#register", "#about"].includes(h)) setView("registry");
+      else if (["#time", "#space", "#markets"].some((p) => h.startsWith(p))) setView("studies");
+    } else {
+      setView("cockpit");
+    }
+  }
+
   async function init() {
     fillStaticMeters();
+    initViewSwitch();
     window.matchMedia("(max-width: 720px)").addEventListener("change", () => { if (state.active) selectMarket(state.active); });
     try {
       const res = await fetch("data/report.json", { cache: "no-store" });
