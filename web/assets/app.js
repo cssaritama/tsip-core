@@ -921,14 +921,15 @@
   function tileLevels(inst, unit) {
     const levels = inst.open_levels?.levels || [];
     if (!levels.length) return null;
-    const above = levels.find((l) => l.distance_pct > 0);
-    const below = levels.find((l) => l.distance_pct < 0);
+    const highs = levels.filter((l) => l.distance_pct > 0).slice(0, 2);
+    const lows = levels.filter((l) => l.distance_pct < 0).slice(0, 2);
     const block = (l, word) => {
       if (!l) return el("div", { class: "lvl lvl--none" }, `No untested ${word} in the published range.`);
       const half = l.reach?.typical_sessions;
+      const confBadge = l.confluence > 1 ? el("span", { class: "lvl__conf" }, `${l.confluence}x Confluence`) : null;
       return el("div", { class: `lvl lvl--${l.side}` },
         el("div", { class: "lvl__top" },
-          el("b", {}, levelName(l)),
+          el("b", {}, levelName(l), confBadge),
           el("span", { class: "lvl__dist" }, `${signed(l.distance_pct)}%`, el("span", {}, `${signed(l.distance_atr, 1)} ATR`))),
         el("div", { class: "lvl__sub" }, `${l.period}, untested for ${l.age_sessions === 0 ? "less than a day" : `${num(l.age_sessions)} ${l.age_sessions === 1 ? unit.slice(0, -1) : unit}`}`),
         el("div", { class: "odds" }, ...["5", "20", "60"].map((k) => {
@@ -940,10 +941,15 @@
         })),
         el("div", { class: "lvl__note" }, half ? `Half of past cases got there within ${half} ${half === 1 ? unit.slice(0, -1) : unit}.` : `Fewer than half of past cases got there within 120 ${unit}.`));
     };
-    return tile("tile--levels", "Which levels are in reach?",
+    const highBlocks = highs.length ? highs.map((l) => block(l, "high above")) : [block(null, "high above")];
+    const lowBlocks = lows.length ? lows.map((l) => block(l, "low below")) : [block(null, "low below")];
+
+    return tile("tile--levels", "Structural Liquidity Ladder: Which levels are in reach?",
       levelMap(levels, inst.open_levels?.atr_pct),
-      el("div", { class: "lvl-pair" }, block(above, "high above"), block(below, "low below")),
-      el("p", { class: "tile__line" }, `How often price has travelled that far within 5, 20 and 60 ${unit}, from every past ${unit.slice(0, -1)} at the same volatility-scaled distance.`),
+      el("div", { class: "lvl-pair" },
+        el("div", { class: "lvl-col" }, el("h4", { class: "lvl-col__title" }, "Overhead Liquidity (Highs)"), ...highBlocks),
+        el("div", { class: "lvl-col" }, el("h4", { class: "lvl-col__title" }, "Downside Liquidity (Lows)"), ...lowBlocks)),
+      el("p", { class: "tile__line" }, `Historical reach probabilities within 5, 20 and 60 ${unit}, from every past ${unit.slice(0, -1)} at the same volatility-scaled distance.`),
       el("a", { class: "tile__more", href: "#open-levels" }, "All untested levels"));
   }
 

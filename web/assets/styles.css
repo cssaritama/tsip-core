@@ -225,7 +225,11 @@ p { margin: 0; }
 .fan__ctl { stroke: var(--text); stroke-width: 2; }
 .tile__line--strong { color: var(--text-2); }
 .lvl-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
-.lvl-pair .lvl { border-bottom: 0; padding-bottom: 0; }
+.lvl-col { display: grid; gap: 14px; }
+.lvl-col__title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 2px 0; border-bottom: 1px solid var(--line-soft); padding-bottom: 6px; }
+.lvl-col .lvl { border-bottom: 1px solid var(--line-soft); padding-bottom: 12px; }
+.lvl-col .lvl:last-child { border-bottom: 0; padding-bottom: 0; }
+.lvl__conf { display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: 0.04em; padding: 1px 6px; border-radius: 4px; background: rgba(205, 174, 114, 0.16); color: var(--brass); margin-left: 6px; vertical-align: 1px; }
 .evidence { display: grid; grid-template-columns: minmax(230px, 0.8fr) 2.4fr; gap: 36px; }
 .evidence__score { display: grid; gap: 18px; align-content: start; }
 .evidence__lines { display: grid; gap: 14px; align-content: start; }
