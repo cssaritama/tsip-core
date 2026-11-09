@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## 2026-11-09 · Paired levels
+
+- Add a private fixed-distance baseline for paired first touches, ambiguity, gaps and complete session windows.
+
 ## 2026-11-09 · Navigation
 
 - Keep section links and the selected market visible while scrolling.

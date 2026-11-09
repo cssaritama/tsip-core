@@ -12,6 +12,7 @@ from .cross_market import compare_etfs
 from .conditional_paths import two_barrier_study
 from .fred_close import parse_fred_csv,close_only_research
 from .monday_range import monday_range_summary
+from .paired_levels import paired_level_baseline
 
 def generate_synthetic(path:str,n:int,seed:int=33)->None:
     if n<40: raise ValueError('n must be >=40')
@@ -108,7 +109,26 @@ def main():
     mr.add_argument('--symbol', choices=['BTC-USD', 'ETH-USD'], required=True)
     mr.add_argument('--as-of', required=True, help='Explicit ISO cutoff with time zone')
     mr.add_argument('--out', required=True)
+    pair = sub.add_parser('paired-levels', help='Private historical fixed-distance first-touch baseline')
+    pair.add_argument('--csv', required=True)
+    pair.add_argument('--symbol', choices=['SPY', 'QQQ'], required=True)
+    pair.add_argument('--origin', choices=['synthetic', 'licensed-research', 'user-provided'], required=True)
+    pair.add_argument('--down-pct', required=True, type=float)
+    pair.add_argument('--up-pct', required=True, type=float)
+    pair.add_argument('--horizon', required=True, type=int)
+    pair.add_argument('--as-of', required=True, help='Last complete session date, YYYY-MM-DD')
+    pair.add_argument('--out', required=True)
     args=p.parse_args()
+    if args.cmd == 'paired-levels':
+        result = paired_level_baseline(
+            load_ohlcv(args.csv), down_pct=args.down_pct, up_pct=args.up_pct,
+            horizon=args.horizon, as_of=pd.Timestamp(args.as_of),
+        )
+        result.update(instrument=args.symbol, origin=args.origin, use='private_descriptive_research')
+        out = Path(args.out)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(result, indent=2, allow_nan=False), encoding='utf8')
+        return
     if args.cmd == 'monday-range':
         summary = monday_range_summary(load_intraday(args.csv), as_of=pd.Timestamp(args.as_of))
         summary.update(instrument=args.symbol, use='private_descriptive_research')
