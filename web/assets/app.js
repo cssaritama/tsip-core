@@ -1596,6 +1596,10 @@
 
   function selectMarket(code) {
     state.active = code;
+    const marketLink = document.getElementById("active-market");
+    marketLink.textContent = SHORT_CODE[code] || code;
+    marketLink.setAttribute("aria-label", `Change market, current market ${marketName(code)} (${code})`);
+    marketLink.hidden = false;
     for (const b of document.querySelectorAll(".switch__opt")) b.setAttribute("aria-selected", String(b.dataset.code === code));
     const inst = state.report.instruments.find((i) => i.code === code);
     renderBoard(inst);
@@ -1718,62 +1722,46 @@
     }
   }
 
-  function initViewSwitch() {
-    const tabs = document.querySelectorAll(".view-tab");
-    if (!tabs.length) return;
-    function setView(viewName, scroll = true) {
-      tabs.forEach((t) => t.setAttribute("aria-selected", String(t.dataset.view === viewName)));
-      const boardSec = document.getElementById("board");
-      const chartSec = document.getElementById("chart-section");
-      const timeSec = document.getElementById("time");
-      const spaceSec = document.getElementById("space");
-      const marketsSec = document.getElementById("markets");
-      const methodSec = document.getElementById("method");
-      const dataSec = document.getElementById("data");
-      const regSec = document.getElementById("register");
-      const aboutSec = document.getElementById("about");
-
-      // Ensure all sections are active and accessible
-      if (boardSec) boardSec.hidden = false;
-      if (chartSec) chartSec.hidden = false;
-      if (timeSec) timeSec.hidden = false;
-      if (spaceSec) spaceSec.hidden = false;
-      if (marketsSec) marketsSec.hidden = false;
-      if (methodSec) methodSec.hidden = false;
-      if (dataSec) dataSec.hidden = false;
-      if (regSec) regSec.hidden = false;
-      if (aboutSec) aboutSec.hidden = false;
-
-      if (scroll) {
-        if (viewName === "cockpit" && boardSec) {
-          boardSec.scrollIntoView({ behavior: "smooth", block: "start" });
-        } else if (viewName === "chart" && chartSec) {
-          chartSec.scrollIntoView({ behavior: "smooth", block: "start" });
-        } else if (viewName === "studies" && marketsSec) {
-          marketsSec.scrollIntoView({ behavior: "smooth", block: "start" });
-        } else if (viewName === "registry" && methodSec) {
-          methodSec.scrollIntoView({ behavior: "smooth", block: "start" });
-        }
+  function initSectionNavigation() {
+    const header = document.querySelector(".bar");
+    const nav = header.querySelector(".nav");
+    const sections = [...nav.querySelectorAll("a")].map((link) => ({
+      link, target: document.getElementById(link.hash.slice(1)),
+    }));
+    let active = sections[0];
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const edge = header.getBoundingClientRect().bottom + 16;
+      let current = sections[0];
+      for (const section of sections) {
+        if (!section.target.hidden && section.target.getBoundingClientRect().top <= edge) current = section;
       }
-    }
-    tabs.forEach((btn) => {
-      btn.addEventListener("click", () => setView(btn.dataset.view, true));
-    });
+      if (current === active) return;
+      active.link.removeAttribute("aria-current");
+      current.link.setAttribute("aria-current", "location");
+      active = current;
+      const linkBox = current.link.getBoundingClientRect();
+      const navBox = nav.getBoundingClientRect();
+      if (linkBox.left < navBox.left) nav.scrollLeft += linkBox.left - navBox.left;
+      if (linkBox.right > navBox.right) nav.scrollLeft += linkBox.right - navBox.right;
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    const measure = () => {
+      document.documentElement.style.setProperty("--header-height", `${header.offsetHeight}px`);
+      schedule();
+    };
+    new ResizeObserver(measure).observe(header);
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
     window.addEventListener("hashchange", () => {
-      const h = window.location.hash;
-      if (["#method", "#data", "#register", "#about"].includes(h)) setView("registry", false);
-      else if (["#chart", "#chart-section", "#candlestick"].includes(h)) setView("chart", false);
-      else if (["#time", "#space", "#markets"].some((p) => h.startsWith(p))) setView("studies", false);
-      else if (h === "#top" || h === "#board") setView("cockpit", false);
+      if (["#chart", "#candlestick"].includes(location.hash)) document.getElementById("chart-section").scrollIntoView();
+      schedule();
     });
-    if (window.location.hash) {
-      const h = window.location.hash;
-      if (["#method", "#data", "#register", "#about"].includes(h)) setView("registry", false);
-      else if (["#chart", "#chart-section", "#candlestick"].includes(h)) setView("chart", false);
-      else if (["#time", "#space", "#markets"].some((p) => h.startsWith(p))) setView("studies", false);
-    } else {
-      setView("cockpit", false);
-    }
+    measure();
+    return schedule;
   }
 
   function initBtnTop() {
@@ -1783,13 +1771,14 @@
       btn.hidden = window.scrollY < 300;
     }, { passive: true });
     btn.addEventListener("click", () => {
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      window.scrollTo({ top: 0 });
     });
   }
 
   async function init() {
     fillStaticMeters();
-    initViewSwitch();
+    const updateNavigation = initSectionNavigation();
+    const initialHash = location.hash;
     initBtnTop();
     window.matchMedia("(max-width: 720px)").addEventListener("change", () => { if (state.active) selectMarket(state.active); });
     try {
@@ -1804,6 +1793,11 @@
       if (first) selectMarket(first);
       renderData(report);
       renderRegister(report);
+      if (initialHash && location.hash === initialHash) {
+        const id = ["#chart", "#candlestick"].includes(initialHash) ? "chart-section" : initialHash.slice(1);
+        document.getElementById(id)?.scrollIntoView({ behavior: "instant" });
+      }
+      updateNavigation();
     } catch (err) {
       document.getElementById("grid-rows").replaceChildren(el("div", { class: "grid__empty" }, `The report could not be loaded (${err.message}). Reload the page to try again.`));
     }

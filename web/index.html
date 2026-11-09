@@ -19,13 +19,18 @@
   <a class="skip" href="#main">Skip to content</a>
   <header class="bar">
     <div class="wrap bar__inner">
-      <a class="mark" href="#top" aria-label="TSIP, back to top">
-        <svg class="mark__glyph" viewBox="0 0 28 28" aria-hidden="true"><rect x="3" y="3" width="22" height="22" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M3 10.5h22M3 17.5h22" stroke="currentColor" stroke-width="1.5" opacity=".45"/><rect x="15.5" y="11.6" width="5" height="4.8" fill="var(--brass)"/></svg>
-        <span class="mark__name">TSIP</span>
-      </a>
-      <nav class="nav" aria-label="Primary">
-        <a href="#board">Cockpit</a>
+      <div class="bar__identity">
+        <a class="mark" href="#top" aria-label="TSIP, back to top">
+          <svg class="mark__glyph" viewBox="0 0 28 28" aria-hidden="true"><rect x="3" y="3" width="22" height="22" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M3 10.5h22M3 17.5h22" stroke="currentColor" stroke-width="1.5" opacity=".45"/><rect x="15.5" y="11.6" width="5" height="4.8" fill="var(--brass)"/></svg>
+          <span class="mark__name">TSIP</span>
+        </a>
+        <a class="bar__market" id="active-market" href="#market-switch" hidden></a>
+      </div>
+      <nav class="nav" aria-label="Sections">
+        <a href="#board" aria-current="location">Brief</a>
         <a href="#chart-section">Levels</a>
+        <a href="#time">Time</a>
+        <a href="#space">Space</a>
         <a href="#markets">Findings</a>
         <a href="#method">Method</a>
         <a href="#data">Data</a>
@@ -44,18 +49,11 @@
           <p class="hero__lede">Where each market stands in <b>time</b> and in <b>price</b>, what has followed from the same place before, and how strong the evidence is.</p>
         </div>
 
-        <div class="switch" role="tablist" id="market-switch" aria-label="Market"></div>
-
-        <nav class="view-switch" role="tablist" id="view-switch" aria-label="View Mode">
-          <button class="view-tab" role="tab" aria-selected="true" data-view="cockpit">Session Brief</button>
-          <button class="view-tab" role="tab" aria-selected="false" data-view="chart">Reference Levels</button>
-          <button class="view-tab" role="tab" aria-selected="false" data-view="studies">Detailed Studies</button>
-          <button class="view-tab" role="tab" aria-selected="false" data-view="registry">Methodology & Register</button>
-        </nav>
+        <div class="switch" role="tablist" id="market-switch" aria-label="Market" tabindex="-1"></div>
 
         <section class="board" id="board" aria-labelledby="board-title" aria-live="polite"></section>
 
-        <section class="chart-section" id="chart-section" hidden>
+        <section class="chart-section" id="chart-section">
           <div class="chart-section__head">
             <div class="chart-section__meta">
               <h2 id="chart-section-title">Reference levels</h2>

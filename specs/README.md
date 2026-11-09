@@ -70,3 +70,4 @@ R1. When ..., the report (or page) shall ...
 | [0022](0022-institutional-readiness.md) | Institutional readiness and integrations | proposed |
 | [0023](0023-complete-equity-sessions.md) | Complete equity sessions for daily context | regression fix for W-01/F01 |
 | [0024](0024-reference-levels-visual-hierarchy.md) | Reference Levels visual hierarchy | implemented; broader pilot pending |
+| [0025](0025-persistent-section-navigation.md) | Persistent section navigation | implemented; comprehension test pending |
