@@ -139,7 +139,7 @@ p { margin: 0; }
 .board__research > summary { cursor: pointer; padding: 10px 0; font-weight: 600; }
 .board__foot { margin-top: 12px; font-size: 13px; color: var(--muted); }
 
-/* Candlestick & Structural Liquidity Flow Workspace */
+/* Reference levels */
 .chart-section { margin-top: 18px; margin-bottom: 32px; background: var(--raise); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px 28px 28px; }
 .chart-section__head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 16px; margin-bottom: 20px; }
 .chart-section__meta h2 { font-size: 26px; font-weight: 500; font-stretch: 80%; letter-spacing: -0.01em; margin: 0 0 6px; }
@@ -148,67 +148,28 @@ p { margin: 0; }
 .cfilter { appearance: none; background: none; border: 0; padding: 5px 12px; font: inherit; font-size: 12px; font-weight: 500; color: var(--muted); border-radius: 4px; cursor: pointer; transition: all 0.15s ease; }
 .cfilter:hover { color: var(--text); }
 .cfilter.is-active { background: var(--raise); color: var(--brass); box-shadow: 0 1px 2px rgba(0,0,0,0.25); }
-.chart-wrap { position: relative; width: 100%; min-height: 420px; background: #0c0f14; border: 1px solid var(--line-soft); border-radius: 6px; overflow: hidden; }
-.chart-svg { display: block; width: 100%; height: auto; }
-.chart-legend { display: flex; flex-wrap: wrap; gap: 16px 24px; margin-top: 14px; font-size: 12px; color: var(--muted); }
-.cleg { display: inline-flex; align-items: center; gap: 8px; }
-.cleg::before { content: ""; display: inline-block; width: 14px; height: 3px; border-radius: 1.5px; }
-.cleg--high::before { background: var(--time); }
-.cleg--low::before { background: var(--brass); }
-.cleg--aligned::before { background: #e5c07b; height: 4px; box-shadow: 0 0 6px rgba(229, 192, 123, 0.4); }
-.cleg--reach::before { background: linear-gradient(90deg, rgba(74, 155, 142, 0.6), rgba(74, 155, 142, 0.1)); width: 28px; }
-.c-ray { stroke-dasharray: 4, 3; stroke-width: 1.25; }
-.c-ray--high { stroke: var(--time); opacity: 0.9; }
-.c-ray--low { stroke: var(--brass); opacity: 0.9; }
-.c-ray--aligned { stroke: #e5c07b; stroke-width: 2; opacity: 1; stroke-dasharray: none; }
-.c-reach-bar { fill-opacity: 0.14; }
-.c-reach-bar--high { fill: var(--time); }
-.c-reach-bar--low { fill: var(--brass); }
-.c-reach-bar--aligned { fill: #e5c07b; fill-opacity: 0.22; }
-.c-ray-tag { font-size: 10.5px; font-weight: 500; font-family: var(--font); }
-.c-grid-line { stroke: var(--line-soft); stroke-width: 1; }
-.c-axis-text { font-size: 10.5px; fill: var(--muted); font-family: var(--font); }
-.c-crosshair { stroke: rgba(255, 255, 255, 0.45); stroke-dasharray: 2, 2; stroke-width: 1; pointer-events: none; }
-.c-hud { pointer-events: none; }
-.c-hud-bg { fill: rgba(14, 18, 24, 0.94); stroke: var(--line); stroke-width: 1; }
-.c-hud-text { font-family: var(--font); font-size: 11px; }
-.c-hud-text--primary { fill: var(--text); font-weight: 600; }
-.c-hud-text--secondary { fill: var(--brass); font-weight: 500; }
-
-.chart-table-wrap {
-  margin-top: 18px;
-  background: var(--sunk);
-  border: 1px solid var(--line-soft);
-  border-radius: 6px;
-  overflow-x: auto;
-}
-.chart-mtable {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12.5px;
-}
-.chart-mtable th, .chart-mtable td {
-  padding: 8px 14px;
-  text-align: left;
-  border-bottom: 1px solid var(--line-soft);
-}
-.chart-mtable th {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--muted);
-  font-weight: 600;
-}
-.chart-tbl-lvl {
-  font-weight: 500;
-  color: var(--text);
+.reference-context { color: var(--text-2); margin-bottom: 14px; font-size: 14px; }
+.reference-context strong { color: var(--text); }
+.reference-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.reference-group { background: var(--sunk); padding: 16px; border: 1px solid var(--line); border-radius: var(--radius); }
+.reference-group h3 { margin: 0 0 12px; font-size: 16px; }
+.reference-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 13px; }
+.reference-row { display: flex; gap: 8px; justify-content: space-between; align-items: baseline; font-size: 14px; }
+.reference-row strong { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.reference-row small, .reference-table small { display: block; color: var(--muted); font-size: 12px; }
+.reference-track { height: 6px; margin-top: 7px; background: var(--raise); border-radius: 4px; }
+.reference-track span { display: block; width: var(--extent); height: 100%; border-radius: inherit; background: var(--time); }
+.reference-group--below .reference-track span { background: var(--brass); }
+.reference-evidence { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 12px; }
+.reference-evidence summary { cursor: pointer; font-weight: 600; }
+.reference-table th[scope="row"] { text-align: left; }
+.reference-evidence .table-wrap { margin-top: 10px; }
+.cfilter:focus-visible, .reference-evidence summary:focus-visible, .reference-evidence .table-wrap:focus-visible { outline: 2px solid var(--time); outline-offset: 2px; }
+@media (max-width: 720px) {
+  .chart-section { padding: 16px; }
+  .reference-pair { grid-template-columns: 1fr; }
 }
 
-
-
-
-
-/* Today: the graded facts that apply to the current position (specification 0006). */
 .today { margin-bottom: 12px; padding: 14px 20px 16px; background: var(--raise); border: 1px solid var(--line); border-radius: var(--radius); }
 .today__title { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
 .today__list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 28px; }

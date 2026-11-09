@@ -25,7 +25,7 @@
       </a>
       <nav class="nav" aria-label="Primary">
         <a href="#board">Cockpit</a>
-        <a href="#chart-section">Chart</a>
+        <a href="#chart-section">Levels</a>
         <a href="#markets">Findings</a>
         <a href="#method">Method</a>
         <a href="#data">Data</a>
@@ -58,24 +58,18 @@
         <section class="chart-section" id="chart-section" hidden>
           <div class="chart-section__head">
             <div class="chart-section__meta">
-              <h2 id="chart-section-title">Structural Liquidity & Empirical Reach Horizons</h2>
-              <p class="chart-section__lede">Audited price levels from closed periods that remain untested, paired with empirical reach probabilities across 5, 20, and 60 sessions from historical starting points.</p>
+              <h2 id="chart-section-title">Reference levels</h2>
+              <p class="chart-section__lede">Compare the nearest untested levels from completed periods, then inspect the historical evidence for each distance.</p>
             </div>
-            <div class="chart-section__filters" id="chart-filters" role="group" aria-label="Liquidity Layer Filters">
-              <button class="cfilter is-active" data-filter="all">All Untested Horizons</button>
-              <button class="cfilter" data-filter="weekly">Weekly Reference</button>
-              <button class="cfilter" data-filter="monthly">Monthly Reference</button>
-              <button class="cfilter" data-filter="macro">Quarterly & Macro</button>
-              <button class="cfilter" data-filter="confluence">Multi-Horizon Aligned</button>
+            <div class="chart-section__filters" id="chart-filters" role="group" aria-label="Reference horizons">
+              <button class="cfilter is-active" data-filter="all">All horizons</button>
+              <button class="cfilter" data-filter="weekly">Weekly</button>
+              <button class="cfilter" data-filter="monthly">Monthly</button>
+              <button class="cfilter" data-filter="macro">Quarter and longer</button>
+              <button class="cfilter" data-filter="confluence">Multiple horizons</button>
             </div>
           </div>
           <div class="chart-wrap" id="chart-wrap" aria-live="polite"></div>
-          <div class="chart-legend" id="chart-legend">
-            <span class="cleg cleg--high">Overhead Reference (Untested Highs)</span>
-            <span class="cleg cleg--low">Downside Reference (Untested Lows)</span>
-            <span class="cleg cleg--aligned">Multi-Horizon Aligned (Confluence)</span>
-            <span class="cleg cleg--reach">Horizontal Bar: 20-Day Empirical Reach Probability</span>
-          </div>
         </section>
 
         <section class="axis" id="time" aria-labelledby="time-title">
