@@ -10,16 +10,10 @@ from tsip.studies.first_passage import AMBIGUOUS, DOWN, NONE, UP, first_passage
 OUTCOMES = {"upper_first": UP, "lower_first": DOWN, "neither": NONE, "ambiguous": AMBIGUOUS}
 
 
-def paired_level_baseline(
-    daily: pd.DataFrame, *, down_pct: float, up_pct: float, horizon: int, as_of: pd.Timestamp
-) -> dict:
-    """Apply the same two signed close-relative distances at each eligible historical close."""
+def session_bars(daily: pd.DataFrame, as_of: pd.Timestamp) -> tuple[pd.DatetimeIndex, pd.DataFrame]:
+    """Validate daily OHLC and return its expected calendar, including the first partial week."""
     import exchange_calendars as xcals
 
-    if not np.isfinite([down_pct, up_pct]).all() or not -100 < down_pct < 0 < up_pct:
-        raise ValueError("Distances must be finite, with -100 < down_pct < 0 < up_pct")
-    if not 1 <= horizon <= 20:
-        raise ValueError("Horizon must be 1..20 sessions")
     index = pd.DatetimeIndex(daily.index)
     if (
         index.tz is not None
@@ -37,7 +31,9 @@ def paired_level_baseline(
     calendar = xcals.get_calendar("XNYS", start=start - pd.Timedelta(days=7), end=as_of + pd.Timedelta(days=7))
     if not calendar.is_session(as_of):
         raise ValueError("Cutoff must be an exchange session")
-    sessions = pd.DatetimeIndex(calendar.sessions_in_range(start, as_of)).tz_localize(None)
+    sessions = pd.DatetimeIndex(
+        calendar.sessions_in_range(start - pd.Timedelta(days=start.dayofweek), as_of)
+    ).tz_localize(None)
     if not daily.index.isin(sessions).all():
         raise ValueError("Input includes dates outside the exchange calendar")
     values = daily[["open", "high", "low", "close"]].to_numpy(dtype=float)
@@ -46,6 +42,21 @@ def paired_level_baseline(
     opens, highs, lows, closes = values.T
     if (highs < np.maximum(opens, closes)).any() or (lows > np.minimum(opens, closes)).any():
         raise ValueError("High and low must enclose open and close")
+
+    return sessions, daily
+
+
+def paired_level_baseline(
+    daily: pd.DataFrame, *, down_pct: float, up_pct: float, horizon: int, as_of: pd.Timestamp
+) -> dict:
+    """Apply the same two signed close-relative distances at each eligible historical close."""
+    if not np.isfinite([down_pct, up_pct]).all() or not -100 < down_pct < 0 < up_pct:
+        raise ValueError("Distances must be finite, with -100 < down_pct < 0 < up_pct")
+    if not 1 <= horizon <= 20:
+        raise ValueError("Horizon must be 1..20 sessions")
+    sessions, daily = session_bars(daily, as_of)
+    start = daily.index[0]
+    opens, highs, lows, closes = daily[["open", "high", "low", "close"]].to_numpy(dtype=float).T
 
     counts = dict.fromkeys(OUTCOMES, 0)
     gaps = {"upper_first": 0, "lower_first": 0}
