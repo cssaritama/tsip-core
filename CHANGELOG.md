@@ -37,6 +37,7 @@ All notable changes to this project are documented here. The format follows [Kee
 ## [Unreleased]
 
 ### Added
+- Course project data (specification 0028, R1 and R6; `tsip.capstone.data`): one daily frame for SPY, QQQ, GLD, Bitcoin and Ethereum with reference-market closes and FRED macro series, in two modes (`--mode download` stores yfinance and FRED data outside the repository with a fingerprinted manifest; `--mode file` repeats the run from the stored copy). Reference closes come only from earlier dates and macro values only after a conservative release lag; tests check both and that no row changes when later data are removed. Optional dependencies: `pip install -e ".[capstone]"`.
 - Specification 0028 (W-121): do time–space features improve the out-of-sample prediction of future returns, with ablation, random-walk and permuted-block controls, five strategies and the pullback-buying comparison with idle cash accounted for. Hypothesis H-2026-016 registered before any model is trained.
 
 ### Removed

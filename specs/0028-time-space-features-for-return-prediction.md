@@ -54,8 +54,15 @@ The answer is useful whichever way it goes. A lift, confirmed against controls a
 
 Data files are never committed. Prices from yfinance are used for the course project only, under their terms; TSIP's public board keeps its own sources (ADR 0055). The private Kibot history is not used.
 
+## Data notes (step 1)
+
+- Reference markets: S&P 500, Nasdaq-100, DAX, gold, WTI and Brent oil, Bitcoin and VIX closes, joined from the previous calendar day or earlier, because their closes fall at different hours from the row's own close.
+- Macro release lags: 10-year yield and 3-month bill from the next day; federal funds monthly average 3 days after the month ends; CPI 20 days after the month ends.
+- The rubric's "more than 1 million records" point is not met by daily data (about 30,000 rows); it would need intraday or minute bars (for example the Binance archive) and is claimed only if such data are added.
+
 ## Verification
 
 | ID | Result | Evidence |
 |---|---|---|
-| T1–T6 | to do | |
+| T1 | partial: data layer passes (`tests/test_capstone_data.py`: reference closes only from earlier dates, macro values only after release lags, rows unchanged when later data are removed); features to follow | step 1 of the resume point, 2026-11-10 |
+| T2–T6 | to do | |
