@@ -58,7 +58,7 @@ Data files are never committed. Prices from yfinance are used for the course pro
 
 - Reference markets: S&P 500, Nasdaq-100, DAX, gold, WTI and Brent oil, Bitcoin and VIX closes, joined from the previous calendar day or earlier, because their closes fall at different hours from the row's own close.
 - Macro release lags: 10-year yield and 3-month bill from the next day; federal funds monthly average 3 days after the month ends; CPI 20 days after the month ends.
-- The rubric's "more than 1 million records" point is not met by daily data (about 30,000 rows); it would need intraday or minute bars (for example the Binance archive) and is claimed only if such data are added.
+- The rubric's "more than 1 million records" point is not met by daily data (tens of thousands of rows); it would need intraday or minute bars (for example the Binance archive) and is claimed only if such data are added.
 
 ## Verification
 
