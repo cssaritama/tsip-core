@@ -178,5 +178,17 @@
     "evaluation_start": "2026-11-09",
     "evaluation_end": "2027-11-07",
     "status": "open"
+  },
+  {
+    "id": "H-2026-016",
+    "instrument": "SPY, QQQ, GLD, BTC-USD, ETH-USD",
+    "statement": "Adding the time and space features of TSIP to the course's standard features improves the out-of-sample prediction of the direction of the next five sessions.",
+    "metric": "Pooled ROC AUC of the model chosen on validation data with LECTURE+TIME+SPACE features minus the same model with LECTURE features only, on the test period from 2024-01-01 (specification 0018), with a circular block bootstrap interval (20-session blocks, 2,000 resamples).",
+    "criterion": "Supported if the lift is at least 0.02 and its 95% interval excludes zero, and the random-walk and permuted-block controls show no lift. Rejected otherwise.",
+    "basis": "Founder's thesis that price travels in time and space towards liquidity levels; one graded lead (prior week's high revisited more often than an equally distant level, RESULTS_2026-11-03_REVISIT) and one rejection (Monday's low on SPY). Registered before any model was trained.",
+    "registered": "2026-11-09",
+    "evaluation_start": "2024-01-01",
+    "evaluation_end": "2026-11-19",
+    "status": "open"
   }
 ]

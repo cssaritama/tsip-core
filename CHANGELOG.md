@@ -4,6 +4,9 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Added
+- Specification 0018 (W-89): do time–space features improve the out-of-sample prediction of future returns, with ablation, random-walk and permuted-block controls, five strategies and the pullback-buying comparison with idle cash accounted for. Hypothesis H-2026-016 registered before any model is trained.
+
 ### Removed
 - Specifications 0012 to 0017 withdrawn (W-83): their first versions reported results that no code in the repository produces, without control, holdout, interval or grade, and some figures contradicted each other and the graded money results of 0.2.16 to 0.2.18. Each file now states why it was withdrawn and how the question can be specified again. No study, report field or page section depended on them.
 

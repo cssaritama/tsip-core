@@ -63,3 +63,4 @@ R1. When ..., the report (or page) shall ...
 | [0015](0015-time-space-opportunistic-accumulation.md) | Opportunistic accumulation against monthly purchases | withdrawn 2026-11-09 (W-80; ADR 0071) |
 | [0016](0016-microstructure-sweep-and-absorption.md) | Microstructure sweep signatures: absorption versus breakout acceptance | withdrawn 2026-11-09 (W-81; ADR 0071) |
 | [0017](0017-institutional-execution-and-risk-matrix.md) | Institutional execution and risk matrix: posture synthesis, bounded stops, and Kelly sizing | withdrawn 2026-11-09 (W-82; ADR 0071) |
+| [0018](0018-time-space-features-for-return-prediction.md) | Do time–space features improve the prediction of future returns? | approved; H-2026-016 registered |
