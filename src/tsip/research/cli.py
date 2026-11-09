@@ -11,6 +11,7 @@ from .sessions import load_intraday,session_rows,session_summary,rolling_elapsed
 from .cross_market import compare_etfs
 from .conditional_paths import two_barrier_study
 from .fred_close import parse_fred_csv,close_only_research
+from .monday_range import monday_range_summary
 
 def generate_synthetic(path:str,n:int,seed:int=33)->None:
     if n<40: raise ValueError('n must be >=40')
@@ -102,7 +103,19 @@ def main():
     fc=sub.add_parser('fred-close',help='Local FRED CSV close-only research; NEVER OHLC')
     fc.add_argument('--csv',required=True);fc.add_argument('--series',choices=['SP500','NASDAQ100'],required=True)
     fc.add_argument('--out',required=True)
+    mr = sub.add_parser('monday-range', help='Private crypto Monday range research (hourly UTC bar starts)')
+    mr.add_argument('--csv', required=True)
+    mr.add_argument('--symbol', choices=['BTC-USD', 'ETH-USD'], required=True)
+    mr.add_argument('--as-of', required=True, help='Explicit ISO cutoff with time zone')
+    mr.add_argument('--out', required=True)
     args=p.parse_args()
+    if args.cmd == 'monday-range':
+        summary = monday_range_summary(load_intraday(args.csv), as_of=pd.Timestamp(args.as_of))
+        summary.update(instrument=args.symbol, use='private_descriptive_research')
+        out = Path(args.out)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(summary, indent=2, allow_nan=False), encoding='utf8')
+        return
     if args.cmd=='fred-close':
         frame=parse_fred_csv(args.csv,args.series)
         summary=close_only_research(frame,args.series)

@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## 2026-11-09 · Session research
+
+- Add a private descriptive runner for the crypto Monday range with complete hourly UTC weeks.
+
 ## 2026-11-09 · Restart documentation
 
 - Record the proposed desk workflow and mark the execution matrix as withdrawn pending independent evidence.

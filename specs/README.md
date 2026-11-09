@@ -64,3 +64,4 @@ R1. When ..., the report (or page) shall ...
 | [0016](0016-microstructure-sweep-and-absorption.md) | Microstructure sweep signatures: absorption versus breakout acceptance | open (W-81) |
 | [0017](0017-institutional-execution-and-risk-matrix.md) | Institutional execution and risk matrix: posture synthesis, bounded stops, and Kelly sizing | blocked research proposal (W-82); display withdrawn |
 | [0018](0018-desk-brief-and-pilot.md) | SPY next-session Desk Brief and shadow pilot | proposed (W-83–W-85) |
+| [0019](0019-session-transitions-and-brief-export.md) | Opening transitions, opposing levels and one-page export | private research started (W-88–W-91) |
