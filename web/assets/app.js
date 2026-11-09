@@ -1374,6 +1374,20 @@
       facts.some((f) => f.grade) ? null : el("p", { class: "tile__line" }, "No strong effect applies to today's position; the tiles below give the context and the weaker evidence."));
   }
 
+  function briefLevels(inst, status) {
+    if (status !== "fresh") {
+      return el("p", { class: "board__foot" }, "Current reference levels are unavailable. Check data status before using historical context.");
+    }
+    const levels = (inst.open_levels?.levels || []).filter((level) => Number.isFinite(level.distance_pct));
+    const above = levels.filter((level) => level.distance_pct > 0).sort((a, b) => a.distance_pct - b.distance_pct)[0];
+    const below = levels.filter((level) => level.distance_pct < 0).sort((a, b) => b.distance_pct - a.distance_pct)[0];
+    return el("div", { class: "today__list" },
+      ...[["Above last close", above], ["Below last close", below]].map(([label, level]) =>
+        el("div", { class: "today__fact" },
+          el("strong", { class: "today__fig" }, level ? `${signed(level.distance_pct)}%` : "—"),
+          el("span", { class: "today__text" }, `${label}: ${level ? levelName(level) : "no untested reference available"}`))));
+  }
+
   function renderBoard(inst) {
     const box = document.getElementById("board");
     if (!inst || inst.status !== "ok") { box.replaceChildren(); box.hidden = true; return; }
@@ -1389,14 +1403,21 @@
       : crypto ? `last full day ${dayLabel(lastDay)}; trading around the clock`
       : clk.open ? `${clk.label}` : `last close ${dayLabel(lastDay)}; next session ${clk.weekday} ${clk.dom} ${clk.month}, 09:30 New York${clk.early ? `, early close ${clk.closeText}` : ""}`;
     const tiles = [tileMove(inst, clk, unit, crypto), tileWhen(inst, clk, crypto), tilePosition(inst, unit), tileLevels(inst, unit), tileMoney(inst, unit), tilePlan(inst), tileEvidence(inst)].filter(Boolean);
-    const costs = findCard(inst, "money.week") || findCard(inst, "money.month") || findCard(inst, "plan.week") || findCard(inst, "plan.month");
+    const research = el("details", { class: "board__research" },
+      el("summary", {}, "Open historical analysis"),
+      closeOnly ? null : todayPanel(inst, clk, crypto, unit),
+      el("div", { class: "board__grid" }, ...tiles));
+    research.open = box.querySelector("details.board__research")?.open || location.hash.startsWith("#tile-");
     box.replaceChildren(
       el("div", { class: "board__head" },
-        el("h2", { id: "board-title" }, "At a glance"),
+        el("h2", { id: "board-title" }, "Session brief"),
         el("p", {}, `${marketName(inst.code)}, ${inst.code}: ${when}`),
         st ? el("span", { class: "board__status" }, el("span", { class: `dot dot--${st.status}` }), word[st.status] || st.status) : null),
-      closeOnly ? null : todayPanel(inst, clk, crypto, unit),
-      el("div", { class: "board__grid" }, ...tiles),
+      closeOnly ? null : el("section", { class: "today", "aria-label": "Nearest reference levels" },
+        el("h3", { class: "today__title" }, `Reference levels · ${dayLabel(inst.open_levels?.as_of || lastDay)} (${crypto ? "UTC" : "New York"})`),
+        briefLevels(inst, st?.status),
+        el("p", { class: "board__foot" }, "Historical reference levels describe location. Open historical analysis to inspect comparisons and their evidence.")),
+      research,
       el("p", { class: "board__foot" }, closeOnly
         ? `${marketName(inst.code)} is published as closes only, so positions, levels and intraday timing are shown for the tradable funds (SPY, QQQ); its long-history statistics are listed below.`
         : "Every figure is measured on this market's own history and graded against a control. It describes what has happened; it is not a signal or a forecast."));
@@ -1768,23 +1789,21 @@
       crosshairY.style.display = "";
 
       const impliedDistPct = -((cursor.y - (padT + chartH / 2)) / (chartH / 2)) * span;
-      const atrPct = inst.open_levels?.atr_pct || inst.position?.atr_median_pct || 1.1;
-      const impliedAtr = impliedDistPct / (atrPct || 1.0);
+      const atrPct = inst.open_levels?.atr_pct;
+      const impliedAtr = Number.isFinite(atrPct) && atrPct > 0 ? impliedDistPct / atrPct : null;
 
       // Check proximity to any level
       const nearest = labelItems.find((it) => Math.abs(it.rayY - cursor.y) < 10);
       if (nearest) {
         const l = nearest.level;
-        const p5 = l.reach?.within?.["5"]?.pct ? `${l.reach.within["5"].pct.toFixed(0)}%` : "–";
-        const p20 = l.reach?.within?.["20"]?.pct ? `${l.reach.within["20"].pct.toFixed(0)}%` : "–";
-        const p60 = l.reach?.within?.["60"]?.pct ? `${l.reach.within["60"].pct.toFixed(0)}%` : "–";
-        const typ = l.reach?.typical_sessions ? `${l.reach.typical_sessions}s` : ">120s";
+        const [p5, p20, p60] = [5, 20, 60].map((window) => pct(l.reach?.within?.[window]?.pct));
+        const typ = l.reach?.typical_sessions == null ? "unavailable" : `${l.reach.typical_sessions} sessions`;
 
-        hudTxt1.textContent = `${levelName(l)} · Distance: ${signed(l.distance_pct)}% (${signed(l.distance_atr || 0, 1)} ATR)`;
+        hudTxt1.textContent = `${levelName(l)} · Distance: ${signed(l.distance_pct)}% (${signed(l.distance_atr, 1)} ATR)`;
         hudTxt2.textContent = `Reach odds: 5s:${p5} · 20s:${p20} · 60s:${p60} · Typical arrival: ${typ}`;
       } else {
         hudTxt1.textContent = `Target Distance: ${signed(impliedDistPct)}% from Close`;
-        hudTxt2.textContent = `Implied Volatility Offset: ${signed(impliedAtr, 2)} ATR (14-session)`;
+        hudTxt2.textContent = impliedAtr === null ? "ATR unavailable" : `Volatility offset: ${signed(impliedAtr, 2)} ATR (14-session)`;
       }
       hudGroup.style.display = "";
     });
@@ -1797,7 +1816,7 @@
     // Render Clean Structural Levels Table Below SVG
     const oddsStr = (l, k) => {
       const o = l.reach?.within?.[k];
-      return o && o.pct !== null ? `${o.pct.toFixed(0)}%` : "–";
+      return pct(o?.pct);
     };
 
     const tableWrap = el("div", { class: "chart-table-wrap" },
@@ -1820,7 +1839,7 @@
             el("td", {}, oddsStr(l, "5")),
             el("td", {}, oddsStr(l, "20")),
             el("td", {}, oddsStr(l, "60")),
-            el("td", {}, l.reach?.typical_sessions ? `${l.reach.typical_sessions} sessions` : "Over 120 sessions"),
+            el("td", {}, l.reach?.typical_sessions == null ? "Unavailable" : `${l.reach.typical_sessions} sessions`),
             el("td", {}, (l.confluence || 1) > 1
               ? `${(l.horizons || []).map(capital).join(" & ")} Aligned`
               : `${capital(l.horizon || "Standard")} Reference`))))));

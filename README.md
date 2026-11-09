@@ -7,7 +7,7 @@
 
 **Time–Space Intelligence: where we are in time, where price stands in space, and the evidence behind every figure.** The model is described in [docs/TIME_SPACE_MODEL.md](docs/TIME_SPACE_MODEL.md).
 
-**▶ Live report: [cssaritama.github.io/tsip-core](https://cssaritama.github.io/tsip-core/)**, rebuilt every day from market data up to the previous session. The page opens with **At a glance**: how far the market moves, when it moves, where it stands, which levels are in reach, what can be made or lost from here and what the evidence supports, each answered with one figure, one chart against its control and its grade.
+**▶ Live report: [cssaritama.github.io/tsip-core](https://cssaritama.github.io/tsip-core/)**, rebuilt every day from market data up to the previous session. The page opens with the **Session brief**, showing data freshness and the nearest available references above and below the last close. Open historical analysis for the detailed studies and evidence.
 
 Traders are surrounded by statistics: *"the prior-day high gets taken 60% of the time"*, *"Mondays set the weekly low"*, *"buy the dip at last month's low"*. Most of these numbers are real frequencies and most of them are misleading, because they are never compared with what chance alone would produce.
 

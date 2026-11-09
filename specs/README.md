@@ -65,3 +65,6 @@ R1. When ..., the report (or page) shall ...
 | [0017](0017-institutional-execution-and-risk-matrix.md) | Institutional execution and risk matrix: posture synthesis, bounded stops, and Kelly sizing | blocked research proposal (W-82); display withdrawn |
 | [0018](0018-desk-brief-and-pilot.md) | SPY next-session Desk Brief and shadow pilot | proposed (W-83–W-85) |
 | [0019](0019-session-transitions-and-brief-export.md) | Opening transitions, opposing levels and one-page export | private research started (W-88–W-91) |
+| [0020](0020-decision-interface-and-replay.md) | Decision interface, replay and review | first-view prototype; pilot pending |
+| [0021](0021-advanced-decision-research.md) | Advanced decision research | proposed |
+| [0022](0022-institutional-readiness.md) | Institutional readiness and integrations | proposed |
