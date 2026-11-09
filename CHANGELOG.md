@@ -4,6 +4,12 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Removed
+- Specifications 0012 to 0017 withdrawn (W-83): their first versions reported results that no code in the repository produces, without control, holdout, interval or grade, and some figures contradicted each other and the graded money results of 0.2.16 to 0.2.18. Each file now states why it was withdrawn and how the question can be specified again. No study, report field or page section depended on them.
+
+### Changed
+- The website changes of 2026-11-08 (view switcher, level ladder and reach map, candlestick workspace, percentage axis, removal of the cost selector from the header) are not yet described in this file; they will be recorded with the next release after a render check (W-84).
+
 ## [0.2.24] – 2026-11-06
 
 ### Added

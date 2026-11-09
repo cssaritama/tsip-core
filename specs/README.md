@@ -57,9 +57,9 @@ R1. When ..., the report (or page) shall ...
 | [0009](0009-test-budget.md) | Test budget: which conditions the history can support | shipped 0.2.22 |
 | [0010](0010-revisit-of-monday-and-recent-lows.md) | Revisit of Monday's low and of the recent lows | shipped 0.2.23 |
 | [0011](0011-hypothesis-evaluations.md) | Evaluation record for the hypothesis register | shipped 0.2.24 |
-| [0012](0012-extreme-tail-expansions-and-reversion.md) | Extreme multi-session expansions, trapped volume and retracement velocities | open (W-78) |
-| [0013](0013-liquidity-voids-and-auction-imbalances.md) | Liquidity voids, auction imbalances and mean fill dynamics | open (W-79) |
-| [0014](0014-session-momentum-and-overnight-transitions.md) | Session-to-session momentum and overnight transitions | open (W-58) |
-| [0015](0015-time-space-opportunistic-accumulation.md) | Time–Space opportunistic liquidity accumulation and 20-year alpha proof | open (W-80) |
-| [0016](0016-microstructure-sweep-and-absorption.md) | Microstructure sweep signatures: absorption versus breakout acceptance | open (W-81) |
-| [0017](0017-institutional-execution-and-risk-matrix.md) | Institutional execution and risk matrix: posture synthesis, bounded stops, and Kelly sizing | open (W-82) |
+| [0012](0012-extreme-tail-expansions-and-reversion.md) | Extreme multi-session expansions, trapped volume and retracement velocities | withdrawn 2026-11-09 (W-78; ADR 0071) |
+| [0013](0013-liquidity-voids-and-auction-imbalances.md) | Liquidity voids, auction imbalances and mean fill dynamics | withdrawn 2026-11-09 (W-79; ADR 0071) |
+| [0014](0014-session-momentum-and-overnight-transitions.md) | Session-to-session momentum and overnight transitions | withdrawn 2026-11-09 (W-58; ADR 0071) |
+| [0015](0015-time-space-opportunistic-accumulation.md) | Opportunistic accumulation against monthly purchases | withdrawn 2026-11-09 (W-80; ADR 0071) |
+| [0016](0016-microstructure-sweep-and-absorption.md) | Microstructure sweep signatures: absorption versus breakout acceptance | withdrawn 2026-11-09 (W-81; ADR 0071) |
+| [0017](0017-institutional-execution-and-risk-matrix.md) | Institutional execution and risk matrix: posture synthesis, bounded stops, and Kelly sizing | withdrawn 2026-11-09 (W-82; ADR 0071) |
