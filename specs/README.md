@@ -72,4 +72,4 @@ R1. When ..., the report (or page) shall ...
 | [0024](0024-reference-levels-visual-hierarchy.md) | Reference Levels visual hierarchy | implemented; broader pilot pending |
 | [0025](0025-persistent-section-navigation.md) | Persistent section navigation | implemented; comprehension test pending |
 | [0026](0026-paired-level-geometry-baseline.md) | Paired-level geometry baseline | private runner implemented; matched research and review pending |
-| [0027](0027-matched-weekly-levels.md) | Historical weekly references versus geometry | private synthetic verification; authorized market run pending |
+| [0027](0027-matched-weekly-levels.md) | Historical weekly references versus geometry | private runner and synthetic verification; independent review pending |

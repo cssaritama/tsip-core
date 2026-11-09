@@ -20,4 +20,4 @@ python -m tsip.research.cli matched-weekly-levels --symbol SPY --origin licensed
 
 Use synthetic fixtures to verify mechanics. Independent review must reproduce selected anchors, check calendar and adjustment integrity, test sensitivity to control reuse and volatility regime, and sign off before reporting a market estimate. If results fail to separate from geometry, keep the result as a baseline. The next extension, after review, is time and adverse excursion before the first touch.
 
-Verification: the reproducible synthetic fixture in tests/research/test_matched_levels.py exercised 154 matched anchors, a separate calibration pool and the exploratory interval. Synthetic outputs verify mechanics only. No market result has been produced.
+Verification: the reproducible synthetic fixture in tests/research/test_matched_levels.py exercised 154 matched anchors, a separate calibration pool and the exploratory interval. Synthetic outputs verify mechanics only. Market data and results are outside the public specification.
