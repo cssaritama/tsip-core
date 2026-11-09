@@ -1,7 +1,7 @@
 # 0028 Do time–space features improve the prediction of future returns?
 
 **Status:** approved (founder, 2026-11-09); hypothesis H-2026-016 registered before any model is trained
-**Level:** 2 study · **Open work:** W-89 (course final project, release 1.0.0) · **Decisions:** ADR 0064, ADR 0071
+**Level:** 2 study · **Open work:** W-121 (course final project, release 1.0.0) · **Decisions:** ADR 0064, ADR 0071
 
 ## Problem and decision supported
 

@@ -37,13 +37,13 @@ All notable changes to this project are documented here. The format follows [Kee
 ## [Unreleased]
 
 ### Added
-- Specification 0028 (W-89): do time–space features improve the out-of-sample prediction of future returns, with ablation, random-walk and permuted-block controls, five strategies and the pullback-buying comparison with idle cash accounted for. Hypothesis H-2026-016 registered before any model is trained.
+- Specification 0028 (W-121): do time–space features improve the out-of-sample prediction of future returns, with ablation, random-walk and permuted-block controls, five strategies and the pullback-buying comparison with idle cash accounted for. Hypothesis H-2026-016 registered before any model is trained.
 
 ### Removed
-- Specifications 0012 to 0017 withdrawn (W-83): their first versions reported results that no code in the repository produces, without control, holdout, interval or grade, and some figures contradicted each other and the graded money results of 0.2.16 to 0.2.18. Each file now states why it was withdrawn and how the question can be specified again. No study, report field or page section depended on them.
+- Specifications 0012 to 0017 withdrawn (W-115): their first versions reported results that no code in the repository produces, without control, holdout, interval or grade, and some figures contradicted each other and the graded money results of 0.2.16 to 0.2.18. Each file now states why it was withdrawn and how the question can be specified again. No study, report field or page section depended on them.
 
 ### Changed
-- The website changes of 2026-11-08 (view switcher, level ladder and reach map, candlestick workspace, percentage axis, removal of the cost selector from the header) are not yet described in this file; they will be recorded with the next release after a render check (W-84).
+- The website changes of 2026-11-08 (view switcher, level ladder and reach map, candlestick workspace, percentage axis, removal of the cost selector from the header) are not yet described in this file; they will be recorded with the next release after a render check (W-116).
 
 ## [0.2.24] – 2026-11-06
 
