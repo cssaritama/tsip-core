@@ -1,5 +1,7 @@
 # Specification 0017: Institutional Execution and Risk Matrix (W-82)
 
+**Status: blocked research proposal.** The display was withdrawn in core 3de72ca. The historical text below preserves the proposal. The void-fill frequency is a different endpoint from target-before-stop; the Sharpe thresholds conflict. With the stated inputs quarter Kelly is approximately 12.3%, and a 2% cap would be a separate rule. No sizing or execution claims may be promoted from this specification pending independent validation. See [0018](0018-desk-brief-and-pilot.md) for the proposed desk workflow.
+
 ## 1. Context and Problem Statement
 Operators currently have access to individual quantitative cards: Time profiles, Space levels, Auction Voids, and Session Momentum. However, an institutional portfolio manager or execution desk requires a unified synthesis that answers:
 1. What is the current **Market Posture** (Accumulation, Expansion, Distribution, or Neutral)?

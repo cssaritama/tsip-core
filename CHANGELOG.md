@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## 2026-11-09 · Restart documentation
+
+- Record the proposed desk workflow and mark the execution matrix as withdrawn pending independent evidence.
+
 ## [Unreleased]
 
 ## [0.2.24] – 2026-11-06
