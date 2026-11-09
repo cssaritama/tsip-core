@@ -63,4 +63,14 @@ R1. When ..., the report (or page) shall ...
 | [0015](0015-time-space-opportunistic-accumulation.md) | Opportunistic accumulation against monthly purchases | withdrawn 2026-11-09 (W-80; ADR 0071) |
 | [0016](0016-microstructure-sweep-and-absorption.md) | Microstructure sweep signatures: absorption versus breakout acceptance | withdrawn 2026-11-09 (W-81; ADR 0071) |
 | [0017](0017-institutional-execution-and-risk-matrix.md) | Institutional execution and risk matrix: posture synthesis, bounded stops, and Kelly sizing | withdrawn 2026-11-09 (W-82; ADR 0071) |
-| [0018](0018-time-space-features-for-return-prediction.md) | Do time–space features improve the prediction of future returns? | approved; H-2026-016 registered |
+| [0018](0018-desk-brief-and-pilot.md) | SPY next-session Desk Brief and shadow pilot | proposed (W-83–W-85) |
+| [0019](0019-session-transitions-and-brief-export.md) | Opening transitions, opposing levels and one-page export | private research started (W-88–W-91) |
+| [0020](0020-decision-interface-and-replay.md) | Decision interface, replay and review | first-view prototype; pilot pending |
+| [0021](0021-advanced-decision-research.md) | Advanced decision research | proposed |
+| [0022](0022-institutional-readiness.md) | Institutional readiness and integrations | proposed |
+| [0023](0023-complete-equity-sessions.md) | Complete equity sessions for daily context | regression fix for W-01/F01 |
+| [0024](0024-reference-levels-visual-hierarchy.md) | Reference Levels visual hierarchy | implemented; broader pilot pending |
+| [0025](0025-persistent-section-navigation.md) | Persistent section navigation | implemented; comprehension test pending |
+| [0026](0026-paired-level-geometry-baseline.md) | Paired-level geometry baseline | private runner implemented; matched research and review pending |
+| [0027](0027-matched-weekly-levels.md) | Historical weekly references versus geometry | private runner and synthetic verification; independent review pending |
+| [0028](0028-time-space-features-for-return-prediction.md) | Do time–space features improve the prediction of future returns? | approved; H-2026-016 registered |

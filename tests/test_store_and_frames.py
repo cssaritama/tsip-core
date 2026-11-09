@@ -118,3 +118,22 @@ def test_cross_feed_reports_unresolved_alignment():
     assert result["off_grid_bars"]["secondary"] == 120
     assert "return_correlation" not in result
     assert len(secondary) == 120
+
+
+def test_rth_requires_exact_closed_session_and_keeps_scheduled_early_close():
+    parts = []
+    for day, count in (("2024-11-27", 13), ("2024-11-29", 8), ("2024-12-02", 9), ("2024-12-03", 13)):
+        starts = pd.date_range(f"{day} 09:30", periods=count, freq="30min", tz="America/New_York")
+        if day == "2024-12-03":
+            starts = starts.delete(3).insert(3, starts[3] + pd.Timedelta(minutes=1))
+        parts.append(pd.DataFrame(dict(open=1, high=2, low=0.5, close=1.5), index=starts.tz_convert("UTC")))
+    bars = make_bars(pd.concat(parts), instrument="SPY", source="test", timeframe="30min")
+
+    daily, rth = rth_daily_from_intraday(bars, as_of=pd.Timestamp("2024-12-03T22:00Z"))
+    assert list(daily.index.strftime("%Y-%m-%d")) == ["2024-11-27", "2024-11-29"]
+    assert list(daily["n_bars"]) == [13, 7]
+    assert list(daily["full_day"]) == [True, False]
+    assert rth.groupby("date")["slot"].last().tolist() == ["15:30", "12:30"]
+
+    not_closed, no_rth = rth_daily_from_intraday(bars, as_of=pd.Timestamp("2024-11-27T20:59Z"))
+    assert not_closed.empty and no_rth.empty

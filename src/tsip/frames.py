@@ -52,27 +52,55 @@ def rth_daily_from_intraday(
     tz: str = "America/New_York",
     open_time: time = US_RTH_OPEN,
     close_time: time = US_RTH_CLOSE,
-    min_bars: int = 7,
+    as_of: pd.Timestamp | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Regular-trading-hours daily bars from intraday bars.
+    """Return complete RTH sessions and their exact observed bar starts.
 
-    Returns ``(daily, rth_bars)`` where ``rth_bars`` carries a ``date`` and a
-    ``slot`` column (local bar start, ``HH:MM``). Days with fewer than
-    ``min_bars`` bars are dropped; ``daily['full_day']`` marks complete days.
+    Calendar-approved shortened sessions feed daily and path studies, while
+    full_day identifies standard-length sessions for intraday profiles.
     """
     local = bars.index.tz_convert(tz)
-    clock = local.time
-    mask = (clock >= open_time) & (clock < close_time)
+    mask = (local.time >= open_time) & (local.time < close_time)
     rth = bars.loc[mask].copy()
     local_rth = local[mask]
     rth["date"] = pd.DatetimeIndex(local_rth.tz_localize(None)).normalize()
     rth["slot"] = local_rth.strftime("%H:%M")
+    interval = pd.Timedelta(bars.attrs.get("timeframe", "30min"))
+    cutoff = pd.Timestamp.now(tz="UTC") if as_of is None else pd.Timestamp(as_of).tz_convert("UTC")
+    dates = pd.DatetimeIndex(rth["date"].unique()).sort_values()
+    calendar = None
+    if len(dates) and (tz, open_time, close_time) == ("America/New_York", US_RTH_OPEN, US_RTH_CLOSE):
+        try:
+            import exchange_calendars as xcals
+        except ImportError:
+            pass  # With no calendar, only standard weekday sessions qualify.
+        else:
+            calendar = xcals.get_calendar(
+                "XNYS", start=dates[0] - pd.Timedelta(days=7), end=dates[-1] + pd.Timedelta(days=7)
+            )
+    complete = {}
+    for day, group in rth.groupby("date"):
+        if calendar is not None:
+            if not calendar.is_session(day):
+                continue
+            start, end = calendar.session_open(day), calendar.session_close(day)
+        else:
+            if day.dayofweek >= 5:
+                continue
+            start = pd.Timestamp.combine(day, open_time).tz_localize(tz)
+            end = pd.Timestamp.combine(day, close_time).tz_localize(tz)
+        expected = pd.date_range(start, end, freq=interval, inclusive="left")
+        observed = group.index[group.index < end]
+        if end <= cutoff and observed.equals(expected.tz_convert(observed.tz)):
+            complete[day] = end.tz_convert(tz).time() == close_time
+    rth = rth[rth["date"].isin(complete)]
+    if calendar is not None and not rth.empty:
+        closes = {day: calendar.session_close(day) for day in complete}
+        rth = rth[rth.index < pd.DatetimeIndex(rth["date"].map(closes))]
     grouped = rth.groupby("date")
     daily = grouped.agg(OHLCV_AGG)
     daily["n_bars"] = grouped.size()
-    expected = int(rth.groupby("date").size().max()) if len(rth) else 0
-    daily = daily[daily["n_bars"] >= min_bars]
-    daily["full_day"] = daily["n_bars"] == expected
+    daily["full_day"] = daily.index.map(complete).astype(bool)
     daily.index = pd.DatetimeIndex(daily.index, name="date")
     daily.attrs = {**bars.attrs, "timeframe": "1d", "session": "rth", "derived_from": bars.attrs.get("timeframe")}
     rth = rth[rth["date"].isin(daily.index)]

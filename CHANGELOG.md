@@ -2,10 +2,42 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## 2026-11-09 · Matched weekly levels
+
+- Add a private holdout comparison for real weekly references and volatility-matched historical controls.
+
+## 2026-11-09 · Paired levels
+
+- Add a private fixed-distance baseline for paired first touches, ambiguity, gaps and complete session windows.
+
+## 2026-11-09 · Navigation
+
+- Keep section links and the selected market visible while scrolling.
+
+## 2026-11-09 · Reference levels
+
+- Separate nearest market references from historical reach evidence and make the view work across themes and screen sizes.
+
+## 2026-11-09 · Equity data integrity
+
+- Exclude incomplete regular sessions from daily context and assess equity freshness from the latest complete session.
+
+## 2026-11-09 · Decision interface
+
+- Lead with the session cutoff and two reference levels, put historical analysis behind a disclosure, and distinguish unavailable chart values from zero.
+
+## 2026-11-09 · Session research
+
+- Add a private descriptive runner for the crypto Monday range with complete hourly UTC weeks.
+
+## 2026-11-09 · Restart documentation
+
+- Record the proposed desk workflow and mark the execution matrix as withdrawn pending independent evidence.
+
 ## [Unreleased]
 
 ### Added
-- Specification 0018 (W-89): do time–space features improve the out-of-sample prediction of future returns, with ablation, random-walk and permuted-block controls, five strategies and the pullback-buying comparison with idle cash accounted for. Hypothesis H-2026-016 registered before any model is trained.
+- Specification 0028 (W-89): do time–space features improve the out-of-sample prediction of future returns, with ablation, random-walk and permuted-block controls, five strategies and the pullback-buying comparison with idle cash accounted for. Hypothesis H-2026-016 registered before any model is trained.
 
 ### Removed
 - Specifications 0012 to 0017 withdrawn (W-83): their first versions reported results that no code in the repository produces, without control, holdout, interval or grade, and some figures contradicted each other and the graded money results of 0.2.16 to 0.2.18. Each file now states why it was withdrawn and how the question can be specified again. No study, report field or page section depended on them.

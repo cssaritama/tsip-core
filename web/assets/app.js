@@ -1374,6 +1374,20 @@
       facts.some((f) => f.grade) ? null : el("p", { class: "tile__line" }, "No strong effect applies to today's position; the tiles below give the context and the weaker evidence."));
   }
 
+  function briefLevels(inst, status) {
+    if (status !== "fresh") {
+      return el("p", { class: "board__foot" }, "Current reference levels are unavailable. Check data status before using historical context.");
+    }
+    const levels = (inst.open_levels?.levels || []).filter((level) => Number.isFinite(level.distance_pct));
+    const above = levels.filter((level) => level.distance_pct > 0).sort((a, b) => a.distance_pct - b.distance_pct)[0];
+    const below = levels.filter((level) => level.distance_pct < 0).sort((a, b) => b.distance_pct - a.distance_pct)[0];
+    return el("div", { class: "today__list" },
+      ...[["Above last close", above], ["Below last close", below]].map(([label, level]) =>
+        el("div", { class: "today__fact" },
+          el("strong", { class: "today__fig" }, level ? `${signed(level.distance_pct)}%` : "—"),
+          el("span", { class: "today__text" }, `${label}: ${level ? levelName(level) : "no untested reference available"}`))));
+  }
+
   function renderBoard(inst) {
     const box = document.getElementById("board");
     if (!inst || inst.status !== "ok") { box.replaceChildren(); box.hidden = true; return; }
@@ -1389,14 +1403,21 @@
       : crypto ? `last full day ${dayLabel(lastDay)}; trading around the clock`
       : clk.open ? `${clk.label}` : `last close ${dayLabel(lastDay)}; next session ${clk.weekday} ${clk.dom} ${clk.month}, 09:30 New York${clk.early ? `, early close ${clk.closeText}` : ""}`;
     const tiles = [tileMove(inst, clk, unit, crypto), tileWhen(inst, clk, crypto), tilePosition(inst, unit), tileLevels(inst, unit), tileMoney(inst, unit), tilePlan(inst), tileEvidence(inst)].filter(Boolean);
-    const costs = findCard(inst, "money.week") || findCard(inst, "money.month") || findCard(inst, "plan.week") || findCard(inst, "plan.month");
+    const research = el("details", { class: "board__research" },
+      el("summary", {}, "Open historical analysis"),
+      closeOnly ? null : todayPanel(inst, clk, crypto, unit),
+      el("div", { class: "board__grid" }, ...tiles));
+    research.open = box.querySelector("details.board__research")?.open || location.hash.startsWith("#tile-");
     box.replaceChildren(
       el("div", { class: "board__head" },
-        el("h2", { id: "board-title" }, "At a glance"),
+        el("h2", { id: "board-title" }, "Session brief"),
         el("p", {}, `${marketName(inst.code)}, ${inst.code}: ${when}`),
         st ? el("span", { class: "board__status" }, el("span", { class: `dot dot--${st.status}` }), word[st.status] || st.status) : null),
-      closeOnly ? null : todayPanel(inst, clk, crypto, unit),
-      el("div", { class: "board__grid" }, ...tiles),
+      closeOnly ? null : el("section", { class: "today", "aria-label": "Nearest reference levels" },
+        el("h3", { class: "today__title" }, `Reference levels · ${dayLabel(inst.open_levels?.as_of || lastDay)} (${crypto ? "UTC" : "New York"})`),
+        briefLevels(inst, st?.status),
+        el("p", { class: "board__foot" }, "Historical reference levels describe location. Open historical analysis to inspect comparisons and their evidence.")),
+      research,
       el("p", { class: "board__foot" }, closeOnly
         ? `${marketName(inst.code)} is published as closes only, so positions, levels and intraday timing are shown for the tradable funds (SPY, QQQ); its long-history statistics are listed below.`
         : "Every figure is measured on this market's own history and graded against a control. It describes what has happened; it is not a signal or a forecast."));
@@ -1489,351 +1510,100 @@
 
   let activeChartFilter = "all";
 
-  function renderCandleChart(inst) {
+  function renderReferenceLevels(inst) {
     const wrap = document.getElementById("chart-wrap");
-    if (!wrap) return;
-    if (!inst || inst.status !== "ok") {
-      wrap.replaceChildren(el("div", { class: "grid__empty" }, "Structural liquidity horizons are unavailable for this instrument."));
-      return;
-    }
-
-    const levels = inst.open_levels?.levels || [];
-    const filterBtns = document.querySelectorAll(".cfilter");
-    filterBtns.forEach((btn) => {
-      btn.onclick = () => {
-        filterBtns.forEach((b) => b.classList.toggle("is-active", b === btn));
-        activeChartFilter = btn.dataset.filter;
-        renderCandleChart(inst);
+    const filters = document.querySelectorAll(".cfilter");
+    filters.forEach((button) => {
+      const selected = button.dataset.filter === activeChartFilter;
+      button.classList.toggle("is-active", selected);
+      button.setAttribute("aria-pressed", String(selected));
+      button.onclick = () => {
+        activeChartFilter = button.dataset.filter;
+        renderReferenceLevels(inst);
       };
     });
 
-    const w = 1040, h = 460;
-    const padL = 75, padR = 260, padT = 36, padB = 36;
-    const chartW = w - padL - padR;
-    const chartH = h - padT - padB;
-
-    let activeLevels = levels;
-    if (activeChartFilter === "weekly") {
-      activeLevels = levels.filter((l) => (l.period?.toLowerCase() || "").includes("week") || (l.levels || []).some((n) => n.toLowerCase().includes("week")));
-    } else if (activeChartFilter === "monthly") {
-      activeLevels = levels.filter((l) => (l.period?.toLowerCase() || "").includes("month") || (l.levels || []).some((n) => n.toLowerCase().includes("month")));
-    } else if (activeChartFilter === "macro") {
-      activeLevels = levels.filter((l) => (l.period?.toLowerCase() || "").includes("quarter") || (l.period?.toLowerCase() || "").includes("year") || (l.age_sessions || 0) >= 30);
-    } else if (activeChartFilter === "confluence") {
-      activeLevels = levels.filter((l) => (l.confluence || 1) > 1);
-      if (!activeLevels.length) activeLevels = levels.slice(0, 5);
+    const snapshot = inst?.open_levels;
+    if (inst?.status !== "ok" || !snapshot?.levels?.length) {
+      wrap.replaceChildren(el("p", { class: "grid__empty" }, "Reference levels are unavailable for this market."));
+      return;
     }
-
-    // Determine scale based on real percentage distance
-    const validLevels = activeLevels.filter((l) => l.distance_pct !== null);
-    const topLevels = validLevels.slice(0, 8);
-    const maxDist = topLevels.length ? Math.max(2.5, ...topLevels.map((l) => Math.abs(l.distance_pct))) * 1.15 : 4.0;
-    const span = Math.min(22.0, Math.max(3.0, maxDist));
-
-    const yPct = (pct) => padT + chartH / 2 - (pct / span) * (chartH / 2);
-
-    const root = svg("svg", {
-      viewBox: `0 0 ${w} ${h}`,
-      class: "chart-svg",
-      role: "img",
-      "aria-label": `${inst.code} Structural Liquidity Horizons and Empirical Reach Map`
-    });
-
-    // Determine clean step for percentage grid
-    let step = 1.0;
-    if (span > 10) step = 3.0;
-    else if (span > 5) step = 2.0;
-
-    for (let s = -Math.floor(span / step) * step; s <= Math.floor(span / step) * step; s += step) {
-      if (Math.abs(s) < 0.001) continue;
-      const y = yPct(s);
-      root.append(svg("line", { x1: padL, x2: padL + chartW, y1: y, y2: y, class: "c-grid-line" }));
-      const txt = svg("text", { x: padL - 10, y: y + 4, "text-anchor": "end", class: "c-axis-text" });
-      txt.textContent = `${s > 0 ? "+" : ""}${s.toFixed(1)}%`;
-      root.append(txt);
-    }
-
-    // Central Datum: Last Close (0.00%)
-    const zeroY = yPct(0);
-    root.append(svg("line", {
-      x1: padL, x2: padL + chartW + 12, y1: zeroY, y2: zeroY,
-      stroke: "var(--line-hard, #8b949e)", "stroke-width": 1.5
-    }));
-    const zeroTxt = svg("text", {
-      x: padL - 10, y: zeroY + 4, "text-anchor": "end",
-      fill: "var(--text)", "font-size": "11px", "font-weight": "600"
-    });
-    zeroTxt.textContent = "Close (0.0%)";
-    root.append(zeroTxt);
-
-    // Label on datum line
-    const asOfStr = inst.open_levels?.as_of || inst.position?.as_of || "";
-    const datumLbl = svg("text", {
-      x: padL + 8, y: zeroY - 6,
-      fill: "var(--muted)", "font-size": "10px", "font-family": "var(--font)"
-    });
-    datumLbl.textContent = `${inst.code} Benchmark Close · As of ${asOfStr}`;
-    root.append(datumLbl);
-
-    // Multi-Horizon Cycle Range Indicators on left margin
-    const horizons = inst.position?.horizons || [];
-    const refHorizons = horizons.filter((h) => ["week", "month", "quarter"].includes(h.horizon));
-    if (refHorizons.length) {
-      const bW = 28;
-      const startX = padL + 12;
-      refHorizons.forEach((h, hIdx) => {
-        const hx = startX + hIdx * (bW + 14);
-        const highY = yPct(h.to_reference_high_pct);
-        const lowY = yPct(h.to_reference_low_pct);
-        const clampedHighY = Math.max(padT + 8, Math.min(padT + chartH - 8, highY));
-        const clampedLowY = Math.max(padT + 8, Math.min(padT + chartH - 8, lowY));
-        const barH = Math.max(4, Math.abs(clampedLowY - clampedHighY));
-        const topY = Math.min(clampedHighY, clampedLowY);
-
-        // Range span box
-        root.append(svg("rect", {
-          x: hx, y: topY, width: bW, height: barH, rx: 2,
-          fill: "rgba(255, 255, 255, 0.04)", stroke: "var(--line-soft)", "stroke-width": 1
-        }));
-
-        // Current price indicator mark on the range
-        root.append(svg("line", {
-          x1: hx - 2, x2: hx + bW + 2, y1: zeroY, y2: zeroY,
-          stroke: "var(--text)", "stroke-width": 1.5
-        }));
-
-        // Horizon tag
-        const tag = svg("text", {
-          x: hx + bW / 2, y: padT + chartH + 16, "text-anchor": "middle",
-          fill: "var(--muted)", "font-size": "9.5px", "font-weight": "500"
-        });
-        tag.textContent = capital(h.horizon.slice(0, 4));
-        root.append(tag);
-
-        // Percentile tag inside range
-        if (h.range_position_pct !== null && barH > 18) {
-          const pTag = svg("text", {
-            x: hx + bW / 2, y: zeroY + (zeroY > topY + barH / 2 ? -5 : 12), "text-anchor": "middle",
-            fill: "var(--text-2)", "font-size": "9px"
-          });
-          pTag.textContent = `${h.range_position_pct.toFixed(0)}%`;
-          root.append(pTag);
-        }
-      });
-    }
-
-    // Collect ray label items for collision avoidance
-    const labelItems = [];
-    const rayStartX = padL + 140;
-
-    topLevels.forEach((l) => {
-      const dist = l.distance_pct;
-      if (dist === null) return;
-      const y = yPct(dist);
-      const isHigh = l.side === "high";
-      const isAligned = (l.confluence || 1) > 1;
-      const p20 = l.reach?.within?.["20"]?.pct || 0;
-
-      // Draw empirical reach probability gradient bar
-      if (p20 > 0 && Math.abs(y - zeroY) > 8) {
-        const reachW = Math.max(16, (chartW - 150) * (p20 / 100));
-        const reachColor = isAligned ? "rgba(229, 192, 123, 0.16)" : isHigh ? "rgba(74, 155, 142, 0.14)" : "rgba(205, 174, 114, 0.14)";
-        const reachStroke = isAligned ? "rgba(229, 192, 123, 0.4)" : isHigh ? "rgba(74, 155, 142, 0.35)" : "rgba(205, 174, 114, 0.35)";
-
-        root.append(svg("rect", {
-          x: rayStartX, y: y - 8, width: reachW, height: 16, rx: 3,
-          fill: reachColor, stroke: reachStroke, "stroke-width": 0.8
-        }));
-
-        const pTxt = svg("text", {
-          x: rayStartX + 8, y: y + 3.5,
-          fill: isAligned ? "#e5c07b" : isHigh ? "var(--time)" : "var(--brass)",
-          "font-size": "9.5px", "font-weight": "500", "font-family": "var(--font)"
-        });
-        const nSample = l.reach?.within?.["20"]?.n ? ` (n=${num(l.reach.within["20"].n)})` : "";
-        pTxt.textContent = `20d Reach: ${p20.toFixed(0)}%${nSample}`;
-        root.append(pTxt);
+    const filter = (level) => {
+      const horizons = level.horizons?.length ? level.horizons : [level.horizon];
+      switch (activeChartFilter) {
+        case "weekly": return horizons.includes("week");
+        case "monthly": return horizons.includes("month");
+        case "macro": return horizons.some((horizon) => ["quarter", "half-year", "year"].includes(horizon));
+        case "confluence": return horizons.length > 1;
+        default: return true;
       }
-
-      // Draw the liquidity ray
-      const rayLine = svg("line", {
-        x1: padL, x2: padL + chartW + 12, y1: y, y2: y,
-        class: `c-ray ${isAligned ? "c-ray--aligned" : isHigh ? "c-ray--high" : "c-ray--low"}`
-      });
-      root.append(rayLine);
-
-      // Label text
-      const lName = levelName(l);
-      const labelText = `${lName}: ${signed(l.distance_pct)}%`;
-
-      labelItems.push({
-        rayY: y,
-        targetY: y,
-        text: labelText,
-        isHigh: isHigh,
-        isAligned: isAligned,
-        level: l
-      });
-    });
-
-    // Anti-collision algorithm
-    labelItems.sort((a, b) => a.targetY - b.targetY);
-    const minSpacing = 24;
-    const tagHeight = 18;
-    labelItems.forEach((item) => { item.y = item.targetY; });
-
-    for (let iter = 0; iter < 12; iter++) {
-      for (let i = 1; i < labelItems.length; i++) {
-        const prev = labelItems[i - 1];
-        const cur = labelItems[i];
-        if (cur.y < prev.y + minSpacing) {
-          cur.y = prev.y + minSpacing;
-        }
-      }
-    }
-
-    // Boundary containment
-    const maxBottom = padT + chartH - 10;
-    if (labelItems.length && labelItems[labelItems.length - 1].y > maxBottom) {
-      const shiftUp = labelItems[labelItems.length - 1].y - maxBottom;
-      labelItems.forEach((item) => { item.y -= shiftUp; });
-      for (let i = 0; i < labelItems.length; i++) {
-        if (labelItems[i].y < padT + 12) labelItems[i].y = padT + 12;
-        if (i > 0 && labelItems[i].y < labelItems[i - 1].y + minSpacing) {
-          labelItems[i].y = labelItems[i - 1].y + minSpacing;
-        }
-      }
-    }
-
-    // Render anti-collided tags with connector links
-    labelItems.forEach((item) => {
-      const badgeX = padL + chartW + 16;
-      const badgeW = padR - 22;
-
-      const strokeColor = item.isAligned ? "#e5c07b" : item.isHigh ? "var(--time)" : "var(--brass)";
-      const fillColor = item.isAligned ? "rgba(229, 192, 123, 0.20)" : item.isHigh ? "rgba(74, 155, 142, 0.16)" : "rgba(205, 174, 114, 0.16)";
-
-      if (Math.abs(item.y - item.rayY) > 2) {
-        root.append(svg("path", {
-          d: `M ${padL + chartW + 10} ${item.rayY} L ${badgeX - 4} ${item.y}`,
-          fill: "none",
-          stroke: strokeColor,
-          "stroke-width": 0.8,
-          "stroke-dasharray": "2,2",
-          opacity: 0.7
-        }));
-      }
-
-      const tagBg = svg("rect", {
-        x: badgeX, y: item.y - tagHeight / 2, width: badgeW, height: tagHeight, rx: 3,
-        fill: fillColor, stroke: strokeColor, "stroke-width": item.isAligned ? 1.5 : 1
-      });
-      root.append(tagBg);
-
-      const tagText = svg("text", {
-        x: badgeX + 6, y: item.y + 4, fill: strokeColor, class: "c-ray-tag"
-      });
-      tagText.textContent = item.text;
-      root.append(tagText);
-    });
-
-    // Crosshair and Interactive Inspection HUD
-    const crosshairY = svg("line", { class: "c-crosshair", x1: padL, x2: padL + chartW + 15 });
-    crosshairY.style.display = "none";
-    root.append(crosshairY);
-
-    const hudGroup = svg("g", { class: "c-hud", transform: `translate(${padL + 16}, ${padT + 12})` });
-    hudGroup.style.display = "none";
-    const hudBg = svg("rect", { class: "c-hud-bg", width: 340, height: 48, rx: 4 });
-    const hudTxt1 = svg("text", { class: "c-hud-text c-hud-text--primary", x: 10, y: 19 });
-    const hudTxt2 = svg("text", { class: "c-hud-text c-hud-text--secondary", x: 10, y: 37 });
-    hudGroup.append(hudBg, hudTxt1, hudTxt2);
-    root.append(hudGroup);
-
-    root.addEventListener("mousemove", (e) => {
-      const pt = root.createSVGPoint();
-      pt.x = e.clientX;
-      pt.y = e.clientY;
-      const ctm = root.getScreenCTM();
-      if (!ctm) return;
-      const cursor = pt.matrixTransform(ctm.inverse());
-      if (cursor.x < padL || cursor.x > padL + chartW + 15 || cursor.y < padT || cursor.y > padT + chartH) {
-        crosshairY.style.display = "none";
-        hudGroup.style.display = "none";
-        return;
-      }
-
-      crosshairY.setAttribute("y1", cursor.y);
-      crosshairY.setAttribute("y2", cursor.y);
-      crosshairY.style.display = "";
-
-      const impliedDistPct = -((cursor.y - (padT + chartH / 2)) / (chartH / 2)) * span;
-      const atrPct = inst.open_levels?.atr_pct || inst.position?.atr_median_pct || 1.1;
-      const impliedAtr = impliedDistPct / (atrPct || 1.0);
-
-      // Check proximity to any level
-      const nearest = labelItems.find((it) => Math.abs(it.rayY - cursor.y) < 10);
-      if (nearest) {
-        const l = nearest.level;
-        const p5 = l.reach?.within?.["5"]?.pct ? `${l.reach.within["5"].pct.toFixed(0)}%` : "–";
-        const p20 = l.reach?.within?.["20"]?.pct ? `${l.reach.within["20"].pct.toFixed(0)}%` : "–";
-        const p60 = l.reach?.within?.["60"]?.pct ? `${l.reach.within["60"].pct.toFixed(0)}%` : "–";
-        const typ = l.reach?.typical_sessions ? `${l.reach.typical_sessions}s` : ">120s";
-
-        hudTxt1.textContent = `${levelName(l)} · Distance: ${signed(l.distance_pct)}% (${signed(l.distance_atr || 0, 1)} ATR)`;
-        hudTxt2.textContent = `Reach odds: 5s:${p5} · 20s:${p20} · 60s:${p60} · Typical arrival: ${typ}`;
-      } else {
-        hudTxt1.textContent = `Target Distance: ${signed(impliedDistPct)}% from Close`;
-        hudTxt2.textContent = `Implied Volatility Offset: ${signed(impliedAtr, 2)} ATR (14-session)`;
-      }
-      hudGroup.style.display = "";
-    });
-
-    root.addEventListener("mouseleave", () => {
-      crosshairY.style.display = "none";
-      hudGroup.style.display = "none";
-    });
-
-    // Render Clean Structural Levels Table Below SVG
-    const oddsStr = (l, k) => {
-      const o = l.reach?.within?.[k];
-      return o && o.pct !== null ? `${o.pct.toFixed(0)}%` : "–";
     };
+    const levels = snapshot.levels
+      .filter((level) => Number.isFinite(level.distance_pct) && filter(level))
+      .sort((a, b) => Math.abs(a.distance_pct) - Math.abs(b.distance_pct));
+    const above = levels.filter((level) => level.distance_pct > 0).slice(0, 3);
+    const below = levels.filter((level) => level.distance_pct < 0).slice(0, 3);
+    const unit = inst.instrument.calendar === "24/7" ? "days" : "sessions";
+    const status = state.report.data_status?.instruments?.find((row) => row.code === inst.code)?.status;
+    const context = el("p", { class: "reference-context" },
+      el("strong", {}, inst.code), ` · Reference close ${dayLabel(snapshot.as_of)} · `,
+      ({ fresh: "Current at publication", degraded: "Fallback source at publication", stale: "Historical snapshot · data out of date" })[status]
+        || "Freshness unavailable");
+    if (!levels.length) {
+      wrap.replaceChildren(context, el("p", { class: "grid__empty" }, "No reference levels match this filter."));
+      return;
+    }
 
-    const tableWrap = el("div", { class: "chart-table-wrap" },
-      el("table", { class: "mtable chart-mtable" },
-        el("thead", {},
-          el("tr", {},
-            el("th", {}, "Structural Reference Level"),
-            el("th", {}, "Distance"),
-            el("th", {}, "Untested For"),
-            el("th", {}, "5-Day Reach"),
-            el("th", {}, "20-Day Reach"),
-            el("th", {}, "60-Day Reach"),
-            el("th", {}, "Typical Arrival"),
-            el("th", {}, "Horizon Status"))),
-        el("tbody", {},
-          ...validLevels.slice(0, 8).map((l) => el("tr", {},
-            el("td", { class: "chart-tbl-lvl" }, levelName(l)),
-            el("td", { class: l.distance_pct >= 0 ? "up" : "down" }, `${signed(l.distance_pct)}%`),
-            el("td", {}, l.age_sessions === 0 ? "Current Period" : `${num(l.age_sessions)} sessions`),
-            el("td", {}, oddsStr(l, "5")),
-            el("td", {}, oddsStr(l, "20")),
-            el("td", {}, oddsStr(l, "60")),
-            el("td", {}, l.reach?.typical_sessions ? `${l.reach.typical_sessions} sessions` : "Over 120 sessions"),
-            el("td", {}, (l.confluence || 1) > 1
-              ? `${(l.horizons || []).map(capital).join(" & ")} Aligned`
-              : `${capital(l.horizon || "Standard")} Reference`))))));
+    const shown = [...above, ...below];
+    const extent = Math.max(0.01, ...shown.map((level) => Math.abs(level.distance_pct)));
+    const group = (title, entries, side) => el("section", { class: `reference-group reference-group--${side}` },
+      el("h3", {}, title),
+      entries.length ? el("ol", { class: "reference-list" }, ...entries.map((level) =>
+        el("li", {},
+          el("div", { class: "reference-row" },
+            el("span", {}, levelName(level), el("small", {}, level.period)),
+            el("strong", {}, `${signed(level.distance_pct)}%`)),
+          el("div", { class: "reference-track", "aria-hidden": "true" },
+            el("span", { style: `--extent: ${100 * Math.abs(level.distance_pct) / extent}%` })))))
+        : el("p", { class: "tile__line" }, "No reference on this side."));
 
-    wrap.replaceChildren(root, tableWrap);
+    const reach = (level, horizon) => {
+      const value = level.reach?.within?.[horizon];
+      if (!Number.isFinite(value?.pct)) return el("td", {}, "—");
+      const interval = Number.isFinite(value.ci_low) && Number.isFinite(value.ci_high)
+        ? ` · interval ${pct(value.ci_low, 1)}–${pct(value.ci_high, 1)}` : "";
+      return el("td", {}, pct(value.pct, 1),
+        el("small", {}, Number.isFinite(value.n) ? `n=${num(value.n)}${interval}` : interval));
+    };
+    const evidence = el("details", { class: "reference-evidence" },
+      el("summary", {}, `Historical reach evidence · ${levels.length} references`),
+      el("p", { class: "tile__line" },
+        "Each column shows how often price moved at least that far in the stated window. These are separate historical rates for each level."),
+      el("div", { class: "table-wrap", tabindex: "0", role: "region", "aria-label": "Historical reach table" },
+        el("table", { class: "mtable reference-table" },
+          el("thead", {}, el("tr", {}, ...["Reference", "Distance", ...[5, 20, 60].map((n) => `${n} ${unit}`)]
+            .map((label) => el("th", { scope: "col" }, label)))),
+          el("tbody", {}, ...levels.map((level) => el("tr", {},
+            el("th", { scope: "row" }, levelName(level), el("small", {}, level.period)),
+            el("td", {}, `${signed(level.distance_pct)}%`),
+            ...[5, 20, 60].map((horizon) => reach(level, horizon))))))));
+    wrap.replaceChildren(context,
+      el("div", { class: "reference-pair" }, group("Above the close", above, "above"), group("Below the close", below, "below")),
+      el("p", { class: "tile__line" },
+        `Showing the three closest references per side. Both groups use the same distance scale (0 to ${extent.toFixed(2)}%).`),
+      evidence);
   }
 
   function selectMarket(code) {
     state.active = code;
+    const marketLink = document.getElementById("active-market");
+    marketLink.textContent = SHORT_CODE[code] || code;
+    marketLink.setAttribute("aria-label", `Change market, current market ${marketName(code)} (${code})`);
+    marketLink.hidden = false;
     for (const b of document.querySelectorAll(".switch__opt")) b.setAttribute("aria-selected", String(b.dataset.code === code));
     const inst = state.report.instruments.find((i) => i.code === code);
     renderBoard(inst);
-    renderCandleChart(inst);
+    renderReferenceLevels(inst);
     renderTime(inst);
     renderGrid(inst);
     renderCurves(inst);
@@ -1952,62 +1722,46 @@
     }
   }
 
-  function initViewSwitch() {
-    const tabs = document.querySelectorAll(".view-tab");
-    if (!tabs.length) return;
-    function setView(viewName, scroll = true) {
-      tabs.forEach((t) => t.setAttribute("aria-selected", String(t.dataset.view === viewName)));
-      const boardSec = document.getElementById("board");
-      const chartSec = document.getElementById("chart-section");
-      const timeSec = document.getElementById("time");
-      const spaceSec = document.getElementById("space");
-      const marketsSec = document.getElementById("markets");
-      const methodSec = document.getElementById("method");
-      const dataSec = document.getElementById("data");
-      const regSec = document.getElementById("register");
-      const aboutSec = document.getElementById("about");
-
-      // Ensure all sections are active and accessible
-      if (boardSec) boardSec.hidden = false;
-      if (chartSec) chartSec.hidden = false;
-      if (timeSec) timeSec.hidden = false;
-      if (spaceSec) spaceSec.hidden = false;
-      if (marketsSec) marketsSec.hidden = false;
-      if (methodSec) methodSec.hidden = false;
-      if (dataSec) dataSec.hidden = false;
-      if (regSec) regSec.hidden = false;
-      if (aboutSec) aboutSec.hidden = false;
-
-      if (scroll) {
-        if (viewName === "cockpit" && boardSec) {
-          boardSec.scrollIntoView({ behavior: "smooth", block: "start" });
-        } else if (viewName === "chart" && chartSec) {
-          chartSec.scrollIntoView({ behavior: "smooth", block: "start" });
-        } else if (viewName === "studies" && marketsSec) {
-          marketsSec.scrollIntoView({ behavior: "smooth", block: "start" });
-        } else if (viewName === "registry" && methodSec) {
-          methodSec.scrollIntoView({ behavior: "smooth", block: "start" });
-        }
+  function initSectionNavigation() {
+    const header = document.querySelector(".bar");
+    const nav = header.querySelector(".nav");
+    const sections = [...nav.querySelectorAll("a")].map((link) => ({
+      link, target: document.getElementById(link.hash.slice(1)),
+    }));
+    let active = sections[0];
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const edge = header.getBoundingClientRect().bottom + 16;
+      let current = sections[0];
+      for (const section of sections) {
+        if (!section.target.hidden && section.target.getBoundingClientRect().top <= edge) current = section;
       }
-    }
-    tabs.forEach((btn) => {
-      btn.addEventListener("click", () => setView(btn.dataset.view, true));
-    });
+      if (current === active) return;
+      active.link.removeAttribute("aria-current");
+      current.link.setAttribute("aria-current", "location");
+      active = current;
+      const linkBox = current.link.getBoundingClientRect();
+      const navBox = nav.getBoundingClientRect();
+      if (linkBox.left < navBox.left) nav.scrollLeft += linkBox.left - navBox.left;
+      if (linkBox.right > navBox.right) nav.scrollLeft += linkBox.right - navBox.right;
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    const measure = () => {
+      document.documentElement.style.setProperty("--header-height", `${header.offsetHeight}px`);
+      schedule();
+    };
+    new ResizeObserver(measure).observe(header);
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
     window.addEventListener("hashchange", () => {
-      const h = window.location.hash;
-      if (["#method", "#data", "#register", "#about"].includes(h)) setView("registry", false);
-      else if (h === "#chart" || h === "#candlestick") setView("chart", false);
-      else if (["#time", "#space", "#markets"].some((p) => h.startsWith(p))) setView("studies", false);
-      else if (h === "#top" || h === "#board") setView("cockpit", false);
+      if (["#chart", "#candlestick"].includes(location.hash)) document.getElementById("chart-section").scrollIntoView();
+      schedule();
     });
-    if (window.location.hash) {
-      const h = window.location.hash;
-      if (["#method", "#data", "#register", "#about"].includes(h)) setView("registry", false);
-      else if (h === "#chart" || h === "#candlestick") setView("chart", false);
-      else if (["#time", "#space", "#markets"].some((p) => h.startsWith(p))) setView("studies", false);
-    } else {
-      setView("cockpit", false);
-    }
+    measure();
+    return schedule;
   }
 
   function initBtnTop() {
@@ -2017,13 +1771,14 @@
       btn.hidden = window.scrollY < 300;
     }, { passive: true });
     btn.addEventListener("click", () => {
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      window.scrollTo({ top: 0 });
     });
   }
 
   async function init() {
     fillStaticMeters();
-    initViewSwitch();
+    const updateNavigation = initSectionNavigation();
+    const initialHash = location.hash;
     initBtnTop();
     window.matchMedia("(max-width: 720px)").addEventListener("change", () => { if (state.active) selectMarket(state.active); });
     try {
@@ -2038,6 +1793,11 @@
       if (first) selectMarket(first);
       renderData(report);
       renderRegister(report);
+      if (initialHash && location.hash === initialHash) {
+        const id = ["#chart", "#candlestick"].includes(initialHash) ? "chart-section" : initialHash.slice(1);
+        document.getElementById(id)?.scrollIntoView({ behavior: "instant" });
+      }
+      updateNavigation();
     } catch (err) {
       document.getElementById("grid-rows").replaceChildren(el("div", { class: "grid__empty" }, `The report could not be loaded (${err.message}). Reload the page to try again.`));
     }

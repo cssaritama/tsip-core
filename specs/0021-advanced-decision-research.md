@@ -1,0 +1,14 @@
+# 0021 · Advanced decision research
+
+Status: proposed. This registers work packages, not statistical hypotheses. Register the exact target, horizon, freeze date, baseline, minimum coverage and promotion criteria before looking at results. Advance one family at a time.
+
+| Work | Desk question | Validation and release rule |
+|---|---|---|
+| W-97 · Conditional excursion and competing levels | Which reference tends to be visited first, how long does it take, and what adverse excursion is typical? | Extend 0019/W-90 using mutually exclusive upper/lower/neither/ambiguous outcomes and a distance-, volatility- and horizon-matched benchmark. Count opening gaps separately from fills. Publish reliability and intervals; abstain for sparse buckets. |
+| W-98 · Regime and event scenarios | Does the distribution widen around scheduled events, or after a volatility change? | Freeze the event calendar, timezone and pre-event cutoffs. Use original release vintages when surprise is measured. Separate overlapping events and control for gap, weekday and volatility. Test simple quantile baselines before adding models. |
+| W-99 · Cross-asset context | Is a reference move idiosyncratic or shared across equity, volatility and crypto? | Start with SPY/QQQ and compatible hours, then add entitled VIX or other data. Align cutoffs, instrument, session and adjustment basis. Test incremental value against the single-asset baseline; test stability across regimes. No causal wording from correlation. |
+| W-100 · Executable economic value | Does an observed effect improve a decision after realistic friction? | Reuse existing MFE/MAE and simulation, then model next executable price, spread, fees, latency, slippage and ambiguity. Compare with existing desk rules at matched exposure and risk, include turnover, drawdown, adverse tails and uncertainty. No fill claims from OHLC alone. |
+| W-101 · Prospective calibration | Do projected frequencies hold in new, timestamped reports? | Freeze forecasts into the archive. Use chronological holdout with gap for overlapping horizons, reliability bins, Brier skill against the simple baseline, missing forecast rate and drift monitoring. Independently review before promotion; remove stale claims. |
+| W-102 · Portfolio scenario feasibility | Would the same scenario concentrate exposure across a desk's own positions? | Later, use private position inputs and entitled data. Start with transparent shock tests and explicit exposure assumptions. Separate from a standalone SPY brief; require user demand and risk sign-off. |
+
+Start with W-97 and W-101 together. W-98/99 earn a place through incremental lift, usability or actionable risk context. Order-book imbalance, auctions and capacity require relevant trades/quotes or depth and venue-specific rights. Daily or hourly bars cannot substantiate these claims. Real-time execution, optimization and routing require separate approval.

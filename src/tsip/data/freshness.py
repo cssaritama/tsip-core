@@ -33,7 +33,8 @@ EXPECTED = {
 MAX_CRYPTO_AGE_HOURS = 6.0
 # FRED posts a close the next day and the S&P 500 series sometimes one day later still.
 MAX_SESSIONS_BEHIND = {"alpaca": 0, "stooq": 1, "fred": 2}
-SESSION_CLOSE_NY = pd.Timedelta(hours=16, minutes=30)  # regular close plus a margin for late bars
+SESSION_CLOSE_NY = pd.Timedelta(hours=16)
+SESSION_GRACE = pd.Timedelta(minutes=30)  # allow late bars after the actual close
 
 
 def _utc(value) -> pd.Timestamp:
@@ -51,11 +52,10 @@ def completed_sessions(after: pd.Timestamp, now: pd.Timestamp, calendar: str = "
         import exchange_calendars as xcals
 
         cal = xcals.get_calendar(calendar, start=first - pd.Timedelta(days=7), end=last + pd.Timedelta(days=7))
-        sessions = pd.DatetimeIndex(cal.sessions_in_range(first, last)).tz_localize(None)
+        closes = [cal.session_close(day) for day in cal.sessions_in_range(first, last)]
     except ImportError:  # optional dependency: weekdays are a close approximation
-        sessions = pd.bdate_range(first, last)
-    closes = [(s + SESSION_CLOSE_NY).tz_localize("America/New_York") for s in sessions]
-    return sum(1 for c in closes if c <= now)
+        closes = [(day + SESSION_CLOSE_NY).tz_localize("America/New_York") for day in pd.bdate_range(first, last)]
+    return sum(1 for close in closes if close + SESSION_GRACE <= now)
 
 
 def assess_instrument(code: str, inst: dict | None, now: pd.Timestamp) -> dict:
@@ -65,6 +65,7 @@ def assess_instrument(code: str, inst: dict | None, now: pd.Timestamp) -> dict:
     primary = inst["sources"][0]
     source = primary.get("source")
     last = _utc(primary["end"])
+    reference = last
     out = {
         "code": code,
         "source": source,
@@ -75,7 +76,12 @@ def assess_instrument(code: str, inst: dict | None, now: pd.Timestamp) -> dict:
         out["status"] = "fresh" if out["age_hours"] <= MAX_CRYPTO_AGE_HOURS else "stale"
         out["allowed"] = f"{MAX_CRYPTO_AGE_HOURS:g} hours"
     else:
-        behind = completed_sessions(last, now)
+        if source == "alpaca" and code in ("SPY", "QQQ") and "coverage" in inst:
+            daily = inst["coverage"].get("daily")
+            if not daily:
+                return {**out, "status": "stale", "reason": "no complete regular session"}
+            reference = _utc(daily["end"])
+        behind = completed_sessions(reference, now)
         allowed = MAX_SESSIONS_BEHIND.get(source, 1)
         out.update(sessions_behind=behind, allowed=f"{allowed} completed session(s)")
         out["status"] = "fresh" if behind <= allowed else "stale"
@@ -83,7 +89,10 @@ def assess_instrument(code: str, inst: dict | None, now: pd.Timestamp) -> dict:
         out["status"] = "degraded"
         out["reason"] = f"served by the fallback source {source}; expected {expected['source']}"
     elif out["status"] == "stale":
-        out["reason"] = f"last bar {last.strftime('%Y-%m-%d %H:%M')} UTC is older than allowed ({out['allowed']})"
+        if source == "alpaca" and code in ("SPY", "QQQ") and "coverage" in inst:
+            out["reason"] = f"last complete regular session {reference.date()} is older than allowed ({out['allowed']})"
+        else:
+            out["reason"] = f"last bar {last.strftime('%Y-%m-%d %H:%M')} UTC is older than allowed ({out['allowed']})"
     return out
 
 
