@@ -89,3 +89,13 @@ def test_fred_close_two_sessions_behind_is_only_degraded():
     assert row["sessions_behind"] == 2 and row["status"] == "degraded"
     late = freshness.assess_instrument("SPX", _inst("SPX", "fred", "2026-10-27 00:00:00"), now)
     assert late["status"] == "stale"
+
+
+def test_partial_equity_bars_do_not_make_completed_daily_levels_fresh():
+    spy = _inst("SPY", "alpaca", "2024-11-29T17:00Z")
+    spy["coverage"] = {"daily": {"end": "2024-11-27"}}
+    assert freshness.assess_instrument("SPY", spy, pd.Timestamp("2024-11-29T17:30Z"))["status"] == "fresh"
+    stale = freshness.assess_instrument("SPY", spy, pd.Timestamp("2024-11-29T18:31Z"))
+    assert stale["status"] == "stale"
+    assert stale["sessions_behind"] == 1
+    assert "last complete regular session" in stale["reason"]

@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## 2026-11-09 · Equity data integrity
+
+- Exclude incomplete regular sessions from daily context and assess equity freshness from the latest complete session.
+
 ## 2026-11-09 · Decision interface
 
 - Lead with the session cutoff and two reference levels, put historical analysis behind a disclosure, and distinguish unavailable chart values from zero.

@@ -68,3 +68,4 @@ R1. When ..., the report (or page) shall ...
 | [0020](0020-decision-interface-and-replay.md) | Decision interface, replay and review | first-view prototype; pilot pending |
 | [0021](0021-advanced-decision-research.md) | Advanced decision research | proposed |
 | [0022](0022-institutional-readiness.md) | Institutional readiness and integrations | proposed |
+| [0023](0023-complete-equity-sessions.md) | Complete equity sessions for daily context | regression fix for W-01/F01 |
