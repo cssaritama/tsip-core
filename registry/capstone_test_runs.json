@@ -1,0 +1,17 @@
+[
+  {
+    "kind": "registered",
+    "started_utc": "2026-11-10T12:06:34+00:00",
+    "commit": "393631ee4a14cbf0b613b2f9d57b1c2bfe1b46f1",
+    "data_sha256": {
+      "prices": "6e3132b4402f8337a51adb8014c79b79476c7ef08270ef989291998381e1b3fb",
+      "fred": "924cb85fa901250317ed8cbfeb5b5084b122bb8a21cd4bf6d897c31e24916669"
+    },
+    "rerun_reason": null,
+    "status": "completed",
+    "outputs": [
+      "test_models_h5.json",
+      "test_h5.json"
+    ]
+  }
+]

@@ -14,7 +14,7 @@ this module first ran. The run:
 
     python -m tsip.capstone.evaluate                   # registered run, phase 1: models, controls, verdict
     python -m tsip.capstone.evaluate --strategies      # phase 2 of the same run: frozen strategies
-    python -m tsip.capstone.evaluate --walk-forward    # exploratory: yearly refits and the 20-row horizon
+    python -m tsip.capstone.evaluate --walk-forward 5  # exploratory: yearly refits (5 or 20 rows)
     python -m tsip.capstone.evaluate --markdown        # tables of the saved summary
 """
 
@@ -258,12 +258,12 @@ def strategies_phase(store: Path, results: Path, models: dict) -> dict:
 # ---------------------------------------------------------------- exploratory: walk-forward and 20 rows
 
 
-def walk_forward(store: Path) -> dict:
+def walk_forward(store: Path, horizons=(5, 20)) -> dict:
     """Refit at the start of each test year on every earlier row (purged), score that year; both horizons."""
     frame, _ = data.load("file", store)
     feats, sets = features.build_features(frame)
     out = {}
-    for horizon in (5, 20):
+    for horizon in horizons:
         target = f"is_positive_growth_{horizon}d"
         known = feats[feats[target].notna()]
         years = sorted({d.year for d in known["date"] if d >= TEST_START})
@@ -415,7 +415,9 @@ def main(argv=None):
     parser.add_argument("--results", type=Path, default=None)
     parser.add_argument("--rerun", default=None, help="reason for running again (logged)")
     parser.add_argument("--strategies", action="store_true", help="phase 2 of the registered run: frozen strategies")
-    parser.add_argument("--walk-forward", action="store_true", help="exploratory yearly refits and the 20-row horizon")
+    parser.add_argument(
+        "--walk-forward", type=int, choices=[5, 20], default=None, help="exploratory yearly refits, one horizon"
+    )
     parser.add_argument("--markdown", action="store_true", help="print the tables of the saved summaries and stop")
     args = parser.parse_args(argv)
     store = args.store or data.default_store()
@@ -437,12 +439,14 @@ def main(argv=None):
         mark_run(RUN_LOG, runs, "completed", summary_path)
         print(f"written {summary_path}")
         return
-    kind = "walk_forward" if args.walk_forward else "registered"
+    kind = f"walk_forward_h{args.walk_forward}" if args.walk_forward else "registered"
     runs = open_run(RUN_LOG, commit=commit, dirty=dirty, fingerprint=manifest["sha256"], kind=kind, rerun=args.rerun)
     if args.walk_forward:
-        out = walk_forward(store)
-        out["run"] = runs[-1]
-        walk_path.write_text(json.dumps(out, indent=2, default=str))
+        walk = json.loads(walk_path.read_text()) if walk_path.exists() else {}
+        out = walk_forward(store, (args.walk_forward,))
+        out[f"h{args.walk_forward}"]["run"] = runs[-1]
+        walk.update(out)
+        walk_path.write_text(json.dumps(walk, indent=2, default=str))
         mark_run(RUN_LOG, runs, "completed", walk_path)
         print(f"written {walk_path}")
         return
