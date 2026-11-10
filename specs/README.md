@@ -73,4 +73,5 @@ R1. When ..., the report (or page) shall ...
 | [0025](0025-persistent-section-navigation.md) | Persistent section navigation | implemented; comprehension test pending |
 | [0026](0026-paired-level-geometry-baseline.md) | Paired-level geometry baseline | private runner implemented; matched research and review pending |
 | [0027](0027-matched-weekly-levels.md) | Historical weekly references versus geometry | private runner and synthetic verification; independent review pending |
-| [0028](0028-time-space-features-for-return-prediction.md) | Do time–space features improve the prediction of future returns? | approved; H-2026-016 registered |
+| [0028](0028-time-space-features-for-return-prediction.md) | Do time–space features improve the prediction of future returns? | evaluated: H-2026-016 not supported |
+| [0029](0029-when-to-buy-with-a-monthly-budget.md) | When and where to buy with a fixed monthly budget | approved; H-2026-017 registered |

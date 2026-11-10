@@ -190,5 +190,17 @@
     "evaluation_start": "2024-01-01",
     "evaluation_end": "2026-11-19",
     "status": "open"
+  },
+  {
+    "id": "H-2026-017",
+    "instrument": "SPY, QQQ, GLD, BTC-USD, ETH-USD (each on its own)",
+    "statement": "With the same amount invested every month, buying on a session chosen by a time or space rule (weekday, after a strong fall, a high-range session, near the nearest untested monthly, quarterly or half-year low, at the nearest bullish fair value gap, on the usual session of the monthly low, or below the month's open after the first week) pays a lower price than a session drawn at random from the same month.",
+    "metric": "Mean price advantage over months: (average close of the month minus the purchase price) divided by the average close, in the confirmation period of specification 0029, with a circular block bootstrap over months (6-month blocks, 2,000 resamples).",
+    "criterion": "Supported for an instrument if at least one of its confirmation rules has a mean advantage of at least 0.20% with Benjamini-Hochberg q below 0.05 across all 59 confirmation tests, and no rule passes on random walks. Rejected for an instrument otherwise.",
+    "basis": "Founder's question of 2026-11-10 after the specification 0028 test, where buying at the prior month's low lost to monthly buying partly because it left money uninvested. Registered before any figure of specification 0029 was computed.",
+    "registered": "2026-11-10",
+    "evaluation_start": "2016-01-01",
+    "evaluation_end": "2026-10-31",
+    "status": "open"
   }
 ]
