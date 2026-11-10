@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## 2026-11-10 · Buy timing with a monthly budget
+
+- Add `tsip.capstone.timing` (specification 0029): seven rule families and two references, each buying once per month, compared with the exact price of a random session of the month; development choices frozen in `registry/capstone_timing_choices.json`; a single logged confirmation with Benjamini–Hochberg control and a random-walk run.
+
 ## 2026-11-10 · Course project, delivery pieces
 
 - Add `tsip.capstone.run_all` (the whole flow in one command, from the stored copy or fresh downloads), `notebooks/capstone.ipynb` (executed, outputs saved) and its builder `tools/build_capstone_notebook.py`, `tsip.capstone.paper_order` (paper-trading order example, paper endpoint only), a `Dockerfile`, the README release section and the rubric map in `docs/CAPSTONE.md`.

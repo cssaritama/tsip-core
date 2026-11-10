@@ -1,6 +1,6 @@
 # 0029 When and where to buy with a fixed monthly budget
 
-**Status:** approved (founder request, 2026-11-10); protocol fixed before any figure; H-2026-017 registered before the run
+**Status:** in progress: code and tests (T1–T3, T5) on 2026-11-10; H-2026-017 registered before the run
 **Level:** 2 study · **Open work:** W-124 · **Decisions:** ADR 0064, ADR 0067, ADR 0071
 
 ## Problem and decision supported
