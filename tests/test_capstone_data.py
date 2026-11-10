@@ -123,3 +123,87 @@ def test_a_store_used_by_a_logged_test_read_is_never_overwritten(tmp_path):
     with pytest.raises(SystemExit):
         data.save(store, prices, fred, source="t", log=log)
     data.save(tmp_path / "other", prices, fred, source="t", log=log)  # another folder is fine
+
+
+def _bars(dates, close, adj=None, ticker="SPY"):
+    import pandas as pd
+
+    close = list(close)
+    return pd.DataFrame(
+        {
+            "date": pd.to_datetime(dates),
+            "ticker": ticker,
+            "open": close,
+            "high": close,
+            "low": close,
+            "close": close,
+            "adj_close": adj if adj is not None else close,
+            "volume": 1.0,
+        }
+    )
+
+
+def test_splice_replaces_the_overlap_and_rescales_the_back_adjusted_history():
+    import pandas as pd
+
+    from tsip.capstone import data
+
+    days = pd.bdate_range("2026-10-01", periods=10)
+    old = _bars(days[:8], [100.0] * 8, adj=[95.0] * 8)
+    # a dividend was paid: the provider now reports the adjusted history 2% lower, and two new days
+    new = _bars(days[5:], [100.0] * 5, adj=[93.1] * 5)
+    out, ratios = data.splice(old, new)
+    assert len(out) == 10 and out["date"].is_unique
+    assert abs(ratios["SPY"]["adj_close"] - 0.98) < 1e-12
+    assert (abs(out["adj_close"] - 93.1) < 1e-9).all()  # one adjustment basis throughout, no false jump
+
+
+def test_splice_refuses_an_update_that_does_not_overlap():
+    import pandas as pd
+    import pytest
+
+    from tsip.capstone import data
+
+    old = _bars(pd.bdate_range("2026-01-01", periods=5), [1.0] * 5)
+    new = _bars(pd.bdate_range("2026-03-01", periods=5), [1.0] * 5)
+    with pytest.raises(ValueError):
+        data.splice(old, new)
+
+
+def test_update_downloads_only_recent_days(tmp_path, monkeypatch):
+    import pandas as pd
+
+    from tsip.capstone import data
+
+    days = pd.bdate_range("2026-09-01", periods=30)
+    tickers = list(dict.fromkeys([*data.UNIVERSE, *data.REFERENCES]))
+    old = pd.concat([_bars(days[:25], [10.0] * 25, ticker=t) for t in tickers], ignore_index=True)
+    fred = pd.DataFrame({"date": ["2026-09-01"], "series": ["DTB3"], "value": [4.0]})
+    monkeypatch.setattr(data, "RUN_LOG", tmp_path / "none.json")
+    data.save(tmp_path, old, fred, source="t", log=tmp_path / "none.json")
+    seen = {}
+
+    def fake_prices(tks, start):
+        seen["start"] = start
+        return pd.concat([_bars(days[20:], [10.0] * 10, ticker=t) for t in tks], ignore_index=True)
+
+    monkeypatch.setattr(data, "download_prices", fake_prices)
+    monkeypatch.setattr(data, "download_fred", lambda ids: fred)
+    out = data.update(tmp_path)
+    assert seen["start"] == (days[24] - pd.Timedelta(days=data.OVERLAP_DAYS)).date().isoformat()
+    assert out["update"]["new_rows"] == 5 * len(tickers)
+
+
+def test_run_all_sets_aside_results_of_older_data(tmp_path):
+    import json
+
+    from tsip.capstone import run_all
+
+    results = tmp_path / "results"
+    results.mkdir()
+    (results / "piece.json").write_text("{}")
+    (results / "data_fingerprint.json").write_text(json.dumps({"prices": "a" * 64, "fred": "b"}))
+    (tmp_path / "manifest.json").write_text(json.dumps({"sha256": {"prices": "c" * 64, "fred": "d"}}))
+    run_all.keep_results_in_step(tmp_path, results)
+    assert (tmp_path / f"results_{'a' * 12}" / "piece.json").exists()  # kept, not deleted
+    assert json.loads((results / "data_fingerprint.json").read_text())["prices"] == "c" * 64

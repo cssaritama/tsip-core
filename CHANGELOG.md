@@ -5,6 +5,7 @@ All notable changes to this project are documented here. The format follows [Kee
 ## [Unreleased]
 
 ### Added
+- Incremental data loading (`--mode update` in `tsip.capstone.data` and `run_all`): only the days since shortly before the last stored date, spliced with the stored history rescaled to the latest provider adjustment; refused on a protected store; results of older data are set aside.
 - `tsip.capstone.analysis`: correlations of features with the target (training and validation rows only), the vector view's return on capital, test-period AUC, precision of the most confident decile and calibration by instrument and by month of the year, and the most confident wrong predictions; a section in `docs/CAPSTONE.md` with the reading and ideas for improvement.
 - The notebook shows all four model families of step 3 (regenerated; the published tables reproduce exactly), the correlation analysis and the diagnostics.
 

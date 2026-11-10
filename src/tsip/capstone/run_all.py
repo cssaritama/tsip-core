@@ -2,6 +2,7 @@
 
     python -m tsip.capstone.run_all --mode file        # from the stored copy, no network
     python -m tsip.capstone.run_all --mode download    # fresh data from yfinance and FRED first
+    python -m tsip.capstone.run_all --mode update      # only the days since the last stored date
 
 Steps: 1 data, 2 features, 3 models on the validation period (logistic regression by default;
 ``--all-families`` adds the decision tree, XGBoost and random forest, which take longer),
@@ -20,9 +21,24 @@ from pathlib import Path
 from tsip.capstone import data, evaluate, features, run_models, simulate
 
 
+def keep_results_in_step(store: Path, results: Path) -> None:
+    """Saved results belong to one data fingerprint; after new data they are set aside (never deleted)."""
+    current = json.loads((store / "manifest.json").read_text())["sha256"]
+    stamp = results / "data_fingerprint.json"
+    if results.exists() and any(results.iterdir()):
+        previous = json.loads(stamp.read_text()) if stamp.exists() else None
+        if previous is not None and previous != current:
+            aside = results.with_name(f"results_{previous['prices'][:12]}")
+            results.rename(aside)
+            print(f"data changed: earlier results moved to {aside.name}; recomputing")
+    results.mkdir(parents=True, exist_ok=True)
+    if not stamp.exists():
+        stamp.write_text(json.dumps(current, indent=2))
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--mode", choices=["file", "download"], default="file")
+    parser.add_argument("--mode", choices=["file", "download", "update"], default="file")
     parser.add_argument("--store", type=Path, default=None)
     parser.add_argument("--all-families", action="store_true")
     args = parser.parse_args(argv)
@@ -33,6 +49,7 @@ def main(argv=None):
     print("== 1 data")
     frame, summary = data.load(args.mode, store)
     print(json.dumps(summary, indent=2))
+    keep_results_in_step(store, results)
 
     print("== 2 features")
     feats, sets = features.build_features(frame)
