@@ -54,6 +54,41 @@ Full list:
 
 Missing values: reference growth is empty before a reference market starts (Bitcoin from 2014); "untested above" is empty when price is at a new high for the lookback (no untested high exists). Models that cannot take empty values receive an indicator and an imputed value; this is stated with each model.
 
-## Models (step 3) · Simulation (step 4) · Evaluation (step 5)
+## Models (step 3): validation period only
+
+Commands (each piece resumable; results outside Git):
+
+```sh
+python -m tsip.capstone.run_models fit --horizon 5
+python -m tsip.capstone.run_models fit --horizon 5 --random-walk
+python -m tsip.capstone.run_models summarise --horizon 5 [--random-walk]
+```
+
+Training rows up to 2021-12-31, validation 2022-01-01 to 2023-12-31, the last 5 rows of each ticker before each boundary purged. Each family tuned on three expanding time-ordered folds of the training rows (`tsip.capstone.models.GRIDS`). Validation AUC of the direction of the next 5 rows, run on 2026-11-10 with the code of the commit that added this section, on the download of 2026-11-10 (validation base rate 51.8% positive):
+
+| Family | LECTURE | +TIME | +SPACE | +TIME+SPACE | Mean | TIME and SPACE shuffled | Lift of +TIME+SPACE over LECTURE (95% block interval) |
+|---|---:|---:|---:|---:|---:|---:|---|
+| Logistic regression | 0.555 | 0.561 | 0.548 | 0.553 | **0.554** | 0.537 | −0.002 (−0.039 to +0.036) |
+| Decision tree | 0.480 | 0.490 | 0.499 | 0.490 | 0.490 | 0.483 | +0.010 (−0.069 to +0.086) |
+| XGBoost | 0.538 | 0.551 | 0.530 | 0.548 | 0.542 | 0.504 | +0.009 (−0.032 to +0.047) |
+| Random forest | 0.477 | 0.515 | 0.495 | 0.512 | 0.500 | 0.487 | +0.035 (−0.003 to +0.066) |
+
+Random-walk control (same pipeline, each ticker's prices replaced by a walk with its own drift and volatility; references and macro kept):
+
+| Family | LECTURE | +TIME | +SPACE | +TIME+SPACE | Lift (95% block interval) |
+|---|---:|---:|---:|---:|---|
+| Logistic regression | 0.489 | 0.488 | 0.509 | 0.506 | +0.017 (−0.011 to +0.048) |
+| Decision tree | 0.489 | 0.477 | 0.489 | 0.477 | −0.012 (−0.034 to +0.010) |
+| XGBoost | 0.494 | 0.482 | 0.510 | 0.503 | +0.009 (−0.020 to +0.039) |
+| Random forest | 0.506 | 0.502 | 0.509 | 0.510 | +0.004 (−0.007 to +0.016) |
+
+Reading (exploratory; the registered result is the test period at step 5):
+
+1. **Selected family: logistic regression** (highest mean validation AUC over the four sets, rule fixed before the run). The trees overfit: the decision tree and the random forest stay at or below 0.5 on the course features.
+2. **No validated lift yet.** Every interval of the lift contains zero, on real prices as on random walks. Time features add a little in every family (+0.006 to +0.038); space features alone do not.
+3. **The pipeline is honest:** on random walks every family stays near 0.5 and no lift is significant, and on the real data shuffling the time and space columns lowers the AUC of the logistic and XGBoost models.
+4. A validation sample of two years is noisy: on random walks of the same size the AUC spreads by about 0.04 between seeds (checked 2026-11-10). Differences below a few hundredths are not evidence.
+
+## Simulation (step 4) · Evaluation (step 5)
 
 To be built, in this order, under specification 0028; the test period from 2024-01-01 is read once, at step 5.

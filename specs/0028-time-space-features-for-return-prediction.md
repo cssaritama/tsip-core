@@ -40,7 +40,7 @@ The answer is useful whichever way it goes. A lift, confirmed against controls a
 |---|---|---|
 | T1 | No feature on day t changes when every session after t is deleted | test |
 | T2 | On random-walk series the pooled lift interval contains zero | random-walk test |
-| T3 | A series with a planted level effect (price returns to the prior week's high more than chance) gives a positive lift for `SPACE` | planted-effect test |
+| T3 | A series with a planted level effect (drift up for five days after a close below the prior week's low) is found (validation AUC above 0.6) and `SPACE` adds a positive lift over the course features | planted-effect test |
 | T4 | The test period is read only by the final evaluation command, which records its commit | test and log |
 | T5 | Pullback buying never spends more than the cash available on the day | test |
 | T6 | One notebook runs the whole flow from the `.py` modules, in two modes: from stored files and from fresh downloads | run log |
@@ -54,6 +54,13 @@ The answer is useful whichever way it goes. A lift, confirmed against controls a
 
 Data files are never committed. Prices from yfinance are used for the course project only, under their terms; TSIP's public board keeps its own sources (ADR 0055). The private Kibot history is not used.
 
+## Selection rule (fixed 2026-11-10, before the first model was trained)
+
+- Each family is tuned on three expanding, time-ordered folds of the training period (small fixed grids in `tsip.capstone.models.GRIDS`), then fitted on the whole training period and scored once on validation.
+- The family carried to the test period is the one with the **highest mean validation AUC over the four feature sets**, so the choice does not favour the time–space sets. Ties go to the simpler family (logistic, then decision tree, XGBoost, random forest).
+- Validation lift and its 95% interval (circular block bootstrap over dates, 20-date blocks) are reported for every family as exploratory; only the test-period lift of the selected family is the registered result (H-2026-016).
+- Controls on validation: TIME and SPACE columns shuffled within each ticker (the lift should vanish), and the same pipeline on random-walk prices with each ticker's drift and volatility (the lift interval should contain zero).
+
 ## Data notes (step 1)
 
 - Reference markets: S&P 500, Nasdaq-100, DAX, gold, WTI and Brent oil, Bitcoin and VIX closes, joined from the previous calendar day or earlier, because their closes fall at different hours from the row's own close.
@@ -65,4 +72,7 @@ Data files are never committed. Prices from yfinance are used for the course pro
 | ID | Result | Evidence |
 |---|---|---|
 | T1 | pass: data layer (`tests/test_capstone_data.py`) and features (`tests/test_capstone_features.py::test_no_feature_changes_when_later_rows_are_removed`) | steps 1 and 2, 2026-11-10 |
-| T2–T6 | to do | |
+| T2 | pass: random-walk prices give no significant lift for any family (`docs/CAPSTONE.md`, step 3) and `tests/test_capstone_models.py::test_random_walk_gives_no_time_space_lift` | 2026-11-10 |
+| T3 | pass: `tests/test_capstone_models.py::test_planted_space_effect_is_found` | 2026-11-10 |
+| T4 | partial: `split` refuses test rows unless `allow_test=True` (`test_split_never_returns_test_rows_unless_asked`); the single evaluation command is step 5 | 2026-11-10 |
+| T5–T6 | to do | |
