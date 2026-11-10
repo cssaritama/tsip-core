@@ -5,6 +5,7 @@ All notable changes to this project are documented here. The format follows [Kee
 ## [Unreleased]
 
 ### Added
+- A second data source for the course project (`tsip.capstone.extra_sources`): Coinbase daily candles for Bitcoin and Ether in their own fingerprinted folder, a cross-check against the aggregate and three exchange-specific features (exploratory); fetched by `run_all` in download and update modes.
 - Scheduled course-project run (`.github/workflows/capstone.yml`, Sundays and on demand): fresh download, the whole flow, the latest predictions and paper-trading orders (dry run) in the summary; a second job builds and runs the container.
 - Incremental data loading (`--mode update` in `tsip.capstone.data` and `run_all`): only the days since shortly before the last stored date, spliced with the stored history rescaled to the latest provider adjustment; refused on a protected store; results of older data are set aside.
 - `tsip.capstone.analysis`: correlations of features with the target (training and validation rows only), the vector view's return on capital, test-period AUC, precision of the most confident decile and calibration by instrument and by month of the year, and the most confident wrong predictions; a section in `docs/CAPSTONE.md` with the reading and ideas for improvement.

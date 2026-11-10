@@ -18,7 +18,7 @@ import json
 import time
 from pathlib import Path
 
-from tsip.capstone import data, evaluate, features, run_models, simulate
+from tsip.capstone import data, evaluate, extra_sources, features, run_models, simulate
 
 
 def keep_results_in_step(store: Path, results: Path) -> None:
@@ -50,6 +50,14 @@ def main(argv=None):
     frame, summary = data.load(args.mode, store)
     print(json.dumps(summary, indent=2))
     keep_results_in_step(store, results)
+
+    print("== 1b second source (Coinbase daily candles for Bitcoin and Ether; exploratory)")
+    if args.mode in ("download", "update"):
+        try:
+            extra_sources.download(store)
+        except Exception as exc:  # network or provider failure must not stop the flow
+            print(f"  Coinbase not downloaded: {exc}")
+    print(extra_sources.markdown(store).split("\n\n**Coinbase features")[0])
 
     print("== 2 features")
     feats, sets = features.build_features(frame)

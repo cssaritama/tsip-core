@@ -37,6 +37,10 @@ First download, 2026-11-10 00:37 UTC (`python -m tsip.capstone.data --mode downl
 | Unified frame | 26,759 rows, 20 columns, 2000-01-03 to 2026-11-09 |
 | Rows by instrument | SPY 6,754 · QQQ 6,754 · GLD 5,528 · Bitcoin 4,436 · Ethereum 3,287 |
 
+### Second source: Coinbase (Bitcoin and Ether)
+
+`python -m tsip.capstone.extra_sources download` adds Coinbase's public daily candles (no key) for Bitcoin and Ether, stored in `<store>/coinbase/` with their own fingerprinted manifest; `run_all` fetches them in download and update modes. They give what the aggregate does not: one exchange's own close and volume. Three features come from them, each known at that day's close: `cb_premium_bps` (Coinbase close over the aggregate close), `cb_volume_share` (Coinbase's share of the aggregate dollar volume) and `cb_volume_share_change_20d`. The two sources are cross-checked against each other. The features are exploratory and not used by the registered models; `python -m tsip.capstone.extra_sources --markdown` prints the cross-check and their correlation with the target (tables in "Exploratory analysis and diagnostics" once downloaded).
+
 ## Features (step 2)
 
 `python -c "from tsip.capstone import data, features; f, s = features.build_features(data.load('file')[0])"` builds 122 columns on the frame above: 4 targets, 60 course features, 11 time features, 40 space features and 5 ticker indicators. No feature on a row changes when later rows are deleted (test `tests/test_capstone_features.py`).
@@ -663,7 +667,7 @@ Where each item of the course rubric is answered, and what is not claimed.
 | Data sources | yfinance (5 instruments, 8 reference markets) and FRED (4 series), two modes, fingerprinted store outside Git (step 1, `tsip.capstone.data`) | done |
 | Twenty or more features, documented | 122 columns in named sets with a dictionary (step 2) and a no-look-ahead test | done |
 | More than one million records | Not met: daily data give 26,759 rows | not claimed |
-| New data source (not yfinance or FRED) | The course models use yfinance and FRED only; the repository's live report uses Coinbase, the Binance archive and Alpaca, but not this project | not claimed |
+| New data source (not yfinance or FRED) | Coinbase daily candles for Bitcoin and Ether (`tsip.capstone.extra_sources`): cross-check and three exchange-specific features (premium and volume share), exploratory | written; tables after the first download (the founder's computer or the scheduled run) |
 | Transformations and exploratory analysis | Point-in-time joins with release lags (step 1); notebook section "Exploratory view" (shares of positive periods by instrument, weekday and position in the prior week) | done: correlations with the 5- and 20-row returns in "Exploratory analysis and diagnostics" |
 | Models and tuning | Decision tree, random forest, logistic regression and XGBoost tuned on time-ordered folds; selection rule fixed before training (step 3) | done: all four families regenerated and shown in the notebook (reusing saved results) |
 | Probability thresholds | Thresholds chosen on validation and frozen (`registry/capstone_choices_h5.json`, step 4) | done |
