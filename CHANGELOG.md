@@ -2,70 +2,38 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
-## 2026-11-10 · Buy timing with a monthly budget
-
-- Add `tsip.capstone.timing` (specification 0029): seven rule families and two references, each buying once per month, compared with the exact price of a random session of the month; development choices frozen in `registry/capstone_timing_choices.json`; a single logged confirmation with Benjamini–Hochberg control and a random-walk run.
-
-## 2026-11-10 · Course project, delivery pieces
-
-- Add `tsip.capstone.run_all` (the whole flow in one command, from the stored copy or fresh downloads), `notebooks/capstone.ipynb` (executed, outputs saved) and its builder `tools/build_capstone_notebook.py`, `tsip.capstone.paper_order` (paper-trading order example, paper endpoint only), a `Dockerfile`, the README release section and the rubric map in `docs/CAPSTONE.md`.
-- Add `tsip.capstone.reproduce`: validation results and choices of two data stores side by side.
-- A data store used by a logged test-period read is never overwritten by a new download (the read stays reproducible).
-
-## 2026-11-10 · Course project, test-period evaluation
-
-- Add `tsip.capstone.evaluate`: the single logged read of the test period in two phases (models, controls and the verdict of H-2026-016; then the frozen strategies), refused from uncommitted code or a second time without a logged reason, and an exploratory walk-forward check.
-
-## 2026-11-10 · Course project, strategy simulations
-
-- Add `tsip.capstone.simulate`: vector and exact simulations of four prediction strategies and of monthly pullback buying, with costs, idle cash at the bill rate, rotation and random-walk controls, and the parameters chosen on validation frozen in `registry/capstone_choices_h5.json`.
-
-## 2026-11-09 · Matched weekly levels
-
-- Add a private holdout comparison for real weekly references and volatility-matched historical controls.
-
-## 2026-11-09 · Paired levels
-
-- Add a private fixed-distance baseline for paired first touches, ambiguity, gaps and complete session windows.
-
-## 2026-11-09 · Navigation
-
-- Keep section links and the selected market visible while scrolling.
-
-## 2026-11-09 · Reference levels
-
-- Separate nearest market references from historical reach evidence and make the view work across themes and screen sizes.
-
-## 2026-11-09 · Equity data integrity
-
-- Exclude incomplete regular sessions from daily context and assess equity freshness from the latest complete session.
-
-## 2026-11-09 · Decision interface
-
-- Lead with the session cutoff and two reference levels, put historical analysis behind a disclosure, and distinguish unavailable chart values from zero.
-
-## 2026-11-09 · Session research
-
-- Add a private descriptive runner for the crypto Monday range with complete hourly UTC weeks.
-
-## 2026-11-09 · Restart documentation
-
-- Record the proposed desk workflow and mark the execution matrix as withdrawn pending independent evidence.
-
 ## [Unreleased]
 
+## [1.0.0] – 2026-11-10
+
+Release 1.0.0 is the course project of the Stock Markets Analytics course and phase 1 of the research core: a daily data and feature pipeline, models, strategy simulations and two pre-registered studies, each read once out of sample (`docs/CAPSTONE.md`). H-2026-016 (time and space features improve return prediction) and H-2026-017 (timing rules beat a random session of the month) are not supported; both evaluations are in `registry/evaluations.json`.
+
 ### Added
+- Add `tsip.capstone.timing` (specification 0029): seven rule families and two references, each buying once per month, compared with the exact price of a random session of the month; development choices frozen in `registry/capstone_timing_choices.json`; a single logged confirmation with Benjamini–Hochberg control and a random-walk run. (buy timing with a monthly budget, 2026-11-10)
+- Add `tsip.capstone.run_all` (the whole flow in one command, from the stored copy or fresh downloads), `notebooks/capstone.ipynb` (executed, outputs saved) and its builder `tools/build_capstone_notebook.py`, `tsip.capstone.paper_order` (paper-trading order example, paper endpoint only), a `Dockerfile`, the README release section and the rubric map in `docs/CAPSTONE.md`. (course project, delivery pieces, 2026-11-10)
+- Add `tsip.capstone.reproduce`: validation results and choices of two data stores side by side. (course project, delivery pieces, 2026-11-10)
+- A data store used by a logged test-period read is never overwritten by a new download (the read stays reproducible). (course project, delivery pieces, 2026-11-10)
+- Add `tsip.capstone.evaluate`: the single logged read of the test period in two phases (models, controls and the verdict of H-2026-016; then the frozen strategies), refused from uncommitted code or a second time without a logged reason, and an exploratory walk-forward check. (course project, test-period evaluation, 2026-11-10)
+- Add `tsip.capstone.simulate`: vector and exact simulations of four prediction strategies and of monthly pullback buying, with costs, idle cash at the bill rate, rotation and random-walk controls, and the parameters chosen on validation frozen in `registry/capstone_choices_h5.json`. (course project, strategy simulations, 2026-11-10)
+- Add a private holdout comparison for real weekly references and volatility-matched historical controls. (matched weekly levels, 2026-11-09)
+- Add a private fixed-distance baseline for paired first touches, ambiguity, gaps and complete session windows. (paired levels, 2026-11-09)
+- Keep section links and the selected market visible while scrolling. (navigation, 2026-11-09)
+- Separate nearest market references from historical reach evidence and make the view work across themes and screen sizes. (reference levels, 2026-11-09)
+- Exclude incomplete regular sessions from daily context and assess equity freshness from the latest complete session. (equity data integrity, 2026-11-09)
+- Lead with the session cutoff and two reference levels, put historical analysis behind a disclosure, and distinguish unavailable chart values from zero. (decision interface, 2026-11-09)
+- Add a private descriptive runner for the crypto Monday range with complete hourly UTC weeks. (session research, 2026-11-09)
+- Record the proposed desk workflow and mark the execution matrix as withdrawn pending independent evidence. (restart documentation, 2026-11-09)
 - Course project models (specification 0028, R7, R8 and controls; `tsip.capstone.models`, `tsip.capstone.run_models`): four families tuned on time-ordered folds of the training period, four feature sets, purged period boundaries, test rows refused unless explicitly requested, shuffled-column and random-walk controls, block-bootstrap interval of the lift, and a resumable runner. Selection rule fixed in the specification before the first run. Validation results in `docs/CAPSTONE.md`: logistic regression selected; no lift interval excludes zero.
 - Course project features (specification 0028, R2 to R6; `tsip.capstone.features`): 122 columns in named sets (targets at 5 and 20 rows, 60 course features, 11 time features, 40 space features including the nearest untested highs and lows of the last twelve weeks and months, ticker indicators). No feature changes when later rows are deleted (test). Bars dated on or after the download's UTC date are dropped, since they may still be open. `docs/CAPSTONE.md` records the first download (26,759 rows, 2000-01-03 to 2026-11-09) and the feature dictionary.
 - Repository rules checked by code (`tools/check_rules.py`, W-75): registered hypothesis IDs, unique and indexed specification numbers, no tool or assistant names, no unsupported claims in public text, no tracked data files, owner authorship and a changelog change for code changes. Runs in CI on every push and in the new **Daily review** workflow (every day at 07:43 UTC, also tests, lint and the freshness of the published report). Procedure in `CONTRIBUTING.md`, independent of any particular tool.
 - Course project data (specification 0028, R1 and R6; `tsip.capstone.data`): one daily frame for SPY, QQQ, GLD, Bitcoin and Ethereum with reference-market closes and FRED macro series, in two modes (`--mode download` stores yfinance and FRED data outside the repository with a fingerprinted manifest; `--mode file` repeats the run from the stored copy). Reference closes come only from earlier dates and macro values only after a conservative release lag; tests check both and that no row changes when later data are removed. Optional dependencies: `pip install -e ".[capstone]"`.
 - Specification 0028 (W-121): do time–space features improve the out-of-sample prediction of future returns, with ablation, random-walk and permuted-block controls, five strategies and the pullback-buying comparison with idle cash accounted for. Hypothesis H-2026-016 registered before any model is trained.
 
-### Removed
-- Specifications 0012 to 0017 withdrawn (W-115): their first versions reported results that no code in the repository produces, without control, holdout, interval or grade, and some figures contradicted each other and the graded money results of 0.2.16 to 0.2.18. Each file now states why it was withdrawn and how the question can be specified again. No study, report field or page section depended on them.
-
 ### Changed
 - The website changes of 2026-11-08 (view switcher, level ladder and reach map, candlestick workspace, percentage axis, removal of the cost selector from the header) are not yet described in this file; they will be recorded with the next release after a render check (W-116).
+
+### Removed
+- Specifications 0012 to 0017 withdrawn (W-115): their first versions reported results that no code in the repository produces, without control, holdout, interval or grade, and some figures contradicted each other and the graded money results of 0.2.16 to 0.2.18. Each file now states why it was withdrawn and how the question can be specified again. No study, report field or page section depended on them.
 
 ## [0.2.24] – 2026-11-06
 
