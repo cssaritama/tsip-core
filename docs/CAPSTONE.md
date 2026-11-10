@@ -10,11 +10,17 @@ TSIP describes where price stands in time (calendar coordinates) and in space (a
 
 ```sh
 pip install -e ".[dev,calendar,capstone]"
-python -m tsip.capstone.data --mode download   # fresh data from yfinance and FRED, stored outside Git
-python -m tsip.capstone.data --mode file       # repeat from the stored copy, no network
+python -m tsip.capstone.run_all --mode download   # steps 1-4 with fresh data from yfinance and FRED
+python -m tsip.capstone.run_all --mode file       # the same from the stored copy, no network
+python -m tsip.capstone.run_all --all-families    # adds decision tree, XGBoost and random forest (slower)
+jupyter notebook notebooks/capstone.ipynb          # the same flow step by step, with outputs saved
+python -m tsip.capstone.evaluate --markdown       # tables of the single test-period read (step 5)
+python -m tsip.capstone.paper_order               # paper-trading order example (dry run; --send with paper keys)
+docker build -t tsip-capstone .                   # container: the data folder is mounted at /data
+docker run --rm -v "$HOME/tsip_capstone_data:/data" tsip-capstone [--mode download]
 ```
 
-Data are stored in `~/tsip_capstone_data` (override with `TSIP_CAPSTONE_DATA`) with a manifest that fingerprints each file; nothing is committed to Git.
+Data are stored in `~/tsip_capstone_data` (override with `TSIP_CAPSTONE_DATA`) with a manifest that fingerprints each file; nothing is committed to Git and nothing is copied into the container image. The notebook is rebuilt with `python tools/build_capstone_notebook.py` and executed with `python -m nbconvert --to notebook --execute --inplace notebooks/capstone.ipynb`.
 
 ## Data (step 1)
 
@@ -291,3 +297,29 @@ Reading:
 4. **Pullback buying lost to buying on arrival and to a lump sum** in a rising market: the frozen trigger (prior month's low) earned a mean money-weighted +5.9% a year against +8.2% for monthly buying and +16.7% for the lump sum; cash earned +4.0%. Waiting for a pullback cost time in the market.
 5. **The controls behaved:** on random walks the lift interval contains zero; with the time and space columns shuffled the lift is negative, as columns without information should be.
 6. The result is negative and it is published as it is. What the project shows is a pipeline that cannot fool itself: every choice fixed before the test, one logged read, and controls that would have exposed a false edge.
+
+## Rubric map
+
+Where each item of the course rubric is answered, and what is not claimed.
+
+| Criterion | Evidence in this repository | Status |
+|---|---|---|
+| Problem description | "Problem" above; README release section; specification 0028 | done |
+| Data sources | yfinance (5 instruments, 8 reference markets) and FRED (4 series), two modes, fingerprinted store outside Git (step 1, `tsip.capstone.data`) | done |
+| Twenty or more features, documented | 122 columns in named sets with a dictionary (step 2) and a no-look-ahead test | done |
+| More than one million records | Not met: daily data give 26,759 rows | not claimed |
+| Transformations and exploratory analysis | Point-in-time joins with release lags (step 1); notebook section "Exploratory view" | done |
+| Models and tuning | Decision tree, random forest, logistic regression and XGBoost tuned on time-ordered folds; selection rule fixed before training (step 3) | done |
+| Probability thresholds | Thresholds chosen on validation and frozen (`registry/capstone_choices_h5.json`, step 4) | done |
+| Two or more strategies, vector and exact simulation | sim1 to sim5, vector view and an exact account with costs, cash at the bill rate, one-session delay (steps 4 and 5) | done |
+| Benchmark with dividends | Five-instrument buy and hold and SPY with dividends (adjusted close), with block-bootstrap intervals | done |
+| Stop loss and a new strategy | sim3 (2 ATR stop and a volatility filter); pullback buying with monthly deposits (sim5) | done |
+| Deep analysis | Rotation and random-walk controls, validation against test, walk-forward check (steps 4 and 5) | done |
+| Exceptional returns | The registered strategy did not beat either benchmark on the test period (step 5) | not claimed |
+| Scripts and dependencies | `pyproject.toml` extra `capstone`; one command, `tsip.capstone.run_all`, in two modes | done |
+| Incremental data outside GitHub | Data store outside Git with a fingerprinted manifest; steps reuse saved results | done |
+| Scheduled run | The public report runs every day in GitHub Actions; the course flow itself is not scheduled | partial |
+| Modular code | `src/tsip/capstone/` modules with their tests (`tests/test_capstone_*.py`); the notebook only calls them | done |
+| Broker API | `tsip.capstone.paper_order`: orders to Alpaca's paper endpoint only, with simulated money | done (dry run verified; sending needs the founder's paper keys) |
+| Container | `Dockerfile`; not built in the environment where this release was prepared | written, not yet built |
+| Deployment | The project's public report on GitHub Pages | done |

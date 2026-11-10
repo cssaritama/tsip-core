@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## 2026-11-10 · Course project, delivery pieces
+
+- Add `tsip.capstone.run_all` (the whole flow in one command, from the stored copy or fresh downloads), `notebooks/capstone.ipynb` (executed, outputs saved) and its builder `tools/build_capstone_notebook.py`, `tsip.capstone.paper_order` (paper-trading order example, paper endpoint only), a `Dockerfile`, the README release section and the rubric map in `docs/CAPSTONE.md`.
+
 ## 2026-11-10 · Course project, test-period evaluation
 
 - Add `tsip.capstone.evaluate`: the single logged read of the test period in two phases (models, controls and the verdict of H-2026-016; then the frozen strategies), refused from uncommitted code or a second time without a logged reason, and an exploratory walk-forward check.
