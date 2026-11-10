@@ -1,6 +1,6 @@
 # 0028 Do time–space features improve the prediction of future returns?
 
-**Status:** in progress: data, features, models (validation) and strategy simulations (validation) built on 2026-11-10; hypothesis H-2026-016 registered before any model was trained; test period not yet read
+**Status:** evaluated on 2026-11-10: H-2026-016 not supported (test lift −0.012, interval −0.039 to +0.016; `docs/CAPSTONE.md`, `registry/evaluations.json`); notebook and release (T6) to do
 **Level:** 2 study · **Open work:** W-121 (course final project, release 1.0.0) · **Decisions:** ADR 0064, ADR 0071
 
 ## Problem and decision supported
@@ -93,6 +93,6 @@ Data files are never committed. Prices from yfinance are used for the course pro
 | T1 | pass: data layer (`tests/test_capstone_data.py`) and features (`tests/test_capstone_features.py::test_no_feature_changes_when_later_rows_are_removed`) | steps 1 and 2, 2026-11-10 |
 | T2 | pass: random-walk prices give no significant lift for any family (`docs/CAPSTONE.md`, step 3) and `tests/test_capstone_models.py::test_random_walk_gives_no_time_space_lift` | 2026-11-10 |
 | T3 | pass: `tests/test_capstone_models.py::test_planted_space_effect_is_found` | 2026-11-10 |
-| T4 | partial: `split` refuses test rows unless `allow_test=True` (`test_split_never_returns_test_rows_unless_asked`); the single evaluation command is step 5 | 2026-11-10 |
+| T4 | pass: `split` refuses test rows unless `allow_test=True`; `tests/test_capstone_evaluate.py` (refused from uncommitted code, refused a second time without a logged reason, phase 2 only for the same run and commit, both phases end to end); registered run logged in `registry/capstone_test_runs.json` (commit `393631e`) | 2026-11-10 |
 | T5 | pass: `tests/test_capstone_simulate.py::test_accumulation_never_spends_more_than_the_cash` (every rule) and `test_accumulation_on_a_flat_price_returns_the_deposits_less_costs` | 2026-11-10 |
 | T6 | to do | |

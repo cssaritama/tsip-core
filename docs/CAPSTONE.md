@@ -200,6 +200,94 @@ Reading (exploratory; the registered results are those of the test period at ste
 6. **Pullback buying:** with the same monthly deposits, buying only at or below the prior month's low gave the highest mean money-weighted return over the period (+28.4% against +25.3% for investing each deposit on arrival); the ATR triggers fired almost every month and behaved like monthly buying. Two years hold 24 deposits per instrument: this is a choice for the test period, not a finding.
 7. Carried to step 5, unchanged: sim3 on LECTURE+TIME+SPACE (threshold, stop and filter above) against buy and hold of the five and SPY with dividends; the pullback trigger at the prior month's low; and every chosen parameter, frozen at full precision in `registry/capstone_choices_h5.json` (written by `simulate --freeze`).
 
-## Evaluation (step 5)
+## Evaluation (step 5): the test period, read once
 
-To be built under specification 0028; the test period from 2024-01-01 is read once.
+The rule was committed before the first read (specification 0028, section "Evaluation rule", commit `cb5ff00`): the logistic model of step 3, fitted on the training period only (founder decision of 2026-11-10, so the frozen thresholds keep their meaning), the parameters of `registry/capstone_choices_h5.json`, and the H-2026-016 criterion. Commands:
+
+```sh
+python -m tsip.capstone.evaluate                 # phase 1: models, controls, verdict (refused if already run)
+python -m tsip.capstone.evaluate --strategies    # phase 2 of the same run: frozen strategies
+python -m tsip.capstone.evaluate --walk-forward 5   # exploratory checks, 5 and 20 rows
+python -m tsip.capstone.evaluate --markdown      # the tables below
+```
+
+Each run is logged in `registry/capstone_test_runs.json` before any test row is read (time, commit, data fingerprint). The registered run is commit `393631e` on 2026-11-10 12:06 UTC, on the download of 2026-11-10 (test rows from 2024-01-01; the last rows with a known 5-row target end on 2026-11-03). Validation AUCs recomputed inside the run match step 3, which checks that the model is the same one.
+
+Rows: training 19,534, validation 2,938, test 4,212 (test base rate 55.1% positive).
+
+| Feature set | Test AUC | Validation AUC (refit, check) |
+|---|---:|---:|
+| LECTURE | 0.552 | 0.555 |
+| LECTURE+TIME | 0.534 | 0.561 |
+| LECTURE+SPACE | 0.547 | 0.548 |
+| LECTURE+TIME+SPACE | 0.540 | 0.553 |
+
+| Statistic | Lift over LECTURE | 95% interval |
+|---|---:|---|
+| **Registered: LECTURE+TIME+SPACE** | **-0.0122** | -0.0394 to +0.0160 |
+| LECTURE+TIME (exploratory) | -0.0182 | -0.0413 to +0.0059 |
+| LECTURE+SPACE (exploratory) | -0.0045 | -0.0195 to +0.0112 |
+| Control: TIME and SPACE shuffled | -0.0209 | -0.0416 to -0.0015 |
+| Control: random walk | -0.0034 | -0.0232 to +0.0165 |
+
+H-2026-016: **rejected** (lift at least 0.02: no; interval excludes zero: no; permuted control shows no lift: yes; random walk control shows no lift: yes).
+
+**Strategies on LECTURE** (test period 2024-01-01 to 2026-11-03, frozen parameters)
+
+| Strategy | CAGR (95%) | CAGR minus five equal (95%) | CAGR minus SPY with dividends (95%) | Sharpe | Max drawdown | Exposure | Entries | One-session delay: CAGR, Sharpe |
+|---|---|---|---|---:|---:|---:|---:|---|
+| sim1 | +8.3% (+2.3% to +15.3%) | -47.6% to +21.0% | -28.6% to +4.7% | 0.50 | -9.4% | 0.06 | 77 | +10.7%, 0.76 |
+| sim2 | +8.3% (+2.3% to +15.3%) | -47.6% to +21.0% | -28.6% to +4.7% | 0.50 | -9.4% | 0.06 | 77 | +10.7%, 0.76 |
+| sim3 | +5.9% (+1.9% to +10.2%) | -50.3% to +18.6% | -31.2% to +2.4% | 0.42 | -5.6% | 0.03 | 60 | +6.3%, 0.57 |
+| sim4 | -8.0% (-28.1% to +13.8%) | -71.8% to +15.2% | -53.4% to +0.6% | -0.58 | -36.3% | 0.11 | 92 | +4.7%, 0.12 |
+| buy_hold_equal | +17.7% (-12.6% to +56.0%) | - | -26.2% to +30.0% | 0.59 | -26.4% | 1.00 | 5 | - |
+| buy_hold_crypto | +11.4% (-40.3% to +100.9%) | -32.2% to +50.0% | -57.1% to +75.4% | 0.39 | -58.6% | 1.00 | 2 | - |
+| spy_total_return | +19.0% (+2.0% to +38.4%) | -30.0% to +26.2% | - | 0.93 | -18.8% | 1.00 | 1 | - |
+| spy_price_only | +17.7% (+0.9% to +36.7%) | -31.3% to +24.5% | -2.1% to -0.7% | 0.86 | -19.0% | 1.00 | 1 | - |
+
+Rotation control of sim1: median Sharpe 0.31 (95% -0.63 to 1.17); share at or above the actual 0.38.
+
+**Strategies on LECTURE+TIME+SPACE** (test period 2024-01-01 to 2026-11-03, frozen parameters)
+
+| Strategy | CAGR (95%) | CAGR minus five equal (95%) | CAGR minus SPY with dividends (95%) | Sharpe | Max drawdown | Exposure | Entries | One-session delay: CAGR, Sharpe |
+|---|---|---|---|---:|---:|---:|---:|---|
+| sim1 | +7.8% (-5.5% to +23.0%) | -43.5% to +18.4% | -28.0% to +4.7% | 0.32 | -16.2% | 0.33 | 299 | +8.5%, 0.37 |
+| sim2 | +7.8% (-5.5% to +23.0%) | -43.5% to +18.4% | -28.0% to +4.7% | 0.32 | -16.2% | 0.33 | 299 | +8.5%, 0.37 |
+| sim3 | +0.7% (-9.9% to +13.2%) | -51.4% to +11.0% | -36.4% to -1.4% | -0.35 | -13.8% | 0.22 | 233 | +1.8%, -0.24 |
+| sim4 | -7.5% (-44.7% to +57.0%) | -93.7% to +63.5% | -71.7% to +43.6% | -0.07 | -54.7% | 0.66 | 261 | -22.3%, -0.45 |
+| buy_hold_equal | +17.7% (-12.6% to +56.0%) | - | -26.2% to +30.0% | 0.59 | -26.4% | 1.00 | 5 | - |
+| buy_hold_crypto | +11.4% (-40.3% to +100.9%) | -32.2% to +50.0% | -57.1% to +75.4% | 0.39 | -58.6% | 1.00 | 2 | - |
+| spy_total_return | +19.0% (+2.0% to +38.4%) | -30.0% to +26.2% | - | 0.93 | -18.8% | 1.00 | 1 | - |
+| spy_price_only | +17.7% (+0.9% to +36.7%) | -31.3% to +24.5% | -2.1% to -0.7% | 0.86 | -19.0% | 1.00 | 1 | - |
+
+Rotation control of sim1: median Sharpe 0.46 (95% -0.47 to 1.19); share at or above the actual 0.63.
+
+Benchmark comparison (registered strategy sim3 on LECTURE+TIME+SPACE): CAGR +0.7% against +17.7% (five equal) and +19.0% (SPY with dividends): **not above both**; the rubric's exceptional-returns point is not claimed.
+
+Pullback buying, money-weighted annual return (frozen trigger: prior_month_low):
+
+| Rule | BTC-USD | ETH-USD | GLD | QQQ | SPY | Mean |
+|---|---:|---:|---:|---:|---:|---:|
+| lump_sum | +20.1% | -3.6% | +27.3% | +20.7% | +19.0% | +16.7% |
+| monthly | -0.1% | -13.5% | +20.4% | +17.6% | +16.4% | +8.2% |
+| cash | +4.0% | +4.0% | +4.0% | +4.0% | +4.0% | +4.0% |
+| atr_1 | +0.2% | -13.4% | +20.1% | +17.7% | +16.4% | +8.2% |
+| atr_2 | +0.5% | -13.3% | +20.1% | +17.7% | +16.3% | +8.3% |
+| atr_3 | +0.3% | -13.5% | +19.6% | +17.3% | +16.1% | +7.9% |
+| prior_month_low (frozen) | -3.9% | -16.7% | +18.7% | +16.1% | +15.5% | +5.9% |
+
+Walk-forward check (exploratory; refitted at the start of each test year on all earlier rows):
+
+| Horizon | AUC LECTURE | AUC +TIME+SPACE | Lift (95%) |
+|---|---:|---:|---|
+| 5 rows | 0.533 | 0.526 | -0.0075 (-0.0329 to +0.0178) |
+| 20 rows | 0.588 | 0.571 | -0.0173 (-0.0470 to +0.0141) |
+
+Reading:
+
+1. **H-2026-016 is not supported.** Adding the time and space features lowered the pooled test AUC by 0.012 (interval −0.039 to +0.016); the criterion needed at least +0.02 with the interval above zero. Neither block helps alone (time −0.018, space −0.005), and refitting every year gives the same answer at 5 and 20 rows. The evaluation is recorded in `registry/evaluations.json`, without editing the registered entry.
+2. **The course features carry a weak signal of their own:** pooled test AUC 0.552 against 0.490 on random walks; by instrument from 0.509 (Bitcoin) to 0.556 (GLD). Part of a pooled AUC comes from different base rates between instruments, so the per-instrument figures are the fairer reading.
+3. **The validation advantage of the strategies did not survive.** The registered strategy (sim3 on LECTURE+TIME+SPACE) made +0.7% a year against +17.7% for the five instruments held equally and +19.0% for SPY with dividends; the rotation control places sim1's timing at the 38th and 63rd percentile of random timings. This is what step 4 warned: on two years of validation, random walks reached Sharpe ratios of 2. The rubric's exceptional-returns point is not claimed.
+4. **Pullback buying lost to buying on arrival and to a lump sum** in a rising market: the frozen trigger (prior month's low) earned a mean money-weighted +5.9% a year against +8.2% for monthly buying and +16.7% for the lump sum; cash earned +4.0%. Waiting for a pullback cost time in the market.
+5. **The controls behaved:** on random walks the lift interval contains zero; with the time and space columns shuffled the lift is negative, as columns without information should be.
+6. The result is negative and it is published as it is. What the project shows is a pipeline that cannot fool itself: every choice fixed before the test, one logged read, and controls that would have exposed a false edge.

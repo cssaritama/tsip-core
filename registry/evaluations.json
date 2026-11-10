@@ -18,5 +18,15 @@
     "report": "reports/2026/11/2026-11-06T1600Z.json.gz",
     "report_sha256": "8db6fe4b79e67832750552383c3e343b9d4ca61c0b3f502105a17d44746a170f",
     "version": "0.2.23"
+  },
+  {
+    "hypothesis": "H-2026-016",
+    "hypothesis_sha256": "6fdc438c1441e6997a115108673581df77be91b44064848b2e071dd0776ea4ee",
+    "evaluated": "2026-11-10",
+    "outcome": "not supported",
+    "result": "Pooled test AUC (2024-01-01 to the download of 2026-11-10) of LECTURE+TIME+SPACE minus LECTURE: -0.0122, 95% block interval -0.0394 to +0.0160; the criterion needs at least +0.02 with the interval above zero. Controls without lift (permuted -0.0209, random walk -0.0034). Single logged run, commit 393631e (registry/capstone_test_runs.json); data end before the registered end date of 2026-11-19.",
+    "report": "python -m tsip.capstone.evaluate (summary test_h5.json kept outside Git with the data; tables in docs/CAPSTONE.md)",
+    "report_sha256": "b7a9e2876adce8fe63f92aa42fb40dda9519e8885eadf9a357e4a6de6bce9f97",
+    "version": "0.2.24"
   }
 ]
