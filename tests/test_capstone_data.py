@@ -103,3 +103,23 @@ def test_bars_of_the_download_date_are_dropped():
     out = data.drop_unfinished(prices, "2024-01-20T00:37:33+00:00")
     assert out["date"].max() == pd.Timestamp("2024-01-19")
     assert (out["date"] < pd.Timestamp("2024-01-20")).all()
+
+
+def test_a_store_used_by_a_logged_test_read_is_never_overwritten(tmp_path):
+    import json
+
+    import pandas as pd
+    import pytest
+
+    from tsip.capstone import data
+
+    prices = pd.DataFrame({"date": ["2024-01-02"], "ticker": ["SPY"], "close": [1.0]})
+    fred = pd.DataFrame({"date": ["2024-01-02"], "series": ["DTB3"], "value": [4.0]})
+    log = tmp_path / "runs.json"
+    store = tmp_path / "store"
+    manifest = data.save(store, prices, fred, source="t", log=log)
+    data.save(store, prices, fred, source="t", log=log)  # not protected yet: overwriting is allowed
+    log.write_text(json.dumps([{"kind": "registered", "data_sha256": manifest["sha256"]}]))
+    with pytest.raises(SystemExit):
+        data.save(store, prices, fred, source="t", log=log)
+    data.save(tmp_path / "other", prices, fred, source="t", log=log)  # another folder is fine

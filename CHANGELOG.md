@@ -5,6 +5,7 @@ All notable changes to this project are documented here. The format follows [Kee
 ## 2026-11-10 · Course project, delivery pieces
 
 - Add `tsip.capstone.run_all` (the whole flow in one command, from the stored copy or fresh downloads), `notebooks/capstone.ipynb` (executed, outputs saved) and its builder `tools/build_capstone_notebook.py`, `tsip.capstone.paper_order` (paper-trading order example, paper endpoint only), a `Dockerfile`, the README release section and the rubric map in `docs/CAPSTONE.md`.
+- A data store used by a logged test-period read is never overwritten by a new download (the read stays reproducible).
 
 ## 2026-11-10 · Course project, test-period evaluation
 

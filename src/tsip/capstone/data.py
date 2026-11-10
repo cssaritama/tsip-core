@@ -179,7 +179,25 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def save(store: Path, prices: pd.DataFrame, fred: pd.DataFrame, *, source: str) -> dict:
+RUN_LOG = Path(__file__).resolve().parents[3] / "registry" / "capstone_test_runs.json"
+
+
+def protected_fingerprints(log: Path = RUN_LOG) -> list[dict]:
+    """Data fingerprints of logged test-period reads: the stores they used must stay reproducible."""
+    if not log.exists():
+        return []
+    return [r["data_sha256"] for r in json.loads(log.read_text()) if r.get("data_sha256")]
+
+
+def save(store: Path, prices: pd.DataFrame, fred: pd.DataFrame, *, source: str, log: Path = RUN_LOG) -> dict:
+    manifest_path = store / "manifest.json"
+    if manifest_path.exists():
+        current = json.loads(manifest_path.read_text()).get("sha256")
+        if current and current in protected_fingerprints(log):
+            raise SystemExit(
+                f"Refused: {store} holds the data of a logged test-period read (registry/capstone_test_runs.json); "
+                "overwriting it would make that read impossible to reproduce. Download into another folder: --store <new folder>."
+            )
     store.mkdir(parents=True, exist_ok=True)
     files = {"prices": store / "prices.csv.gz", "fred": store / "fred.csv.gz"}
     prices.to_csv(files["prices"], index=False)

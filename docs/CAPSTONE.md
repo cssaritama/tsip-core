@@ -10,7 +10,7 @@ TSIP describes where price stands in time (calendar coordinates) and in space (a
 
 ```sh
 pip install -e ".[dev,calendar,capstone]"
-python -m tsip.capstone.run_all --mode download   # steps 1-4 with fresh data from yfinance and FRED
+python -m tsip.capstone.run_all --mode download --store ~/tsip_capstone_data_new   # steps 1-4 with fresh data, in a new folder
 python -m tsip.capstone.run_all --mode file       # the same from the stored copy, no network
 python -m tsip.capstone.run_all --all-families    # adds decision tree, XGBoost and random forest (slower)
 jupyter notebook notebooks/capstone.ipynb          # the same flow step by step, with outputs saved
@@ -20,7 +20,7 @@ docker build -t tsip-capstone .                   # container: the data folder i
 docker run --rm -v "$HOME/tsip_capstone_data:/data" tsip-capstone [--mode download]
 ```
 
-Data are stored in `~/tsip_capstone_data` (override with `TSIP_CAPSTONE_DATA`) with a manifest that fingerprints each file; nothing is committed to Git and nothing is copied into the container image. The notebook is rebuilt with `python tools/build_capstone_notebook.py` and executed with `python -m nbconvert --to notebook --execute --inplace notebooks/capstone.ipynb`.
+Data are stored in `~/tsip_capstone_data` (override with `TSIP_CAPSTONE_DATA` or `--store`) with a manifest that fingerprints each file; nothing is committed to Git and nothing is copied into the container image. A store whose fingerprint appears in `registry/capstone_test_runs.json` is never overwritten: a fresh download goes to another folder, so the registered test read stays reproducible. The notebook is rebuilt with `python tools/build_capstone_notebook.py` and executed with `python -m nbconvert --to notebook --execute --inplace notebooks/capstone.ipynb`.
 
 ## Data (step 1)
 
