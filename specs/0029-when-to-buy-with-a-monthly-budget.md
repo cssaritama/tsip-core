@@ -30,7 +30,7 @@ The specification 0028 test did not answer this: its pullback rule left money un
 - **Periods:** development (parameters chosen) up to 2015-12-31 for SPY, QQQ and GLD and up to 2019-12-31 for BTC and ETH; confirmation from the next month to the last complete month of the stored download. The years 2024 to 2026 were seen as prices in specification 0028, though not through these statistics; this is stated with the results. A forward record starts with the first month after the run.
 - **Choices in development:** within each family, the variant with the highest mean advantage per instrument (B1 keeps all weekdays, because the question is which day is best). Choices are frozen in a committed file before the confirmation run.
 - **Intervals:** circular block bootstrap over months (blocks of 6 months, 2,000 resamples).
-- **Test budget (ADR 0067):** in development, 21 variants by 5 instruments; in confirmation, B1's weekdays plus one variant of each of B2 to B7, by instrument: 11 tests per ETF and 13 per crypto instrument, 59 in total, with Benjamini–Hochberg at q 0.05 across all of them.
+- **Test budget (ADR 0067):** in development, 21 variants for each fund and 23 for each crypto instrument (weekends); in confirmation, B1's weekdays plus one variant of each of B2 to B7, by instrument: 11 tests per ETF and 13 per crypto instrument, 59 in total, with Benjamini–Hochberg at q 0.05 across all of them.
 - **Random-walk check:** the whole pipeline on random-walk prices with each instrument's drift and volatility: no rule may pass.
 - **Hypothesis before the run (H-2026-017):** stated in `registry/hypotheses.json`.
 
