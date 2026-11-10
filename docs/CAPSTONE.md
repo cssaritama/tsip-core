@@ -298,6 +298,38 @@ Reading:
 5. **The controls behaved:** on random walks the lift interval contains zero; with the time and space columns shuffled the lift is negative, as columns without information should be.
 6. The result is negative and it is published as it is. What the project shows is a pipeline that cannot fool itself: every choice fixed before the test, one logged read, and controls that would have exposed a false edge.
 
+## Reproducibility: a second, independent download
+
+The founder ran `python -m tsip.capstone.run_all --mode download --store <new folder>` on his computer on 2026-11-10 (steps 1 to 4 from scratch on fresh data). `python -m tsip.capstone.reproduce <first store> <second store> --markdown` compares the two:
+
+Downloads: 2026-11-10T00:37:33+00:00 (71,800 price rows) and 2026-11-10T13:21:20+00:00 (71,808 price rows). Largest validation AUC difference: 0.0007.
+
+| Horizon | Feature set | AUC, first | AUC, second | Difference |
+|---|---|---:|---:|---:|
+| 5 | LECTURE | 0.5549 | 0.5545 | -0.0004 |
+| 5 | LECTURE+TIME | 0.5609 | 0.5607 | -0.0001 |
+| 5 | LECTURE+SPACE | 0.5477 | 0.5481 | +0.0004 |
+| 5 | LECTURE+TIME+SPACE | 0.5533 | 0.5538 | +0.0004 |
+| 20 | LECTURE | 0.5448 | 0.5453 | +0.0005 |
+| 20 | LECTURE+TIME | 0.5396 | 0.5395 | -0.0001 |
+| 20 | LECTURE+SPACE | 0.5418 | 0.5417 | -0.0001 |
+| 20 | LECTURE+TIME+SPACE | 0.5329 | 0.5335 | +0.0007 |
+
+| Feature set | Strategy | Chosen, first | Chosen, second | Same choice |
+|---|---|---|---|---|
+| LECTURE | sim1 | quantile 0.9000, threshold 0.5598 | quantile 0.9000, threshold 0.5573 | yes |
+| LECTURE | sim2 | quantile 0.9000, threshold 0.5598, k 5 | quantile 0.5000, threshold 0.4597, k 3 | **no** |
+| LECTURE | sim3 | threshold 0.5598, stop_atr 2.0000 | threshold 0.5573, stop_atr 2.0000 | yes |
+| LECTURE | sim4 | quantile 0.9000, upper 0.5373, lower 0.3299 | quantile 0.9000, upper 0.5350, lower 0.3289 | yes |
+| LECTURE+TIME+SPACE | sim1 | quantile 0.5000, threshold 0.4485 | quantile 0.5000, threshold 0.4487 | yes |
+| LECTURE+TIME+SPACE | sim2 | quantile 0.5000, threshold 0.4485, k 5 | quantile 0.5000, threshold 0.4487, k 5 | yes |
+| LECTURE+TIME+SPACE | sim3 | threshold 0.4485, stop_atr 2.0000 | threshold 0.4487, stop_atr 2.0000 | yes |
+| LECTURE+TIME+SPACE | sim4 | quantile 0.7000, upper 0.4897, lower 0.3821 | quantile 0.7000, upper 0.4901, lower 0.3821 | yes |
+
+Strategy carried to the test period: sim3 on LECTURE+TIME+SPACE (validation Sharpe 1.79) and sim3 on LECTURE+TIME+SPACE (1.95); pullback trigger prior_month_low and prior_month_low.
+
+Reading: the models reproduce to the fourth decimal, and the strategy carried to the test period and the pullback trigger are the same. One validation choice flipped (sim2 on the course features) and the validation Sharpe ratio of sim3 moved from 1.79 to 1.95 with data revisions this small: validation choices among close alternatives are fragile, which agrees with what the test period showed. The registered test read used the first store, which is protected from being overwritten.
+
 ## Rubric map
 
 Where each item of the course rubric is answered, and what is not claimed.
@@ -316,10 +348,10 @@ Where each item of the course rubric is answered, and what is not claimed.
 | Stop loss and a new strategy | sim3 (2 ATR stop and a volatility filter); pullback buying with monthly deposits (sim5) | done |
 | Deep analysis | Rotation and random-walk controls, validation against test, walk-forward check (steps 4 and 5) | done |
 | Exceptional returns | The registered strategy did not beat either benchmark on the test period (step 5) | not claimed |
-| Scripts and dependencies | `pyproject.toml` extra `capstone`; one command, `tsip.capstone.run_all`, in two modes | done |
+| Scripts and dependencies | `pyproject.toml` extra `capstone`; one command, `tsip.capstone.run_all`, in two modes, both run (file mode here, download mode on the founder's computer, compared above) | done |
 | Incremental data outside GitHub | Data store outside Git with a fingerprinted manifest; steps reuse saved results | done |
 | Scheduled run | The public report runs every day in GitHub Actions; the course flow itself is not scheduled | partial |
 | Modular code | `src/tsip/capstone/` modules with their tests (`tests/test_capstone_*.py`); the notebook only calls them | done |
 | Broker API | `tsip.capstone.paper_order`: orders to Alpaca's paper endpoint only, with simulated money | done (dry run verified; sending needs the founder's paper keys) |
-| Container | `Dockerfile`; not built in the environment where this release was prepared | written, not yet built |
+| Container | `Dockerfile`; not built: Docker is not installed on the machines used for this release | written, not built |
 | Deployment | The project's public report on GitHub Pages | done |

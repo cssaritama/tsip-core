@@ -1,6 +1,6 @@
 # 0028 Do time–space features improve the prediction of future returns?
 
-**Status:** evaluated on 2026-11-10: H-2026-016 not supported (test lift −0.012, interval −0.039 to +0.016; `docs/CAPSTONE.md`, `registry/evaluations.json`); notebook and release (T6) to do
+**Status:** evaluated on 2026-11-10: H-2026-016 not supported (test lift −0.012, interval −0.039 to +0.016; `docs/CAPSTONE.md`, `registry/evaluations.json`); T6 passed; release 1.0.0 to tag
 **Level:** 2 study · **Open work:** W-121 (course final project, release 1.0.0) · **Decisions:** ADR 0064, ADR 0071
 
 ## Problem and decision supported
@@ -95,4 +95,4 @@ Data files are never committed. Prices from yfinance are used for the course pro
 | T3 | pass: `tests/test_capstone_models.py::test_planted_space_effect_is_found` | 2026-11-10 |
 | T4 | pass: `split` refuses test rows unless `allow_test=True`; `tests/test_capstone_evaluate.py` (refused from uncommitted code, refused a second time without a logged reason, phase 2 only for the same run and commit, both phases end to end); registered run logged in `registry/capstone_test_runs.json` (commit `393631e`) | 2026-11-10 |
 | T5 | pass: `tests/test_capstone_simulate.py::test_accumulation_never_spends_more_than_the_cash` (every rule) and `test_accumulation_on_a_flat_price_returns_the_deposits_less_costs` | 2026-11-10 |
-| T6 | partial: `notebooks/capstone.ipynb` executed end to end in file mode on 2026-11-10 (outputs saved, no errors); download mode runs where market sites are reachable (the founder's computer), still to be run there; `tsip.capstone.run_all` runs both modes | 2026-11-10 |
+| T6 | pass: `notebooks/capstone.ipynb` executed end to end in file mode (outputs saved, no errors); `tsip.capstone.run_all --mode download` run from scratch on the founder's computer on 2026-11-10 into a new store; the two stores compared by `tsip.capstone.reproduce` (`docs/CAPSTONE.md`, Reproducibility) | 2026-11-10 |
