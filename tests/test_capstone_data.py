@@ -96,3 +96,10 @@ def test_fred_missing_marker_is_dropped():
     fred = pd.DataFrame({"date": ["2024-01-01", "2024-01-02"], "series": "DGS10", "value": [".", "4.1"]})
     out = data.normalise_fred(fred)
     assert len(out) == 1 and np.isclose(out["value"].iloc[0], 4.1)
+
+
+def test_bars_of_the_download_date_are_dropped():
+    prices = _prices()
+    out = data.drop_unfinished(prices, "2024-01-20T00:37:33+00:00")
+    assert out["date"].max() == pd.Timestamp("2024-01-19")
+    assert (out["date"] < pd.Timestamp("2024-01-20")).all()

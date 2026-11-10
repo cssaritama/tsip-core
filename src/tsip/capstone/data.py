@@ -205,9 +205,19 @@ def load_store(store: Path) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
         path = store / f"{name}.csv.gz"
         if _sha256(path) != manifest["sha256"][name]:
             raise ValueError(f"{path} does not match its manifest fingerprint")
-    prices = normalise_prices(pd.read_csv(store / "prices.csv.gz"))
+    prices = drop_unfinished(normalise_prices(pd.read_csv(store / "prices.csv.gz")), manifest["created_utc"])
     fred = normalise_fred(pd.read_csv(store / "fred.csv.gz"))
     return prices, fred, manifest
+
+
+def drop_unfinished(prices: pd.DataFrame, downloaded_utc: str) -> pd.DataFrame:
+    """Drop bars dated on or after the download's UTC date: they can still be open.
+
+    A crypto day ends at midnight UTC and a US session at 21:00 UTC at the latest, so every bar dated
+    before the download's UTC date is complete; a bar of that date may be a few minutes old.
+    """
+    cutoff = pd.Timestamp(downloaded_utc).tz_convert("UTC").tz_localize(None).normalize()
+    return prices[prices["date"] < cutoff].reset_index(drop=True)
 
 
 def load(mode: str = "file", store: Path | None = None, start: str = "2000-01-01") -> tuple[pd.DataFrame, dict]:

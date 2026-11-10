@@ -1,6 +1,6 @@
 # 0028 Do time–space features improve the prediction of future returns?
 
-**Status:** approved (founder, 2026-11-09); hypothesis H-2026-016 registered before any model is trained
+**Status:** in progress: data and features built (2026-11-10); hypothesis H-2026-016 registered before any model is trained
 **Level:** 2 study · **Open work:** W-121 (course final project, release 1.0.0) · **Decisions:** ADR 0064, ADR 0071
 
 ## Problem and decision supported
@@ -64,5 +64,5 @@ Data files are never committed. Prices from yfinance are used for the course pro
 
 | ID | Result | Evidence |
 |---|---|---|
-| T1 | partial: data layer passes (`tests/test_capstone_data.py`: reference closes only from earlier dates, macro values only after release lags, rows unchanged when later data are removed); features to follow | step 1 of the resume point, 2026-11-10 |
+| T1 | pass: data layer (`tests/test_capstone_data.py`) and features (`tests/test_capstone_features.py::test_no_feature_changes_when_later_rows_are_removed`) | steps 1 and 2, 2026-11-10 |
 | T2–T6 | to do | |
