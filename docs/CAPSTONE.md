@@ -82,10 +82,19 @@ Random-walk control (same pipeline, each ticker's prices replaced by a walk with
 | XGBoost | 0.494 | 0.482 | 0.510 | 0.503 | +0.009 (−0.020 to +0.039) |
 | Random forest | 0.506 | 0.502 | 0.509 | 0.510 | +0.004 (−0.007 to +0.016) |
 
+Secondary horizon, direction of the next 20 rows (`fit --horizon 20`, `summarise --horizon 20`; validation base rate 51.9% positive; random-walk control not run for this horizon):
+
+| Family | LECTURE | +TIME | +SPACE | +TIME+SPACE | Mean | TIME and SPACE shuffled | Lift (95% block interval) |
+|---|---:|---:|---:|---:|---:|---:|---|
+| Logistic regression | 0.545 | 0.540 | 0.542 | 0.533 | **0.540** | 0.531 | −0.012 (−0.045 to +0.023) |
+| Decision tree | 0.535 | 0.528 | 0.535 | 0.528 | 0.531 | 0.528 | −0.007 (−0.048 to +0.039) |
+| XGBoost | 0.541 | 0.536 | 0.541 | 0.497 | 0.529 | 0.491 | −0.044 (−0.099 to +0.013) |
+| Random forest | 0.476 | 0.451 | 0.493 | 0.471 | 0.473 | 0.472 | −0.006 (−0.032 to +0.017) |
+
 Reading (exploratory; the registered result is the test period at step 5):
 
-1. **Selected family: logistic regression** (highest mean validation AUC over the four sets, rule fixed before the run). The trees overfit: the decision tree and the random forest stay at or below 0.5 on the course features.
-2. **No validated lift yet.** Every interval of the lift contains zero, on real prices as on random walks. Time features add a little in every family (+0.006 to +0.038); space features alone do not.
+1. **Selected family: logistic regression at both horizons** (highest mean validation AUC over the four sets, rule fixed before the run). The trees overfit: the decision tree and the random forest stay at or below 0.5 on the course features.
+2. **No validated lift yet.** Every interval of the lift contains zero, on real prices as on random walks. At 5 rows time features add a little in every family (+0.006 to +0.038) and space features alone do not; at 20 rows neither adds, and the point estimates are negative.
 3. **The pipeline is honest:** on random walks every family stays near 0.5 and no lift is significant, and on the real data shuffling the time and space columns lowers the AUC of the logistic and XGBoost models.
 4. A validation sample of two years is noisy: on random walks of the same size the AUC spreads by about 0.04 between seeds (checked 2026-11-10). Differences below a few hundredths are not evidence.
 
