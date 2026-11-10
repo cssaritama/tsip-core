@@ -98,6 +98,108 @@ Reading (exploratory; the registered result is the test period at step 5):
 3. **The pipeline is honest:** on random walks every family stays near 0.5 and no lift is significant, and on the real data shuffling the time and space columns lowers the AUC of the logistic and XGBoost models.
 4. A validation sample of two years is noisy: on random walks of the same size the AUC spreads by about 0.04 between seeds (checked 2026-11-10). Differences below a few hundredths are not evidence.
 
-## Simulation (step 4) · Evaluation (step 5)
+## Simulation (step 4): validation period only
 
-To be built, in this order, under specification 0028; the test period from 2024-01-01 is read once, at step 5.
+The rule was committed before the first simulation (specification 0028, section "Simulation rule", commit `30165b2`). Commands (results outside Git, in `<store>/results/simulation_h5*.json`):
+
+```sh
+python -m tsip.capstone.run_models fit --horizon 5 --families logistic               # validation predictions
+python -m tsip.capstone.simulate --horizon 5                                          # all strategies, choices, controls
+python -m tsip.capstone.run_models fit --horizon 5 --families logistic --feature-sets LECTURE LECTURE+TIME+SPACE --random-walk
+python -m tsip.capstone.simulate --horizon 5 --random-walk                            # the same on random walks
+python -m tsip.capstone.simulate --horizon 5 [--random-walk] --markdown               # the tables below
+```
+
+Run on 2026-11-10 with the code of the commit that added this section, on the download of 2026-11-10. The validation predictions of the logistic model were regenerated for this step and match the step 3 table to the third decimal. Model: logistic regression (selected at step 3), direction of the next 5 rows. Positions taken at the close of the signal; costs 0.02% per side on the funds and 0.10% on crypto; idle cash at the 3-month bill rate; shorts earn nothing on their proceeds and pay no borrow fee (not modelled). Intervals: circular block bootstrap of daily returns, 20-date blocks, 1,000 resamples. Each "Chosen parameters" cell was picked on this same period, so every figure here is in-sample for that choice.
+
+**LECTURE** (period 2022-01-01 to 2023-12-26)
+
+| Strategy | Chosen parameters | CAGR (95% interval) | CAGR minus five equal (95%) | Sharpe | Max drawdown | Rolling 1y min / median | Exposure | Entries | CAGR, Sharpe with one-session delay |
+|---|---|---|---|---:|---:|---|---:|---:|---|
+| sim1 threshold | quantile 0.900, threshold 0.560 | +10.5% (+3.5 to +19.5) | -25.4 to +43.2 | 1.10 | -3.7% | +3.1% / +5.9% | 0.10 | 86 | +7.7%, 0.77 |
+| sim2 top k | quantile 0.900, threshold 0.560, k 5 | +10.5% (+3.5 to +19.5) | -25.4 to +43.2 | 1.10 | -3.7% | +3.1% / +5.9% | 0.10 | 86 | +7.7%, 0.77 |
+| sim3 stop and filter | threshold 0.560 | +4.9% (+1.2 to +8.9) | -31.6 to +36.7 | 0.43 | -2.3% | +3.3% / +4.9% | 0.05 | 57 | +5.6%, 0.65 |
+| sim4 crypto long-short | quantile 0.900, upper 0.537, lower 0.330 | +39.1% (+9.8 to +92.0) | -11.7 to +109.6 | 1.33 | -11.9% | -2.6% / +52.1% | 0.20 | 108 | +19.9%, 0.72 |
+| Buy and hold, five equal | - | -3.2% (-31.9 to +37.2) | - | -0.16 | -39.8% | -37.0% / +11.9% | 1.00 | 5 | - |
+| Buy and hold, crypto | - | -14.0% (-64.1 to +104.6) | -36.8 to +72.7 | -0.01 | -68.9% | -66.6% / +12.2% | 1.00 | 2 | - |
+| SPY with dividends | - | +1.7% (-21.5 to +28.5) | -18.7 to +23.7 | 0.01 | -24.5% | -19.0% / +9.7% | 1.00 | 1 | - |
+| SPY price only | - | +0.1% (-22.9 to +27.1) | -20.5 to +22.1 | -0.07 | -25.4% | -20.3% / +7.9% | 1.00 | 1 | - |
+
+Rotation control of sim1 (100 rotations): median Sharpe -0.28 (95% -1.31 to 1.07); share at or above the actual 0.03. Vector view of sim1: 294 bets of 100, hit rate 55.1%, mean net +0.82 per bet.
+
+**LECTURE+TIME+SPACE** (period 2022-01-01 to 2023-12-26)
+
+| Strategy | Chosen parameters | CAGR (95% interval) | CAGR minus five equal (95%) | Sharpe | Max drawdown | Rolling 1y min / median | Exposure | Entries | CAGR, Sharpe with one-session delay |
+|---|---|---|---|---:|---:|---|---:|---:|---|
+| sim1 threshold | quantile 0.500, threshold 0.448 | +28.0% (-2.2 to +65.5) | +8.8 to +55.7 | 1.26 | -18.8% | +8.4% / +43.0% | 0.51 | 227 | +16.3%, 0.74 |
+| sim2 top k | quantile 0.500, threshold 0.448, k 5 | +28.0% (-2.2 to +65.5) | +8.8 to +55.7 | 1.26 | -18.8% | +8.4% / +43.0% | 0.51 | 227 | +16.3%, 0.74 |
+| sim3 stop and filter | threshold 0.448 | +27.5% (+3.1 to +61.0) | +3.2 to +53.2 | 1.79 | -14.7% | +7.4% / +37.1% | 0.31 | 185 | +18.0%, 1.24 |
+| sim4 crypto long-short | quantile 0.700, upper 0.490, lower 0.382 | +70.1% (-6.5 to +214.3) | -6.8 to +220.3 | 1.35 | -39.8% | +43.5% / +185.8% | 0.59 | 191 | +68.2%, 1.34 |
+| Buy and hold, five equal | - | -3.2% (-31.9 to +37.2) | - | -0.16 | -39.8% | -37.0% / +11.9% | 1.00 | 5 | - |
+| Buy and hold, crypto | - | -14.0% (-64.1 to +104.6) | -36.8 to +72.7 | -0.01 | -68.9% | -66.6% / +12.2% | 1.00 | 2 | - |
+| SPY with dividends | - | +1.7% (-21.5 to +28.5) | -18.7 to +23.7 | 0.01 | -24.5% | -19.0% / +9.7% | 1.00 | 1 | - |
+| SPY price only | - | +0.1% (-22.9 to +27.1) | -20.5 to +22.1 | -0.07 | -25.4% | -20.3% / +7.9% | 1.00 | 1 | - |
+
+Rotation control of sim1 (100 rotations): median Sharpe -0.11 (95% -0.79 to 0.80); share at or above the actual 0.01. Vector view of sim1: 1469 bets of 100, hit rate 55.5%, mean net +0.52 per bet.
+
+Strategy carried to the test period: **sim3 on LECTURE+TIME+SPACE** (validation Sharpe 1.79).
+
+Pullback buying (sim5), money-weighted annual return, one unit deposited each month:
+
+| Rule | BTC-USD | ETH-USD | GLD | QQQ | SPY | Mean |
+|---|---:|---:|---:|---:|---:|---:|
+| lump_sum | -5.9% | -22.3% | +6.6% | +1.7% | +1.3% | -3.7% |
+| monthly | +51.7% | +25.6% | +9.7% | +24.9% | +14.8% | +25.3% |
+| cash | +4.5% | +4.5% | +4.5% | +4.5% | +4.5% | +4.5% |
+| atr_1 | +51.6% | +25.2% | +9.9% | +25.2% | +15.0% | +25.4% |
+| atr_2 | +52.2% | +25.8% | +10.1% | +24.9% | +15.2% | +25.6% |
+| atr_3 | +53.1% | +26.1% | +10.3% | +24.1% | +15.1% | +25.7% |
+| prior_month_low | +59.3% | +30.5% | +9.5% | +27.0% | +15.9% | +28.4% |
+
+Trigger carried to the test period: **prior_month_low**.
+
+Random-walk control (each ticker's prices replaced by a walk with its own drift and volatility, predictions from the model refitted on those prices; validation AUC 0.489 for LECTURE and 0.506 for LECTURE+TIME+SPACE):
+
+**LECTURE** (period 2022-01-01 to 2023-12-26)
+
+| Strategy | Chosen parameters | CAGR (95% interval) | CAGR minus five equal (95%) | Sharpe | Max drawdown | Rolling 1y min / median | Exposure | Entries | CAGR, Sharpe with one-session delay |
+|---|---|---|---|---:|---:|---|---:|---:|---|
+| sim1 threshold | quantile 0.600, threshold 0.536 | +31.1% (+2.9 to +70.1) | -64.8 to +23.5 | 1.56 | -15.0% | -2.5% / +33.8% | 0.37 | 170 | +19.7%, 0.99 |
+| sim2 top k | quantile 0.600, threshold 0.536, k 3 | +58.5% (+11.1 to +126.9) | -41.9 to +68.5 | 1.85 | -17.0% | +1.5% / +83.0% | 0.49 | 178 | +44.2%, 1.47 |
+| sim3 stop and filter | threshold 0.536 | +20.5% (-3.6 to +53.3) | -79.6 to +14.0 | 1.21 | -17.2% | -11.9% / +23.5% | 0.22 | 142 | +13.4%, 0.78 |
+| sim4 crypto long-short | quantile 0.600, upper 0.550, lower 0.529 | -0.4% (-56.7 to +125.2) | -139.2 to +93.2 | 0.31 | -70.3% | -46.2% / +80.0% | 0.98 | 163 | -24.4%, -0.16 |
+| Buy and hold, five equal | - | +46.3% (+1.7 to +105.3) | - | 1.34 | -23.1% | +4.1% / +27.5% | 1.00 | 5 | - |
+| Buy and hold, crypto | - | +85.7% (-19.5 to +332.8) | -27.4 to +232.7 | 1.23 | -41.1% | -25.9% / +65.3% | 1.00 | 2 | - |
+| SPY with dividends | - | +10.6% (-12.1 to +41.3) | -102.9 to +22.8 | 0.43 | -24.8% | -8.8% / +10.0% | 1.00 | 1 | - |
+| SPY price only | - | +10.6% (-12.1 to +41.3) | -102.9 to +22.8 | 0.43 | -24.8% | -8.8% / +10.0% | 1.00 | 1 | - |
+
+Rotation control of sim1 (100 rotations): median Sharpe 1.28 (95% 0.26 to 2.24); share at or above the actual 0.30. Vector view of sim1: 1175 bets of 100, hit rate 51.8%, mean net +0.91 per bet.
+
+**LECTURE+TIME+SPACE** (period 2022-01-01 to 2023-12-26)
+
+| Strategy | Chosen parameters | CAGR (95% interval) | CAGR minus five equal (95%) | Sharpe | Max drawdown | Rolling 1y min / median | Exposure | Entries | CAGR, Sharpe with one-session delay |
+|---|---|---|---|---:|---:|---|---:|---:|---|
+| sim1 threshold | quantile 0.600, threshold 0.549 | +40.8% (+14.9 to +70.7) | -58.7 to +36.3 | 2.06 | -11.7% | +8.2% / +30.7% | 0.38 | 181 | +23.4%, 1.22 |
+| sim2 top k | quantile 0.600, threshold 0.549, k 5 | +40.8% (+14.9 to +70.7) | -58.7 to +36.3 | 2.06 | -11.7% | +8.2% / +30.7% | 0.38 | 181 | +23.4%, 1.22 |
+| sim3 stop and filter | threshold 0.549 | +35.8% (+14.9 to +61.5) | -65.9 to +31.3 | 2.02 | -10.8% | +15.2% / +36.2% | 0.25 | 158 | +20.0%, 1.15 |
+| sim4 crypto long-short | quantile 0.700, upper 0.593, lower 0.506 | +7.3% (-45.3 to +101.0) | -125.7 to +66.9 | 0.32 | -53.5% | -43.4% / -15.4% | 0.64 | 144 | +5.2%, 0.27 |
+| Buy and hold, five equal | - | +46.3% (+1.7 to +105.3) | - | 1.34 | -23.1% | +4.1% / +27.5% | 1.00 | 5 | - |
+| Buy and hold, crypto | - | +85.7% (-19.5 to +332.8) | -27.4 to +232.7 | 1.23 | -41.1% | -25.9% / +65.3% | 1.00 | 2 | - |
+| SPY with dividends | - | +10.6% (-12.1 to +41.3) | -102.9 to +22.8 | 0.43 | -24.8% | -8.8% / +10.0% | 1.00 | 1 | - |
+| SPY price only | - | +10.6% (-12.1 to +41.3) | -102.9 to +22.8 | 0.43 | -24.8% | -8.8% / +10.0% | 1.00 | 1 | - |
+
+Rotation control of sim1 (100 rotations): median Sharpe 1.14 (95% -0.12 to 2.22); share at or above the actual 0.07. Vector view of sim1: 1175 bets of 100, hit rate 53.4%, mean net +0.90 per bet.
+
+Reading (exploratory; the registered results are those of the test period at step 5):
+
+1. **Two years of validation can make noise look excellent.** On random walks, where the model has no information, the same selection gives Sharpe ratios of 1.2 to 2.1. Sharpe ratios of 1 to 2 over this period are therefore not evidence by themselves.
+2. **The rotation control is the useful comparison.** It rotates each instrument's probabilities by a random offset across its own dates, which keeps the exposure and the persistence of the signal and removes only its timing. On random walks the actual run sits inside the rotations (share at or above it 0.30 and 0.07); on real prices it sits at their edge (0.03 for LECTURE, 0.01 for LECTURE+TIME+SPACE). The threshold was chosen among five on the same data, so these shares understate the chance of a fluke by up to five times. A first version of this control shuffled the dates, which breaks the persistence of the signal and made even the random walks look significant; it was replaced by the rotation after that first run, before any figure was recorded.
+3. **Most of the value comes from staying out of 2022.** Every buy and hold lost money or stood still over the period (five equal −3.2% a year, crypto −14.0%), and the strategies were invested between 5% and 59% of the time.
+4. **Execution matters.** Waiting one session lowers the Sharpe ratio of sim1 from 1.26 to 0.74 on LECTURE+TIME+SPACE: much of the signal is used up within a day, so the result depends on trading at the close.
+5. **sim2 chose at most five positions**, which with five instruments is sim1. Concentrated versions (one position) had higher CAGR and deeper drawdowns and lost on Sharpe.
+6. **Pullback buying:** with the same monthly deposits, buying only at or below the prior month's low gave the highest mean money-weighted return over the period (+28.4% against +25.3% for investing each deposit on arrival); the ATR triggers fired almost every month and behaved like monthly buying. Two years hold 24 deposits per instrument: this is a choice for the test period, not a finding.
+7. Carried to step 5, unchanged: sim3 on LECTURE+TIME+SPACE (threshold, stop and filter above) against buy and hold of the five and SPY with dividends; the pullback trigger at the prior month's low; and every chosen parameter, frozen at full precision in `registry/capstone_choices_h5.json` (written by `simulate --freeze`).
+
+## Evaluation (step 5)
+
+To be built under specification 0028; the test period from 2024-01-01 is read once.

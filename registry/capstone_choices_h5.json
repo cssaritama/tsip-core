@@ -1,0 +1,60 @@
+{
+  "horizon": 5,
+  "family": "logistic",
+  "primary": {
+    "feature_set": "LECTURE+TIME+SPACE",
+    "strategy": "sim3",
+    "validation_sharpe": 1.7928641342155176,
+    "params": {
+      "threshold": 0.44845043437653953,
+      "stop_atr": 2.0
+    }
+  },
+  "chosen": {
+    "LECTURE": {
+      "sim1": {
+        "quantile": 0.9,
+        "threshold": 0.5597612505544614
+      },
+      "sim2": {
+        "quantile": 0.9,
+        "threshold": 0.5597612505544614,
+        "k": 5
+      },
+      "sim3": {
+        "threshold": 0.5597612505544614,
+        "stop_atr": 2.0
+      },
+      "sim4": {
+        "quantile": 0.9,
+        "upper": 0.5372786224339902,
+        "lower": 0.3299185863324485
+      }
+    },
+    "LECTURE+TIME+SPACE": {
+      "sim1": {
+        "quantile": 0.5,
+        "threshold": 0.44845043437653953
+      },
+      "sim2": {
+        "quantile": 0.5,
+        "threshold": 0.44845043437653953,
+        "k": 5
+      },
+      "sim3": {
+        "threshold": 0.44845043437653953,
+        "stop_atr": 2.0
+      },
+      "sim4": {
+        "quantile": 0.7,
+        "upper": 0.4896539000866246,
+        "lower": 0.38212843269076713
+      }
+    }
+  },
+  "pullback_trigger": "prior_month_low",
+  "validation_period": [
+    "2022-01-01",
+    "2023-12-26"
+  ]
+}

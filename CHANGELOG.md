@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## 2026-11-10 · Course project, strategy simulations
+
+- Add `tsip.capstone.simulate`: vector and exact simulations of four prediction strategies and of monthly pullback buying, with costs, idle cash at the bill rate, rotation and random-walk controls, and the parameters chosen on validation frozen in `registry/capstone_choices_h5.json`.
+
 ## 2026-11-09 · Matched weekly levels
 
 - Add a private holdout comparison for real weekly references and volatility-matched historical controls.
