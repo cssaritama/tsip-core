@@ -4,6 +4,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [1.1.0] – 2026-11-10
+
+The buy-timing rules of 1.0.0 against a drift-neutral control (specification 0030): H-2026-018 not supported; once the drift is neutralised no rule buys better than a random session at the same point of the month.
+
 ### Added
 - Buy timing against a drift-neutral control (specification 0030, `python -m tsip.capstone.timing confirm-matched`): each rule compared with random sessions at the same positions in the month as its own purchases.
 
