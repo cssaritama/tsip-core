@@ -1,0 +1,376 @@
+{
+  "SPY": {
+    "chosen": {
+      "B1_Mon": {
+        "rule": "weekday",
+        "params": {
+          "day": 0
+        }
+      },
+      "B1_Tue": {
+        "rule": "weekday",
+        "params": {
+          "day": 1
+        }
+      },
+      "B1_Wed": {
+        "rule": "weekday",
+        "params": {
+          "day": 2
+        }
+      },
+      "B1_Thu": {
+        "rule": "weekday",
+        "params": {
+          "day": 3
+        }
+      },
+      "B1_Fri": {
+        "rule": "weekday",
+        "params": {
+          "day": 4
+        }
+      },
+      "B2": {
+        "rule": "after_fall",
+        "params": {
+          "k": 1.0,
+          "buy": "next"
+        }
+      },
+      "B3": {
+        "rule": "high_range",
+        "params": {}
+      },
+      "B4": {
+        "rule": "prior_low",
+        "params": {
+          "horizon": "quarter",
+          "d": 0.5
+        }
+      },
+      "B5": {
+        "rule": "fvg",
+        "params": {}
+      },
+      "B6": {
+        "rule": "month_low_session",
+        "params": {
+          "session": 0
+        }
+      },
+      "B7": {
+        "rule": "below_month_open",
+        "params": {}
+      }
+    },
+    "development_months": [
+      "2000-02",
+      "2015-12"
+    ]
+  },
+  "QQQ": {
+    "chosen": {
+      "B1_Mon": {
+        "rule": "weekday",
+        "params": {
+          "day": 0
+        }
+      },
+      "B1_Tue": {
+        "rule": "weekday",
+        "params": {
+          "day": 1
+        }
+      },
+      "B1_Wed": {
+        "rule": "weekday",
+        "params": {
+          "day": 2
+        }
+      },
+      "B1_Thu": {
+        "rule": "weekday",
+        "params": {
+          "day": 3
+        }
+      },
+      "B1_Fri": {
+        "rule": "weekday",
+        "params": {
+          "day": 4
+        }
+      },
+      "B2": {
+        "rule": "after_fall",
+        "params": {
+          "k": 1.5,
+          "buy": "same"
+        }
+      },
+      "B3": {
+        "rule": "high_range",
+        "params": {}
+      },
+      "B4": {
+        "rule": "prior_low",
+        "params": {
+          "horizon": "quarter",
+          "d": 0.25
+        }
+      },
+      "B5": {
+        "rule": "fvg",
+        "params": {}
+      },
+      "B6": {
+        "rule": "month_low_session",
+        "params": {
+          "session": 0
+        }
+      },
+      "B7": {
+        "rule": "below_month_open",
+        "params": {}
+      }
+    },
+    "development_months": [
+      "2000-02",
+      "2015-12"
+    ]
+  },
+  "GLD": {
+    "chosen": {
+      "B1_Mon": {
+        "rule": "weekday",
+        "params": {
+          "day": 0
+        }
+      },
+      "B1_Tue": {
+        "rule": "weekday",
+        "params": {
+          "day": 1
+        }
+      },
+      "B1_Wed": {
+        "rule": "weekday",
+        "params": {
+          "day": 2
+        }
+      },
+      "B1_Thu": {
+        "rule": "weekday",
+        "params": {
+          "day": 3
+        }
+      },
+      "B1_Fri": {
+        "rule": "weekday",
+        "params": {
+          "day": 4
+        }
+      },
+      "B2": {
+        "rule": "after_fall",
+        "params": {
+          "k": 1.0,
+          "buy": "same"
+        }
+      },
+      "B3": {
+        "rule": "high_range",
+        "params": {}
+      },
+      "B4": {
+        "rule": "prior_low",
+        "params": {
+          "horizon": "month",
+          "d": 0.25
+        }
+      },
+      "B5": {
+        "rule": "fvg",
+        "params": {}
+      },
+      "B6": {
+        "rule": "month_low_session",
+        "params": {
+          "session": 0
+        }
+      },
+      "B7": {
+        "rule": "below_month_open",
+        "params": {}
+      }
+    },
+    "development_months": [
+      "2004-12",
+      "2015-12"
+    ]
+  },
+  "BTC-USD": {
+    "chosen": {
+      "B1_Mon": {
+        "rule": "weekday",
+        "params": {
+          "day": 0
+        }
+      },
+      "B1_Tue": {
+        "rule": "weekday",
+        "params": {
+          "day": 1
+        }
+      },
+      "B1_Wed": {
+        "rule": "weekday",
+        "params": {
+          "day": 2
+        }
+      },
+      "B1_Thu": {
+        "rule": "weekday",
+        "params": {
+          "day": 3
+        }
+      },
+      "B1_Fri": {
+        "rule": "weekday",
+        "params": {
+          "day": 4
+        }
+      },
+      "B1_Sat": {
+        "rule": "weekday",
+        "params": {
+          "day": 5
+        }
+      },
+      "B1_Sun": {
+        "rule": "weekday",
+        "params": {
+          "day": 6
+        }
+      },
+      "B2": {
+        "rule": "after_fall",
+        "params": {
+          "k": 1.0,
+          "buy": "next"
+        }
+      },
+      "B3": {
+        "rule": "high_range",
+        "params": {}
+      },
+      "B4": {
+        "rule": "prior_low",
+        "params": {
+          "horizon": "month",
+          "d": 0.25
+        }
+      },
+      "B5": {
+        "rule": "fvg",
+        "params": {}
+      },
+      "B6": {
+        "rule": "month_low_session",
+        "params": {
+          "session": 0
+        }
+      },
+      "B7": {
+        "rule": "below_month_open",
+        "params": {}
+      }
+    },
+    "development_months": [
+      "2014-10",
+      "2019-12"
+    ]
+  },
+  "ETH-USD": {
+    "chosen": {
+      "B1_Mon": {
+        "rule": "weekday",
+        "params": {
+          "day": 0
+        }
+      },
+      "B1_Tue": {
+        "rule": "weekday",
+        "params": {
+          "day": 1
+        }
+      },
+      "B1_Wed": {
+        "rule": "weekday",
+        "params": {
+          "day": 2
+        }
+      },
+      "B1_Thu": {
+        "rule": "weekday",
+        "params": {
+          "day": 3
+        }
+      },
+      "B1_Fri": {
+        "rule": "weekday",
+        "params": {
+          "day": 4
+        }
+      },
+      "B1_Sat": {
+        "rule": "weekday",
+        "params": {
+          "day": 5
+        }
+      },
+      "B1_Sun": {
+        "rule": "weekday",
+        "params": {
+          "day": 6
+        }
+      },
+      "B2": {
+        "rule": "after_fall",
+        "params": {
+          "k": 2.0,
+          "buy": "same"
+        }
+      },
+      "B3": {
+        "rule": "high_range",
+        "params": {}
+      },
+      "B4": {
+        "rule": "prior_low",
+        "params": {
+          "horizon": "quarter",
+          "d": 0.25
+        }
+      },
+      "B5": {
+        "rule": "fvg",
+        "params": {}
+      },
+      "B6": {
+        "rule": "month_low_session",
+        "params": {
+          "session": 0
+        }
+      },
+      "B7": {
+        "rule": "below_month_open",
+        "params": {}
+      }
+    },
+    "development_months": [
+      "2017-12",
+      "2019-12"
+    ]
+  }
+}

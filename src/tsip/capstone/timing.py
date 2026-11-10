@@ -315,7 +315,7 @@ def markdown(dev: dict | None, conf: dict | None) -> str:
     lines = []
     if dev:
         lines += [
-            "**Development** (mean price advantage against a random session of the month; chosen variant in bold)",
+            "**Development** (mean price advantage against a random session of the month; for B2 and B4 the chosen variant, listed in `registry/capstone_timing_choices.json`)",
             "",
         ]
         lines += [
