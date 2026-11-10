@@ -1,6 +1,6 @@
 # 0029 When and where to buy with a fixed monthly budget
 
-**Status:** in progress: code and tests (T1–T3, T5) on 2026-11-10; H-2026-017 registered before the run
+**Status:** evaluated on 2026-11-10: H-2026-017 not supported (passes on random walks: the control is not drift-neutral); `docs/CAPSTONE.md`, `registry/evaluations.json`
 **Level:** 2 study · **Open work:** W-124 · **Decisions:** ADR 0064, ADR 0067, ADR 0071
 
 ## Problem and decision supported
@@ -53,4 +53,8 @@ The specification 0028 test did not answer this: its pullback rule left money un
 
 | ID | Result | Evidence |
 |---|---|---|
-| T1–T5 | to do | |
+| T1 | pass: `tests/test_capstone_timing.py::test_decisions_do_not_change_when_later_sessions_are_deleted` | 2026-11-10 |
+| T2 | pass: `test_every_rule_buys_once_in_every_complete_month` | 2026-11-10 |
+| T3 | pass: `test_flat_price_gives_no_advantage_to_any_rule`, `test_a_dip_on_the_first_monday_is_found` | 2026-11-10 |
+| T4 | **fail, and informative:** 3 of 59 tests pass on random walks; the month-average control is not drift-neutral (rules that buy early gain the drift). H-2026-017 is not supported; a drift-neutral version needs a new specification | 2026-11-10 |
+| T5 | pass: choices committed (`5b96f02`) before the confirmation; run logged once; `test_confirmation_runs_once_and_is_logged` | 2026-11-10 |

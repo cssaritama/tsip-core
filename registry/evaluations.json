@@ -28,5 +28,15 @@
     "report": "python -m tsip.capstone.evaluate (summary test_h5.json kept outside Git with the data; tables in docs/CAPSTONE.md)",
     "report_sha256": "b7a9e2876adce8fe63f92aa42fb40dda9519e8885eadf9a357e4a6de6bce9f97",
     "version": "0.2.24"
+  },
+  {
+    "hypothesis": "H-2026-017",
+    "hypothesis_sha256": "a857a0cc81ae72532d7416600aedee6419837279612477c6181e74088306287a",
+    "evaluated": "2026-11-10",
+    "outcome": "not supported",
+    "result": "Confirmation 2016 (crypto 2020) to 2026-10: rules passing on real prices: SPY B1 Thursday, B5, B6; QQQ B1 Thursday and Friday; but 3 of 59 tests also pass on random walks, so the criterion fails for every instrument. The passing rules buy early in the month: with an upward drift the month's average price is above its first sessions (SPY first session +0.52%, last session -0.47%; random walk +0.64% and -0.71%). The month-average control is not drift-neutral. Single logged run (registry/capstone_test_runs.json).",
+    "report": "python -m tsip.capstone.timing (summary timing_confirmation.json kept outside Git with the data; tables in docs/CAPSTONE.md)",
+    "report_sha256": "bad3028f0456311a9e1b692a1b2820056b4074487c177c8ea0b1a47c708a7a20",
+    "version": "0.2.24"
   }
 ]
