@@ -674,8 +674,8 @@ Where each item of the course rubric is answered, and what is not claimed.
 | Exceptional returns | The registered strategy did not beat either benchmark on the test period (step 5) | not claimed |
 | Scripts and dependencies | `pyproject.toml` extra `capstone`; one command, `tsip.capstone.run_all`, in two modes, both run (file mode here, download mode on the founder's computer, compared above) | done |
 | Incremental data outside GitHub | `--mode update` downloads only from ten days before the last stored date and splices the new rows in, rescaling the stored history to the provider's latest dividend and split adjustment; the store stays outside Git with a fingerprinted manifest; results computed on older data are set aside, never mixed | done |
-| Scheduled run | The public report runs every day in GitHub Actions; the course flow itself is not scheduled | partial |
+| Scheduled run | `.github/workflows/capstone.yml`: every Sunday and on demand, fresh download, the whole flow, the latest predictions and the paper-trading orders (dry run) in the run summary and an artifact | written; verified after its first run on GitHub |
 | Modular code | `src/tsip/capstone/` modules with their tests (`tests/test_capstone_*.py`); the notebook only calls them | done |
 | Broker API | `tsip.capstone.paper_order`: orders to Alpaca's paper endpoint only, with simulated money | done (dry run verified; sending needs the founder's paper keys) |
-| Container | `Dockerfile`; not built: Docker is not installed on the machines used for this release | written, not built |
+| Container | `Dockerfile`, built and run by the `container` job of `.github/workflows/capstone.yml` | written; verified after its first run on GitHub |
 | Deployment | The project's public report on GitHub Pages | done |
