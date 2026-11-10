@@ -536,6 +536,122 @@ Reading:
 3. **One test passed on random walks** (a first Tuesday on simulated QQQ). With 59 tests, a chance rejection on data without information happens about once in twenty runs; a check with a single random-walk seed cannot tell chance from a flawed control. The next version uses several seeds and compares the pass rate with the nominal rate.
 4. **For a monthly buyer:** buy when the money arrives. Neither the weekday, nor a fall, nor a prior low, nor a fair value gap, nor the usual session of the monthly low gave a better price than chance in these markets, and every rule that waits pays the drift.
 
+## Exploratory analysis and diagnostics
+
+Descriptive and exploratory: nothing here changes a registered result. The correlations use training and validation rows only; the diagnostics use the test predictions saved by the registered run. All four model families of step 3 were regenerated on 2026-11-10 with `run_models fit` and reproduce the step 3 tables exactly.
+
+```sh
+python -m tsip.capstone.analysis --markdown
+```
+
+**Correlation with the return of the next 5 rows** (Spearman, training and validation rows, 15 strongest)
+
+| Feature | Set | Spearman | Rows |
+|---|---|---:|---:|
+| `macro_ten_year_yield` | LECTURE | -0.063 | 22,522 |
+| `growth_btc_usd_30d` | LECTURE | +0.062 | 12,521 |
+| `macro_cpi_yoy` | LECTURE | -0.052 | 21,035 |
+| `growth_wti_oil_7d` | LECTURE | -0.052 | 22,167 |
+| `growth_btc_usd_90d` | LECTURE | +0.049 | 12,278 |
+| `growth_wti_oil_365d` | LECTURE | -0.047 | 20,709 |
+| `growth_brent_oil_365d` | LECTURE | -0.045 | 16,553 |
+| `session_of_month` | TIME | +0.044 | 22,522 |
+| `space_month_untested_below_age` | SPACE | +0.043 | 21,120 |
+| `growth_brent_oil_7d` | LECTURE | -0.043 | 18,010 |
+| `macro_tbill_3m_change_30d` | LECTURE | -0.042 | 22,399 |
+| `macro_ten_year_yield_change_30d` | LECTURE | -0.041 | 22,399 |
+| `week_of_month` | TIME | +0.040 | 22,522 |
+| `ln_volume` | LECTURE | +0.040 | 22,522 |
+| `day_of_month` | TIME | +0.039 | 22,522 |
+
+**Correlation with the return of the next 20 rows** (Spearman, training and validation rows, 15 strongest)
+
+| Feature | Set | Spearman | Rows |
+|---|---|---:|---:|
+| `growth_wti_oil_365d` | LECTURE | -0.110 | 20,709 |
+| `growth_brent_oil_365d` | LECTURE | -0.109 | 16,553 |
+| `macro_cpi_yoy` | LECTURE | -0.104 | 21,035 |
+| `macro_tbill_3m_change_30d` | LECTURE | -0.096 | 22,399 |
+| `macro_ten_year_yield` | LECTURE | -0.094 | 22,522 |
+| `growth_btc_usd_30d` | LECTURE | +0.089 | 12,521 |
+| `growth_btc_usd_90d` | LECTURE | +0.083 | 12,278 |
+| `growth_btc_usd_7d` | LECTURE | +0.069 | 12,618 |
+| `macro_ten_year_yield_change_30d` | LECTURE | -0.059 | 22,399 |
+| `ma_ratio_200` | LECTURE | +0.057 | 21,527 |
+| `ln_volume` | LECTURE | +0.053 | 22,522 |
+| `macro_cpi` | LECTURE | +0.050 | 22,522 |
+| `macro_tbill_3m` | LECTURE | -0.048 | 22,522 |
+| `growth_brent_oil_30d` | LECTURE | +0.046 | 17,913 |
+| `space_month_untested_below_age` | SPACE | +0.044 | 21,120 |
+
+**Vector view, approximate return on capital** (bets of 100; total net over the capital needed)
+
+| Period | Feature set | Bets | Hit rate | Total net | Capital needed | Return on capital |
+|---|---|---:|---:|---:|---:|---:|
+| validation | LECTURE | 294 | 55.1% | +241 | 3,200 | +7.5% |
+| validation | LECTURE+TIME+SPACE | 1,469 | 55.5% | +769 | 3,400 | +22.6% |
+| test | LECTURE | 238 | 63.0% | +262 | 3,400 | +7.7% |
+| test | LECTURE+TIME+SPACE | 1,328 | 56.7% | +463 | 3,400 | +13.6% |
+
+**Test period by instrument** (direction of the next 5 rows; precision of the 10% most confident calls, cut fixed on the whole test set; exploratory)
+
+| Instrument | Rows | Base rate | AUC LECTURE | AUC +TIME+SPACE | Precision top decile LECTURE (rows) | Precision top decile +TIME+SPACE (rows) |
+|---|---:|---:|---:|---:|---|---|
+| BTC-USD | 1038 | 51.3% | 0.509 | 0.515 | 57.9% (38) | 58.2% (55) |
+| ETH-USD | 1038 | 49.3% | 0.514 | 0.526 | 53.8% (52) | 48.5% (101) |
+| GLD | 712 | 60.1% | 0.556 | 0.568 | 76.1% (46) | 68.9% (45) |
+| QQQ | 712 | 58.6% | 0.536 | 0.515 | 63.4% (131) | 59.0% (100) |
+| SPY | 712 | 60.8% | 0.554 | 0.523 | 65.8% (155) | 66.1% (121) |
+
+**Test period by month of the year** (direction of the next 5 rows; precision of the 10% most confident calls, cut fixed on the whole test set; exploratory)
+
+| Month of the year | Rows | Base rate | AUC LECTURE | AUC +TIME+SPACE | Precision top decile LECTURE (rows) | Precision top decile +TIME+SPACE (rows) |
+|---|---:|---:|---:|---:|---|---|
+| 1 | 369 | 53.1% | 0.660 | 0.546 | 85.0% (20) | 62.8% (43) |
+| 2 | 344 | 58.1% | 0.643 | 0.661 | 68.2% (22) | 65.5% (29) |
+| 3 | 375 | 52.0% | 0.466 | 0.427 | 44.9% (118) | 43.7% (71) |
+| 4 | 372 | 62.9% | 0.592 | 0.642 | 80.7% (83) | 76.3% (93) |
+| 5 | 375 | 55.5% | 0.484 | 0.510 | 74.3% (35) | 78.6% (14) |
+| 6 | 360 | 49.7% | 0.727 | 0.767 | 100.0% (19) | 100.0% (9) |
+| 7 | 384 | 54.2% | 0.443 | 0.469 | 46.2% (26) | 59.6% (47) |
+| 8 | 378 | 55.3% | 0.553 | 0.528 | 70.0% (20) | 47.4% (19) |
+| 9 | 366 | 65.6% | 0.550 | 0.538 | 78.6% (42) | 88.2% (17) |
+| 10 | 390 | 42.3% | 0.479 | 0.431 | 35.7% (28) | 34.4% (64) |
+| 11 | 246 | 58.5% | 0.537 | 0.542 | 37.5% (8) | 60.0% (15) |
+| 12 | 253 | 56.9% | 0.525 | 0.642 | 100.0% (1) | 0.0% (1) |
+
+**Wrong predictions** (LECTURE+TIME+SPACE): error rate 52.5%. Share of the 10% most confident errors by instrument: BTC-USD 43%, ETH-USD 38%, GLD 11%, QQQ 4%, SPY 4%; by year: 2024 30%, 2025 34%, 2026 35%.
+
+Calibration (mean predicted probability against the base rate): BTC-USD 37.7% against 51.3%; ETH-USD 39.2% against 49.3%; GLD 40.2% against 60.1%; QQQ 44.6% against 58.6%; SPY 45.4% against 60.8%.
+
+| Date | Instrument | Probability | Outcome (positive 5 rows) | Return of the next 5 rows |
+|---|---|---:|---:|---:|
+| 2025-05-08 | ETH-USD | 0.145 | 1 | +21.5% |
+| 2026-08-22 | ETH-USD | 0.156 | 1 | +3.6% |
+| 2026-03-01 | ETH-USD | 0.173 | 1 | +2.0% |
+| 2026-03-07 | ETH-USD | 0.175 | 1 | +5.3% |
+| 2026-03-07 | BTC-USD | 0.176 | 1 | +4.8% |
+| 2025-05-24 | ETH-USD | 0.183 | 1 | +4.0% |
+| 2025-05-11 | ETH-USD | 0.185 | 1 | +1.0% |
+| 2026-03-06 | BTC-USD | 0.187 | 1 | +3.0% |
+| 2026-03-06 | ETH-USD | 0.188 | 1 | +3.7% |
+| 2026-03-08 | BTC-USD | 0.188 | 1 | +7.6% |
+
+Reading:
+
+1. **What correlates with future returns** (training and validation rows): macro levels and changes (the 10-year yield, CPI inflation and short rates, negatively), oil over a year (negatively) and Bitcoin's recent growth (positively) lead, and all are weak (absolute Spearman correlations of 0.04 to 0.11). The strongest time features (session, week and day of the month) and one space feature (the age of the nearest untested monthly low below) are of the same weak size.
+2. **The model ranks a little better than chance but is badly calibrated in the test period.** Its mean probability of a positive period is 38% to 45% by instrument against observed shares of 49% to 61%, so with a 0.5 cut it is wrong more than half the time. Ranking (AUC) is the fairer reading; thresholds must be relative, as the strategies' frozen thresholds were.
+3. **Where it works and where it fails:** with the course features the AUC is highest on GLD and SPY and close to 0.5 on crypto; the most confident errors are almost all crypto calls of a strong fall that rose instead (81% of the most confident errors are Bitcoin or Ether). By month of the year the results swing widely on few rows each, which is noise rather than seasonality.
+4. **The vector view** earns a positive return on capital in both periods (bets on every high-probability signal), while the exact account with costs and cash at the bill rate did not beat buy and hold (step 5): many small bets with a hit rate near 55% and overlapping positions do not add up to a better portfolio.
+
+Ideas for improvement, each to be fixed before it is run:
+
+- **Calibration:** recalibrate probabilities on the validation period (isotonic or Platt) and set thresholds as percentiles of recent probabilities instead of absolute values.
+- **Stationary inputs:** replace macro levels by changes or z-scores against a rolling window; a plausible reason for the low test probabilities is that rates in 2024–2026 sat far above most of the training period, which the model reads as bearish (untested).
+- **One model per market family:** funds and crypto behave differently; a pooled model with ticker indicators lets crypto's bear years shape the fund predictions and the reverse.
+- **Intraday time and space:** the daily features did not help; the levels and sessions TSIP measures act within the day and the week (hourly bars, the current week's levels).
+- **Direction is the hardest target:** predict the range or the volatility of the next sessions, where time features already carry graded evidence (`docs/TIME_SPACE_MODEL.md`).
+
 ## Rubric map
 
 Where each item of the course rubric is answered, and what is not claimed.
@@ -547,13 +663,13 @@ Where each item of the course rubric is answered, and what is not claimed.
 | Twenty or more features, documented | 122 columns in named sets with a dictionary (step 2) and a no-look-ahead test | done |
 | More than one million records | Not met: daily data give 26,759 rows | not claimed |
 | New data source (not yfinance or FRED) | The course models use yfinance and FRED only; the repository's live report uses Coinbase, the Binance archive and Alpaca, but not this project | not claimed |
-| Transformations and exploratory analysis | Point-in-time joins with release lags (step 1); notebook section "Exploratory view" (shares of positive periods by instrument, weekday and position in the prior week) | partial: no correlation analysis between features and the target yet |
-| Models and tuning | Decision tree, random forest, logistic regression and XGBoost tuned on time-ordered folds; selection rule fixed before training (step 3) | done; the notebook shows only the logistic model, the four families run with `run_all --all-families` |
+| Transformations and exploratory analysis | Point-in-time joins with release lags (step 1); notebook section "Exploratory view" (shares of positive periods by instrument, weekday and position in the prior week) | done: correlations with the 5- and 20-row returns in "Exploratory analysis and diagnostics" |
+| Models and tuning | Decision tree, random forest, logistic regression and XGBoost tuned on time-ordered folds; selection rule fixed before training (step 3) | done: all four families regenerated and shown in the notebook (reusing saved results) |
 | Probability thresholds | Thresholds chosen on validation and frozen (`registry/capstone_choices_h5.json`, step 4) | done |
-| Two or more strategies, vector and exact simulation | sim1 to sim5, vector view and an exact account with costs, cash at the bill rate, one-session delay (steps 4 and 5) | done; the vector view's return on capital is computed but not yet shown in the tables |
+| Two or more strategies, vector and exact simulation | sim1 to sim5, vector view and an exact account with costs, cash at the bill rate, one-session delay (steps 4 and 5) | done; the vector view's return on capital is in "Exploratory analysis and diagnostics" |
 | Benchmark with dividends | Five-instrument buy and hold and SPY with dividends (adjusted close), with block-bootstrap intervals | done |
 | Stop loss and a new strategy | sim3 (2 ATR stop and a volatility filter); pullback buying with monthly deposits (sim5) | done |
-| Deep analysis | Rotation and random-walk controls, validation against test, walk-forward check, reproducibility across downloads | partial: precision by instrument and by month of the year not yet tabulated |
+| Deep analysis | Rotation and random-walk controls, validation against test, walk-forward check, reproducibility across downloads | done: AUC, precision of the most confident decile, calibration and the most confident errors by instrument and month, with improvement ideas |
 | Exceptional returns | The registered strategy did not beat either benchmark on the test period (step 5) | not claimed |
 | Scripts and dependencies | `pyproject.toml` extra `capstone`; one command, `tsip.capstone.run_all`, in two modes, both run (file mode here, download mode on the founder's computer, compared above) | done |
 | Incremental data outside GitHub | Data store outside Git with a fingerprinted manifest; steps reuse saved results | partial: a download fetches the full history, not only the new days |

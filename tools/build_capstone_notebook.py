@@ -25,7 +25,7 @@ from pathlib import Path
 import pandas as pd
 from IPython.display import Markdown, display
 
-from tsip.capstone import data, evaluate, features, paper_order, run_models, simulate
+from tsip.capstone import analysis, data, evaluate, features, paper_order, run_models, simulate
 
 store = data.default_store()
 results = store / "results"
@@ -61,11 +61,18 @@ days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 display((known.pivot_table(index="weekday", columns="ticker", values="is_positive_growth_5d") * 100).round(1).reindex(days))
 display((known.pivot_table(index="prior_week_position", columns="ticker", values="is_positive_growth_5d", observed=True) * 100).round(1))"""),
     md(
-        "## 3. Models on the validation period\nLogistic regression here (seconds); `run_all --all-families` adds the decision tree, XGBoost and random forest (step 3 of `docs/CAPSTONE.md` compares all four). Pieces whose results exist are reused."
+        "### Correlation with the target\nSpearman correlation of each feature with the return of the next 5 and 20 sessions, on training and validation rows only (the test period is not used for exploration). The 15 strongest."
     ),
     code("""for horizon in (5, 20):
+    display(Markdown(f"**Next {horizon} sessions**"))
+    display(analysis.correlations(feats, sets, horizon).round(3))"""),
+    md(
+        '## 3. Models on the validation period\nDecision tree, random forest, logistic regression and XGBoost, each tuned on time-ordered folds of the training period and scored on validation, on four feature sets. Pieces whose results exist are reused; from scratch the random forest takes about 15 minutes on a laptop (set `FAMILIES = ["logistic"]` for a quick run). The family with the highest mean AUC is selected: logistic regression.'
+    ),
+    code("""FAMILIES = list(run_models.FAMILIES)
+for horizon in (5, 20):
     folder = results / f"h{horizon}"
-    run_models.fit(feats, sets, horizon, ["logistic"], list(run_models.M.FEATURE_SETS), folder)
+    quiet(run_models.fit, feats, sets, horizon, FAMILIES, list(run_models.M.FEATURE_SETS), folder)
     table = pd.DataFrame(run_models.summarise(folder, horizon)["table"]).set_index("family")
     display(Markdown(f"**Direction of the next {horizon} sessions, validation AUC**"))
     display(table.round(3))"""),
@@ -85,6 +92,11 @@ if summary_path.exists():
 else:
     print("Not run yet: python -m tsip.capstone.evaluate, then --strategies")
 print(json.dumps(json.loads(Path(evaluate.RUN_LOG).read_text()), indent=2))"""),
+    md(
+        "## Diagnostics: where the model works and where it fails\nThe vector view's return on capital, test-period AUC and precision by instrument and by month of the year, calibration and the most confident wrong predictions (exploratory; the reading and the ideas for improvement are in `docs/CAPSTONE.md`)."
+    ),
+    code("""diagnostics = analysis.markdown(store)
+display(Markdown("**Vector view" + diagnostics.split("**Vector view", 1)[1]))"""),
     md(
         "## 6. Broker example (paper trading, educational)\nThe orders strategy sim1 would place from the latest prediction, printed (dry run). `python -m tsip.capstone.paper_order --send` submits them to Alpaca's paper endpoint with simulated money. It is not a signal: the strategy did not beat buy and hold out of sample."
     ),
