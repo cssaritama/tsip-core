@@ -4,6 +4,9 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Added
+- Buy timing against a drift-neutral control (specification 0030, `python -m tsip.capstone.timing confirm-matched`): each rule compared with random sessions at the same positions in the month as its own purchases.
+
 ## [1.0.0] – 2026-11-10
 
 Release 1.0.0 is the course project of the Stock Markets Analytics course and phase 1 of the research core: a daily data and feature pipeline, models, strategy simulations and two pre-registered studies, each read once out of sample (`docs/CAPSTONE.md`). H-2026-016 (time and space features improve return prediction) and H-2026-017 (timing rules beat a random session of the month) are not supported; both evaluations are in `registry/evaluations.json`.

@@ -1,6 +1,6 @@
 # 0030 Buy timing against a drift-neutral control
 
-**Status:** approved (founder, 2026-11-10: proceed with Q-44); protocol fixed and H-2026-018 registered before any figure
+**Status:** in progress: code and tests (T1–T3, T5) committed before any figure; H-2026-018 registered before the run
 **Level:** 2 study · **Open work:** W-125 · **Decisions:** ADR 0064, ADR 0067, ADR 0071 · **Repairs:** specification 0029
 
 ## Problem and decision supported

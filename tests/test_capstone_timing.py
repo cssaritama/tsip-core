@@ -106,3 +106,43 @@ def test_confirmation_runs_once_and_is_logged(tmp_path, monkeypatch):
     assert json.loads((tmp_path / "runs.json").read_text())[0]["kind"] == "timing_confirmation"
     with pytest.raises(SystemExit):
         T.main(["confirm", "--store", str(store)])
+    T.main(["confirm-matched", "--store", str(store)])
+    matched = json.loads((store / "results" / "timing_matched.json").read_text())
+    assert matched["real"]["control"] == "matched_position" and matched["real"]["n_tests"] == 59
+    assert [r["kind"] for r in json.loads((tmp_path / "runs.json").read_text())] == [
+        "timing_confirmation",
+        "timing_matched",
+    ]
+    with pytest.raises(SystemExit):
+        T.main(["confirm-matched", "--store", str(store)])
+
+
+# ---------------------------------------------------------------- specification 0030, drift-neutral control
+
+
+def test_a_rule_that_always_buys_at_the_same_position_scores_zero():
+    g = T.sessions(_frame(_walk(900, seed=2)), "SPY")
+    months = T.complete_months(g)
+    for rule, params in (("first_session", {}), ("month_low_session", {"session": 3})):
+        assert np.allclose(T.matched_advantages(g, T.decide(g, rule, params, months)), 0), rule
+
+
+def test_early_buying_gains_nothing_from_drift_against_matched_positions():
+    rising = 100 * np.exp(np.cumsum(np.full(1500, 0.002)))  # strong steady drift, no other information
+    g = T.sessions(_frame(rising), "SPY")
+    months = T.complete_months(g)
+    picks = T.decide(g, "weekday", {"day": 0}, months)
+    assert T.advantages(g, picks).mean() > 0.005  # the month-average control rewards buying early
+    assert abs(T.matched_advantages(g, picks).mean()) < 0.001  # the matched control does not
+
+
+def test_a_dip_on_the_first_monday_is_still_found_against_matched_positions():
+    frame = _frame(np.full(900, 100.0))
+    first_monday = (
+        frame.assign(m=frame["date"].dt.to_period("M")).query("date.dt.dayofweek == 0").groupby("m").head(1).index
+    )
+    for col in ("open", "high", "low", "close", "adj_close"):
+        frame.loc[first_monday, col] *= 0.97
+    g = T.sessions(frame, "SPY")
+    months = T.complete_months(g)
+    assert T.matched_advantages(g, T.decide(g, "weekday", {"day": 0}, months)).mean() > 0.01

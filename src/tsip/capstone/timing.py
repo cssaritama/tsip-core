@@ -14,6 +14,7 @@ formed in the last 252 sessions.
 
     python -m tsip.capstone.timing develop        # development period: all variants, choices frozen
     python -m tsip.capstone.timing confirm        # single logged confirmation run (+ random walks)
+    python -m tsip.capstone.timing confirm-matched   # specification 0030: drift-neutral control, logged once
     python -m tsip.capstone.timing --markdown     # tables of the saved results
 """
 
@@ -165,6 +166,25 @@ def advantages(g: pd.DataFrame, picks: pd.Series) -> pd.Series:
     return pd.Series((avg.loc[picks.index].to_numpy() - paid) / avg.loc[picks.index].to_numpy(), index=picks.index)
 
 
+def matched_advantages(g: pd.DataFrame, picks: pd.Series) -> pd.Series:
+    """Advantage against random sessions at the same positions in the month as the rule's own purchases.
+
+    Specification 0030: w(k) is the share of the rule's purchases on the k-th session of the month;
+    the control price of a month is the w-weighted average of that month's adjusted closes at those
+    positions (a position past the month's end takes its last session). Drift-neutral: a rule that
+    always buys at the same position scores exactly zero.
+    """
+    pos = g["session_of_month"].to_numpy()[picks.to_numpy()]
+    weights = pd.Series(pos).value_counts(normalize=True)
+    adj, month = g["adj_close"].to_numpy(), g["month"].to_numpy()
+    out = {}
+    for m, pick in picks.items():
+        rows = np.flatnonzero(month == m)
+        control = sum(w * adj[rows[min(int(k), len(rows) - 1)]] for k, w in weights.items())
+        out[m] = (control - adj[pick]) / control
+    return pd.Series(out)
+
+
 def wealth_ratio(g: pd.DataFrame, picks: pd.Series) -> float:
     """Units bought by the rule over the expected units of a random session, one unit of money per month."""
     inv = 1 / g["adj_close"]
@@ -227,9 +247,9 @@ def usual_low_session(g: pd.DataFrame, months) -> int:
     return int(idx.mode().iloc[0])
 
 
-def evaluate_rule(g, rule, params, months, *, reps=None) -> dict:
+def evaluate_rule(g, rule, params, months, *, reps=None, control: str = "month_average") -> dict:
     picks = decide(g, rule, params, months)
-    adv = advantages(g, picks).to_numpy()
+    adv = (matched_advantages if control == "matched_position" else advantages)(g, picks).to_numpy()
     mean, ci, p = bootstrap_mean(adv, reps=reps)
     return {
         "months": len(months),
@@ -269,24 +289,29 @@ def develop(frame: pd.DataFrame, *, reps=None) -> dict:
     return out
 
 
-def confirm(frame: pd.DataFrame, choices: dict, *, reps=None) -> dict:
+def confirm(frame: pd.DataFrame, choices: dict, *, reps=None, control: str = "month_average") -> dict:
     tests, refs = [], {}
     for ticker in data.UNIVERSE:
         g = sessions(frame, ticker)
         _, conf = split_months(g, ticker)
         for key, c in choices[ticker]["chosen"].items():
             tests.append(
-                {"ticker": ticker, "test": key, **c, **evaluate_rule(g, c["rule"], c["params"], conf, reps=reps)}
+                {
+                    "ticker": ticker,
+                    "test": key,
+                    **c,
+                    **evaluate_rule(g, c["rule"], c["params"], conf, reps=reps, control=control),
+                }
             )
         refs[ticker] = {
-            r: evaluate_rule(g, r, p, conf, reps=reps) | {"period": [str(conf[0]), str(conf[-1])]}
+            r: evaluate_rule(g, r, p, conf, reps=reps, control=control) | {"period": [str(conf[0]), str(conf[-1])]}
             for _, r, p in REFERENCES
         }
     q = bh(np.array([t["p_one_sided"] for t in tests]))
     for t, qv in zip(tests, q, strict=True):
         t["q"] = float(qv)
         t["passes"] = bool(t["mean_advantage"] >= MIN_ADVANTAGE and qv < Q)
-    return {"tests": tests, "references": refs, "n_tests": len(tests)}
+    return {"tests": tests, "references": refs, "n_tests": len(tests), "control": control}
 
 
 def verdict(real: dict, random_walk: dict) -> dict:
@@ -343,7 +368,8 @@ def markdown(dev: dict | None, conf: dict | None) -> str:
     if conf:
         real, rw = conf["real"], conf["random_walk"]
         lines += [
-            f"**Confirmation** ({real['n_tests']} tests, Benjamini–Hochberg across all; passes: mean advantage at least "
+            f"**Confirmation, control: {real.get('control', 'month_average').replace('_', ' ')}** ({real['n_tests']} tests, "
+            "Benjamini–Hochberg across all; passes: mean advantage at least "
             f"{MIN_ADVANTAGE * 100:.2f}% and q below {Q})",
             "",
             "| Instrument | Test | Rule | Months | Mean advantage (95%) | Share of months positive | Wealth vs random | q | Passes |",
@@ -379,7 +405,7 @@ def markdown(dev: dict | None, conf: dict | None) -> str:
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("action", nargs="?", choices=["develop", "confirm"])
+    parser.add_argument("action", nargs="?", choices=["develop", "confirm", "confirm-matched"])
     parser.add_argument("--store", type=Path, default=None)
     parser.add_argument("--rerun", default=None, help="reason for running the confirmation again (logged)")
     parser.add_argument("--markdown", action="store_true")
@@ -388,10 +414,13 @@ def main(argv=None):
     results = store / "results"
     results.mkdir(parents=True, exist_ok=True)
     dev_path, conf_path = results / "timing_development.json", results / "timing_confirmation.json"
+    matched_path = results / "timing_matched.json"
     if args.markdown:
         dev = json.loads(dev_path.read_text()) if dev_path.exists() else None
         conf = json.loads(conf_path.read_text()) if conf_path.exists() else None
         print(markdown(dev, conf))
+        if matched_path.exists():
+            print("\n" + markdown(None, json.loads(matched_path.read_text())))
         return
     frame, _ = data.load("file", store)
     if args.action == "develop":
@@ -405,6 +434,27 @@ def main(argv=None):
             + "\n"
         )
         print(f"written {dev_path} and {CHOICES}; commit the choices before: python -m tsip.capstone.timing confirm")
+        return
+    if args.action == "confirm-matched":
+        commit, dirty = E.git_state()
+        _, _, manifest = data.load_store(store)
+        runs = E.open_run(
+            E.RUN_LOG,
+            commit=commit,
+            dirty=dirty,
+            fingerprint=manifest["sha256"],
+            kind="timing_matched",
+            rerun=args.rerun,
+        )
+        choices = json.loads(CHOICES.read_text())
+        real = confirm(frame, choices, control="matched_position")
+        rw_frame = M.random_walk_frame(frame)
+        rw_dev = develop(rw_frame, reps=500)
+        rw = confirm(rw_frame, {t: {"chosen": d["chosen"]} for t, d in rw_dev.items()}, control="matched_position")
+        out = {"real": real, "random_walk": rw, "verdict": verdict(real, rw), "run": runs[-1]}
+        matched_path.write_text(json.dumps(out, indent=2, default=str))
+        E.mark_run(E.RUN_LOG, runs, "completed", matched_path)
+        print(markdown(None, out))
         return
     if args.action == "confirm":
         commit, dirty = E.git_state()
