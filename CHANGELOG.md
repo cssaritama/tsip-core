@@ -2,6 +2,10 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## 2026-11-10 · Course project, test-period evaluation
+
+- Add `tsip.capstone.evaluate`: the single logged read of the test period in two phases (models, controls and the verdict of H-2026-016; then the frozen strategies), refused from uncommitted code or a second time without a logged reason, and an exploratory walk-forward check.
+
 ## 2026-11-10 · Course project, strategy simulations
 
 - Add `tsip.capstone.simulate`: vector and exact simulations of four prediction strategies and of monthly pullback buying, with costs, idle cash at the bill rate, rotation and random-walk controls, and the parameters chosen on validation frozen in `registry/capstone_choices_h5.json`.

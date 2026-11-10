@@ -461,14 +461,8 @@ def load_predictions(folder: Path, feature_set: str, family: str = "logistic") -
 
 def choose(panel: Panel, preds: pd.DataFrame, volatility: pd.DataFrame, horizon: int) -> dict:
     """Every strategy of the rule on one prediction set; parameters chosen by validation Sharpe."""
-    cash = panel.cash_return
-    prob = probabilities(preds, panel)
-    span = prob.dropna(how="all").index
-    sub = Panel(
-        **{k: getattr(panel, k).loc[span[0] : span[-1]] for k in ("adj", "close", "open", "high", "low", "tradable")},
-        tbill=panel.tbill.loc[span[0] : span[-1]],
-    )
-    prob = prob.loc[span[0] : span[-1]]
+    sub, prob = sub_panel(panel, preds)
+    span = sub.adj.index
     cash = sub.cash_return
     sleeve = 1 / len(panel.tickers)
     levels = {q: float(np.quantile(preds["probability"], q)) for q in QUANTILES}
@@ -506,27 +500,61 @@ def choose(panel: Panel, preds: pd.DataFrame, volatility: pd.DataFrame, horizon:
             best["sim4"] = ({"quantile": q, "upper": up, "lower": lo}, m)
     out["chosen"] = {k: {"params": v[0], **v[1]} for k, v in best.items()}
 
-    # the chosen strategies again with a one-session delay, and the benchmarks
-    p1, p2, p4 = best["sim1"][0], best["sim2"][0], best["sim4"][0]
+    out.update(run_chosen(panel, sub, prob, preds, volatility, out["chosen"], horizon))
+    return out
+
+
+def sub_panel(panel: Panel, preds: pd.DataFrame) -> tuple[Panel, pd.DataFrame]:
+    """The panel and probabilities cut to the dates the predictions cover (the panel keeps its warm-up)."""
+    prob = probabilities(preds, panel)
+    span = prob.dropna(how="all").index
+    sub = Panel(
+        **{k: getattr(panel, k).loc[span[0] : span[-1]] for k in ("adj", "close", "open", "high", "low", "tradable")},
+        tbill=panel.tbill.loc[span[0] : span[-1]],
+    )
+    return sub, prob.loc[span[0] : span[-1]]
+
+
+def run_chosen(panel, sub, prob, preds, volatility, chosen: dict, horizon: int) -> dict:
+    """The strategies with fixed parameters, their one-session delay, the benchmarks and the controls.
+
+    ``chosen`` maps sim1 to sim4 to their parameters (as in ``registry/capstone_choices_h5.json``).
+    The same function serves validation (step 4) and the single test-period run (step 5).
+    """
+    cash = sub.cash_return
+    sleeve = 1 / len(panel.tickers)
+    p = {k: v.get("params", v) for k, v in chosen.items()}
+    p1, p2, p3, p4 = p["sim1"], p["sim2"], p["sim3"], p["sim4"]
+    targets3, exits3 = stop_and_filter(
+        panel, threshold_targets(prob, p3["threshold"], sleeve), volatility, stop_atr=p3.get("stop_atr", STOP_ATR)
+    )
+
+    def build(delay):
+        return {
+            "sim1": run_portfolio(sub, threshold_targets(prob, p1["threshold"], sleeve), delay=delay),
+            "sim2": run_portfolio(sub, top_k_targets(prob, p2["threshold"], p2["k"]), delay=delay),
+            "sim3": run_portfolio(sub, targets3, exits=exits3, delay=delay),
+            "sim4": run_portfolio(sub, long_short_targets(prob, p4["upper"], p4["lower"]), delay=delay),
+        }
+
     runs = {
-        "sim1": run_portfolio(sub, threshold_targets(prob, p1["threshold"], sleeve)),
-        "sim2": run_portfolio(sub, top_k_targets(prob, p2["threshold"], p2["k"])),
-        "sim3": run_portfolio(sub, targets3, exits=exits3),
-        "sim4": run_portfolio(sub, long_short_targets(prob, p4["upper"], p4["lower"])),
+        **build(0),
         "buy_hold_equal": buy_and_hold(sub, sub.tickers),
         "buy_hold_crypto": buy_and_hold(sub, CRYPTO),
         "spy_total_return": buy_and_hold(sub, ["SPY"]),
         "spy_price_only": buy_and_hold(sub, ["SPY"], price="close"),
     }
-    delayed = {
-        "sim1": run_portfolio(sub, threshold_targets(prob, p1["threshold"], sleeve), delay=1),
-        "sim2": run_portfolio(sub, top_k_targets(prob, p2["threshold"], p2["k"]), delay=1),
-        "sim3": run_portfolio(sub, targets3, exits=exits3, delay=1),
-        "sim4": run_portfolio(sub, long_short_targets(prob, p4["upper"], p4["lower"]), delay=1),
+    out = {
+        "period": [str(sub.adj.index[0].date()), str(sub.adj.index[-1].date())],
+        "metrics": {k: metrics(v, cash) for k, v in runs.items()},
+        "delayed_one_session": {k: metrics(v, cash) for k, v in build(1).items()},
+        "intervals": bootstrap(runs, cash, against="buy_hold_equal"),
     }
-    out["metrics"] = {k: metrics(v, cash) for k, v in runs.items()}
-    out["delayed_one_session"] = {k: metrics(v, cash) for k, v in delayed.items()}
-    out["intervals"] = bootstrap(runs, cash, against="buy_hold_equal")
+    out["intervals_vs_spy"] = {
+        k: v["cagr_minus_spy_total_return95"]
+        for k, v in bootstrap(runs, cash, against="spy_total_return").items()
+        if "cagr_minus_spy_total_return95" in v
+    }
     control = rotation_control(sub, preds, panel, p1["threshold"], sleeve)
     values = control.pop("sharpe_values")
     control["share_at_or_above_actual"] = float(np.mean(np.array(values) >= out["metrics"]["sim1"]["sharpe"]))
