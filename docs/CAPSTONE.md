@@ -439,6 +439,103 @@ Reading:
 4. **Limits:** the development periods are short for crypto (63 months for Bitcoin and 25 for Ethereum); B6 chose the first session of the month for every instrument (the month's low formed most often on its first session in development), so it repeats the first-session reference.
 5. **Next question, to pre-register before any figure:** the same rules against a drift-neutral control (random sessions drawn at the same positions in the month as the rule's purchases, or prices detrended within the month).
 
+## A third look: the same rules against a drift-neutral control
+
+Repair of the second study, fixed before any figure in specification 0030 with hypothesis H-2026-018 (commit `fe1bd20`); code and tests committed before the run; one logged run (kind `timing_matched`). The rules and their parameters are the frozen ones of the second study; only the control changes: each rule is compared with random sessions taken at the same positions in the month as its own purchases, so buying early or late earns nothing by itself. These months had already been read with the first control, so this is a re-analysis, not an independent test.
+
+```sh
+python -m tsip.capstone.timing confirm-matched   # single logged run with the drift-neutral control
+python -m tsip.capstone.timing --markdown        # all timing tables, this one last
+```
+
+**Confirmation, control: matched position** (59 tests, Benjamini–Hochberg across all; passes: mean advantage at least 0.20% and q below 0.05)
+
+| Instrument | Test | Rule | Months | Mean advantage (95%) | Share of months positive | Wealth vs random | q | Passes |
+|---|---|---|---:|---|---:|---:|---:|---|
+| SPY | B1_Mon | weekday Mon | 130 | +0.00% (-0.21% to +0.23%) | 42% | +0.30% | 1.000 | no |
+| SPY | B1_Tue | weekday Tue | 130 | -0.03% (-0.16% to +0.10%) | 57% | +0.37% | 1.000 | no |
+| SPY | B1_Wed | weekday Wed | 130 | -0.06% (-0.21% to +0.07%) | 52% | +0.33% | 1.000 | no |
+| SPY | B1_Thu | weekday Thu | 130 | +0.02% (-0.15% to +0.17%) | 55% | +0.41% | 1.000 | no |
+| SPY | B1_Fri | weekday Fri | 130 | +0.02% (-0.16% to +0.19%) | 44% | +0.36% | 1.000 | no |
+| SPY | B2 | after fall (k 1.0, buy next) | 130 | -0.27% (-0.70% to +0.12%) | 47% | -0.38% | 1.000 | no |
+| SPY | B3 | high range | 130 | +0.02% (-0.32% to +0.32%) | 48% | -0.01% | 1.000 | no |
+| SPY | B4 | prior low (horizon quarter, d 0.5) | 130 | -0.07% (-0.26% to +0.11%) | 33% | -0.44% | 1.000 | no |
+| SPY | B5 | fvg | 130 | +0.29% (+0.01% to +0.60%) | 54% | +0.59% | 0.841 | no |
+| SPY | B6 | month low session (session 0) | 130 | +0.00% (+0.00% to +0.00%) | 0% | +0.48% | 1.000 | no |
+| SPY | B7 | below month open | 130 | +0.05% (-0.25% to +0.35%) | 49% | -0.09% | 1.000 | no |
+| QQQ | B1_Mon | weekday Mon | 130 | -0.01% (-0.27% to +0.26%) | 44% | +0.37% | 1.000 | no |
+| QQQ | B1_Tue | weekday Tue | 130 | -0.11% (-0.27% to +0.05%) | 52% | +0.42% | 1.000 | no |
+| QQQ | B1_Wed | weekday Wed | 130 | -0.10% (-0.30% to +0.09%) | 46% | +0.42% | 1.000 | no |
+| QQQ | B1_Thu | weekday Thu | 130 | +0.04% (-0.18% to +0.24%) | 55% | +0.60% | 1.000 | no |
+| QQQ | B1_Fri | weekday Fri | 130 | +0.13% (-0.11% to +0.34%) | 46% | +0.62% | 1.000 | no |
+| QQQ | B2 | after fall (k 1.5, buy same) | 130 | -0.40% (-0.80% to -0.03%) | 38% | -0.78% | 1.000 | no |
+| QQQ | B3 | high range | 130 | -0.48% (-0.95% to -0.04%) | 43% | -0.39% | 1.000 | no |
+| QQQ | B4 | prior low (horizon quarter, d 0.25) | 130 | +0.03% (-0.20% to +0.28%) | 38% | -0.53% | 1.000 | no |
+| QQQ | B5 | fvg | 130 | +0.12% (-0.19% to +0.43%) | 52% | +0.40% | 1.000 | no |
+| QQQ | B6 | month low session (session 0) | 130 | +0.00% (+0.00% to +0.00%) | 0% | +0.57% | 1.000 | no |
+| QQQ | B7 | below month open | 130 | +0.04% (-0.30% to +0.38%) | 52% | -0.06% | 1.000 | no |
+| GLD | B1_Mon | weekday Mon | 130 | +0.06% (-0.11% to +0.24%) | 54% | +0.33% | 1.000 | no |
+| GLD | B1_Tue | weekday Tue | 130 | -0.04% (-0.19% to +0.11%) | 49% | +0.26% | 1.000 | no |
+| GLD | B1_Wed | weekday Wed | 130 | -0.01% (-0.18% to +0.15%) | 55% | +0.29% | 1.000 | no |
+| GLD | B1_Thu | weekday Thu | 130 | +0.01% (-0.15% to +0.16%) | 48% | +0.26% | 1.000 | no |
+| GLD | B1_Fri | weekday Fri | 130 | -0.01% (-0.16% to +0.15%) | 48% | +0.22% | 1.000 | no |
+| GLD | B2 | after fall (k 1.0, buy same) | 130 | -0.10% (-0.36% to +0.12%) | 48% | +0.05% | 1.000 | no |
+| GLD | B3 | high range | 130 | +0.04% (-0.29% to +0.39%) | 49% | +0.06% | 1.000 | no |
+| GLD | B4 | prior low (horizon month, d 0.25) | 130 | +0.12% (-0.18% to +0.43%) | 52% | +0.19% | 1.000 | no |
+| GLD | B5 | fvg | 130 | +0.07% (-0.17% to +0.30%) | 58% | +0.33% | 1.000 | no |
+| GLD | B6 | month low session (session 0) | 130 | +0.00% (+0.00% to +0.00%) | 0% | +0.45% | 1.000 | no |
+| GLD | B7 | below month open | 130 | -0.22% (-0.48% to +0.04%) | 42% | -0.18% | 1.000 | no |
+| BTC-USD | B1_Mon | weekday Mon | 82 | -0.10% (-0.92% to +0.70%) | 50% | +0.34% | 1.000 | no |
+| BTC-USD | B1_Tue | weekday Tue | 82 | -0.13% (-0.73% to +0.53%) | 50% | -0.05% | 1.000 | no |
+| BTC-USD | B1_Wed | weekday Wed | 82 | -0.41% (-1.00% to +0.15%) | 44% | +0.29% | 1.000 | no |
+| BTC-USD | B1_Thu | weekday Thu | 82 | -0.52% (-1.30% to +0.28%) | 50% | -0.14% | 1.000 | no |
+| BTC-USD | B1_Fri | weekday Fri | 82 | +0.55% (+0.07% to +1.05%) | 59% | +0.85% | 0.767 | no |
+| BTC-USD | B1_Sat | weekday Sat | 82 | +0.40% (-0.03% to +0.85%) | 59% | +0.90% | 0.865 | no |
+| BTC-USD | B1_Sun | weekday Sun | 82 | +0.22% (-0.27% to +0.74%) | 52% | +1.31% | 1.000 | no |
+| BTC-USD | B2 | after fall (k 1.0, buy next) | 82 | -2.31% (-3.74% to -0.91%) | 44% | -2.14% | 1.000 | no |
+| BTC-USD | B3 | high range | 82 | -0.42% (-2.16% to +1.39%) | 39% | -2.57% | 1.000 | no |
+| BTC-USD | B4 | prior low (horizon month, d 0.25) | 82 | -1.10% (-2.63% to +0.63%) | 46% | -3.50% | 1.000 | no |
+| BTC-USD | B5 | fvg | 82 | +0.01% (-0.69% to +0.66%) | 52% | +0.38% | 1.000 | no |
+| BTC-USD | B6 | month low session (session 0) | 82 | +0.00% (+0.00% to +0.00%) | 0% | +0.89% | 1.000 | no |
+| BTC-USD | B7 | below month open | 82 | -0.74% (-1.89% to +0.43%) | 52% | -2.00% | 1.000 | no |
+| ETH-USD | B1_Mon | weekday Mon | 82 | -0.19% (-1.18% to +0.77%) | 46% | +0.29% | 1.000 | no |
+| ETH-USD | B1_Tue | weekday Tue | 82 | -0.26% (-1.17% to +0.63%) | 49% | +0.01% | 1.000 | no |
+| ETH-USD | B1_Wed | weekday Wed | 82 | -0.64% (-1.57% to +0.26%) | 43% | +1.82% | 1.000 | no |
+| ETH-USD | B1_Thu | weekday Thu | 82 | -0.43% (-1.45% to +0.59%) | 50% | +1.41% | 1.000 | no |
+| ETH-USD | B1_Fri | weekday Fri | 82 | +0.69% (-0.17% to +1.52%) | 63% | +1.44% | 0.937 | no |
+| ETH-USD | B1_Sat | weekday Sat | 82 | +0.53% (-0.39% to +1.41%) | 60% | +2.63% | 1.000 | no |
+| ETH-USD | B1_Sun | weekday Sun | 82 | +0.30% (-0.40% to +0.99%) | 52% | +2.77% | 1.000 | no |
+| ETH-USD | B2 | after fall (k 2.0, buy same) | 82 | -1.05% (-2.32% to +0.07%) | 44% | -6.50% | 1.000 | no |
+| ETH-USD | B3 | high range | 82 | +0.32% (-1.89% to +2.94%) | 54% | -2.15% | 1.000 | no |
+| ETH-USD | B4 | prior low (horizon quarter, d 0.25) | 82 | -0.43% (-1.56% to +0.72%) | 46% | -2.54% | 1.000 | no |
+| ETH-USD | B5 | fvg | 82 | -0.30% (-1.91% to +1.21%) | 59% | +1.35% | 1.000 | no |
+| ETH-USD | B6 | month low session (session 0) | 82 | +0.00% (+0.00% to +0.00%) | 0% | +3.23% | 1.000 | no |
+| ETH-USD | B7 | below month open | 82 | -1.65% (-3.22% to -0.10%) | 55% | -6.13% | 1.000 | no |
+
+| Instrument | Reference | Mean advantage (95%) |
+|---|---|---|
+| SPY | first session | +0.00% (+0.00% to +0.00%) |
+| SPY | last session | -0.03% (-0.12% to +0.07%) |
+| QQQ | first session | +0.00% (+0.00% to +0.00%) |
+| QQQ | last session | -0.07% (-0.21% to +0.07%) |
+| GLD | first session | +0.00% (+0.00% to +0.00%) |
+| GLD | last session | +0.02% (-0.05% to +0.11%) |
+| BTC-USD | first session | +0.00% (+0.00% to +0.00%) |
+| BTC-USD | last session | +0.08% (-0.06% to +0.22%) |
+| ETH-USD | first session | +0.00% (+0.00% to +0.00%) |
+| ETH-USD | last session | -0.06% (-0.38% to +0.19%) |
+
+Random walks: 1 of 59 tests pass.
+
+H-2026-018 by instrument: SPY **not supported**; QQQ **not supported**; GLD **not supported**; BTC-USD **not supported**; ETH-USD **not supported**.
+
+Reading:
+
+1. **H-2026-018 is not supported.** Once the drift is neutralised, no rule buys at a significantly better price than a random session at the same point of the month, on any instrument; the advantages that looked significant in the second study were the drift.
+2. **The first session scores exactly zero**, as the control requires, and the last session is close to zero: the timing within the month carries no price advantage of its own here.
+3. **One test passed on random walks** (a first Tuesday on simulated QQQ). With 59 tests, a chance rejection on data without information happens about once in twenty runs; a check with a single random-walk seed cannot tell chance from a flawed control. The next version uses several seeds and compares the pass rate with the nominal rate.
+4. **For a monthly buyer:** buy when the money arrives. Neither the weekday, nor a fall, nor a prior low, nor a fair value gap, nor the usual session of the monthly low gave a better price than chance in these markets, and every rule that waits pays the drift.
+
 ## Rubric map
 
 Where each item of the course rubric is answered, and what is not claimed.

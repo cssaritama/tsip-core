@@ -1,6 +1,6 @@
 # 0030 Buy timing against a drift-neutral control
 
-**Status:** in progress: code and tests (T1–T3, T5) committed before any figure; H-2026-018 registered before the run
+**Status:** evaluated on 2026-11-10: H-2026-018 not supported (no rule passes with the drift-neutral control); `docs/CAPSTONE.md`, `registry/evaluations.json`
 **Level:** 2 study · **Open work:** W-125 · **Decisions:** ADR 0064, ADR 0067, ADR 0071 · **Repairs:** specification 0029
 
 ## Problem and decision supported
@@ -38,4 +38,8 @@ Same as specification 0029.
 
 | ID | Result | Evidence |
 |---|---|---|
-| T1–T5 | to do | |
+| T1 | pass: `tests/test_capstone_timing.py::test_a_rule_that_always_buys_at_the_same_position_scores_zero`; real run: first session exactly zero for every instrument | 2026-11-10 |
+| T2 | pass: `test_early_buying_gains_nothing_from_drift_against_matched_positions` | 2026-11-10 |
+| T3 | pass: `test_a_dip_on_the_first_monday_is_still_found_against_matched_positions` | 2026-11-10 |
+| T4 | **fail:** 1 of 59 tests passed on random walks (QQQ first Tuesday); with one seed a chance rejection cannot be ruled out; the next version uses several seeds | 2026-11-10 |
+| T5 | pass: run logged once (kind `timing_matched`); `test_confirmation_runs_once_and_is_logged` | 2026-11-10 |

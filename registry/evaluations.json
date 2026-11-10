@@ -38,5 +38,15 @@
     "report": "python -m tsip.capstone.timing (summary timing_confirmation.json kept outside Git with the data; tables in docs/CAPSTONE.md)",
     "report_sha256": "bad3028f0456311a9e1b692a1b2820056b4074487c177c8ea0b1a47c708a7a20",
     "version": "0.2.24"
+  },
+  {
+    "hypothesis": "H-2026-018",
+    "hypothesis_sha256": "59453db10cfa04ed583aa5f368861c07d09cfe12e9a3f078d4dd1b52882a11cd",
+    "evaluated": "2026-11-10",
+    "outcome": "not supported",
+    "result": "Against random sessions at the same positions in the month (drift-neutral), no rule passes on real prices in the confirmation months (lowest q 0.77: BTC-USD B1_Fri, +0.55%); the first-session reference scores exactly zero. On random walks 1 of 59 tests passed (QQQ B1_Tue), a chance rejection that the single-seed check cannot rule out. Re-analysis of months already read with another control. Single logged run (registry/capstone_test_runs.json, kind timing_matched).",
+    "report": "python -m tsip.capstone.timing (summary timing_matched.json kept outside Git with the data; tables in docs/CAPSTONE.md)",
+    "report_sha256": "a52d92eee2afeb093eb042a99d1f45eeca4b7fa093aeb87f1b61c7710ad5fae7",
+    "version": "1.0.0"
   }
 ]

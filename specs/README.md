@@ -75,4 +75,4 @@ R1. When ..., the report (or page) shall ...
 | [0027](0027-matched-weekly-levels.md) | Historical weekly references versus geometry | private runner and synthetic verification; independent review pending |
 | [0028](0028-time-space-features-for-return-prediction.md) | Do time–space features improve the prediction of future returns? | evaluated: H-2026-016 not supported |
 | [0029](0029-when-to-buy-with-a-monthly-budget.md) | When and where to buy with a fixed monthly budget | evaluated: H-2026-017 not supported (control not drift-neutral) |
-| [0030](0030-buy-timing-against-a-drift-neutral-control.md) | Buy timing against a drift-neutral control | approved; H-2026-018 registered |
+| [0030](0030-buy-timing-against-a-drift-neutral-control.md) | Buy timing against a drift-neutral control | evaluated: H-2026-018 not supported |
