@@ -238,16 +238,71 @@ def drop_unfinished(prices: pd.DataFrame, downloaded_utc: str) -> pd.DataFrame:
     return prices[prices["date"] < cutoff].reset_index(drop=True)
 
 
+OVERLAP_DAYS = 10
+
+
+def splice(old: pd.DataFrame, new: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
+    """Stored prices plus a recent download, per ticker, with the stored history rescaled to the new adjustment.
+
+    The provider back-adjusts the whole history when a dividend or split occurs, so the stored rows
+    are multiplied by the median ratio of new to old values on the overlapping dates (adjusted close
+    for ``adj_close``; close for the other price columns), then the new rows replace the overlap.
+    """
+    parts, ratios = [], {}
+    for ticker in sorted(set(old["ticker"]) | set(new["ticker"])):
+        o = old[old["ticker"] == ticker].set_index("date")
+        n = new[new["ticker"] == ticker].set_index("date")
+        if n.empty:
+            parts.append(o.reset_index())
+            continue
+        overlap = o.index.intersection(n.index)
+        if len(overlap) == 0 and not o.empty:
+            raise ValueError(f"{ticker}: the update does not overlap the stored data; download the full history")
+        o = o.copy()
+        if len(overlap):
+            r_adj = float((n.loc[overlap, "adj_close"] / o.loc[overlap, "adj_close"]).median())
+            r_px = float((n.loc[overlap, "close"] / o.loc[overlap, "close"]).median())
+            o["adj_close"] *= r_adj
+            for col in ("open", "high", "low", "close"):
+                o[col] *= r_px
+            ratios[ticker] = {"adj_close": r_adj, "close": r_px, "overlap": len(overlap)}
+        merged = pd.concat([o[~o.index.isin(n.index)], n]).sort_index()
+        parts.append(merged.reset_index())
+    out = pd.concat(parts, ignore_index=True)[PRICE_COLUMNS]
+    return normalise_prices(out), ratios
+
+
+def update(store: Path, *, overlap_days: int = OVERLAP_DAYS) -> dict:
+    """Incremental load: download prices only from shortly before the last stored date and splice them in."""
+    old_prices, _, manifest = load_store(store)
+    if manifest["sha256"] in protected_fingerprints():
+        raise SystemExit(
+            f"Refused: {store} holds the data of a logged test-period read; update a copy in another folder instead."
+        )
+    old_prices = normalise_prices(pd.read_csv(store / "prices.csv.gz"))  # keep the stored rows as stored
+    start = (old_prices["date"].max() - pd.Timedelta(days=overlap_days)).date().isoformat()
+    tickers = list(dict.fromkeys([*UNIVERSE, *REFERENCES]))
+    new_prices = download_prices(tickers, start)
+    prices, ratios = splice(old_prices, new_prices)
+    fred = download_fred(list(MACRO_SERIES))  # four small series, fetched whole
+    out = save(store, prices, fred, source="yfinance and FRED public CSV (incremental update)")
+    out["update"] = {"from": start, "new_rows": int(len(prices) - len(old_prices)), "rescaling": ratios}
+    (store / "manifest.json").write_text(json.dumps(out, indent=2))
+    return out
+
+
 def load(mode: str = "file", store: Path | None = None, start: str = "2000-01-01") -> tuple[pd.DataFrame, dict]:
     """Unified frame in ``file`` mode (stored copy) or ``download`` mode (fresh data, then stored)."""
     store = store or default_store()
-    if mode == "download":
+    if mode == "update":
+        update(store)
+    elif mode == "download":
         tickers = list(dict.fromkeys([*UNIVERSE, *REFERENCES]))
         prices = download_prices(tickers, start)
         fred = download_fred(list(MACRO_SERIES))
         save(store, prices, fred, source="yfinance and FRED public CSV")
     elif mode != "file":
-        raise ValueError("mode must be 'file' or 'download'")
+        raise ValueError("mode must be 'file', 'download' or 'update'")
     prices, fred, manifest = load_store(store)
     frame = unified_frame(prices, fred)
     summary = {
@@ -265,7 +320,7 @@ def load(mode: str = "file", store: Path | None = None, start: str = "2000-01-01
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Course project data: download or read the stored copy.")
-    parser.add_argument("--mode", choices=["file", "download"], default="file")
+    parser.add_argument("--mode", choices=["file", "download", "update"], default="file")
     parser.add_argument("--store", type=Path, default=None)
     parser.add_argument("--start", default="2000-01-01")
     args = parser.parse_args(argv)

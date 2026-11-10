@@ -12,6 +12,7 @@ TSIP describes where price stands in time (calendar coordinates) and in space (a
 pip install -e ".[dev,calendar,capstone]"
 python -m tsip.capstone.run_all --mode download --store ~/tsip_capstone_data_new   # steps 1-4 with fresh data, in a new folder
 python -m tsip.capstone.run_all --mode file       # the same from the stored copy, no network
+python -m tsip.capstone.run_all --mode update --store ~/tsip_capstone_data_new   # only the new days (not on the protected store)
 python -m tsip.capstone.run_all --all-families    # adds decision tree, XGBoost and random forest (slower)
 jupyter notebook notebooks/capstone.ipynb          # the same flow step by step, with outputs saved
 python -m tsip.capstone.evaluate --markdown       # tables of the single test-period read (step 5)
@@ -672,7 +673,7 @@ Where each item of the course rubric is answered, and what is not claimed.
 | Deep analysis | Rotation and random-walk controls, validation against test, walk-forward check, reproducibility across downloads | done: AUC, precision of the most confident decile, calibration and the most confident errors by instrument and month, with improvement ideas |
 | Exceptional returns | The registered strategy did not beat either benchmark on the test period (step 5) | not claimed |
 | Scripts and dependencies | `pyproject.toml` extra `capstone`; one command, `tsip.capstone.run_all`, in two modes, both run (file mode here, download mode on the founder's computer, compared above) | done |
-| Incremental data outside GitHub | Data store outside Git with a fingerprinted manifest; steps reuse saved results | partial: a download fetches the full history, not only the new days |
+| Incremental data outside GitHub | `--mode update` downloads only from ten days before the last stored date and splices the new rows in, rescaling the stored history to the provider's latest dividend and split adjustment; the store stays outside Git with a fingerprinted manifest; results computed on older data are set aside, never mixed | done |
 | Scheduled run | The public report runs every day in GitHub Actions; the course flow itself is not scheduled | partial |
 | Modular code | `src/tsip/capstone/` modules with their tests (`tests/test_capstone_*.py`); the notebook only calls them | done |
 | Broker API | `tsip.capstone.paper_order`: orders to Alpaca's paper endpoint only, with simulated money | done (dry run verified; sending needs the founder's paper keys) |
