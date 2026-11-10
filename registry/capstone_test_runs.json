@@ -55,5 +55,19 @@
     "outputs": [
       "timing_confirmation.json"
     ]
+  },
+  {
+    "kind": "timing_matched",
+    "started_utc": "2026-11-10T15:30:31+00:00",
+    "commit": "01bbf61f3139a1081b93e5e2729e0f8a90dfa667",
+    "data_sha256": {
+      "prices": "6e3132b4402f8337a51adb8014c79b79476c7ef08270ef989291998381e1b3fb",
+      "fred": "924cb85fa901250317ed8cbfeb5b5084b122bb8a21cd4bf6d897c31e24916669"
+    },
+    "rerun_reason": null,
+    "status": "completed",
+    "outputs": [
+      "timing_matched.json"
+    ]
   }
 ]

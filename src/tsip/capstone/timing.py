@@ -392,7 +392,8 @@ def markdown(dev: dict | None, conf: dict | None) -> str:
             "",
             f"Random walks: {v['random_walk_passes']} of {rw['n_tests']} tests pass.",
             "",
-            "H-2026-017 by instrument: "
+            ("H-2026-018" if real.get("control") == "matched_position" else "H-2026-017")
+            + " by instrument: "
             + "; ".join(
                 f"{k} **{'supported' if s['supported'] else 'not supported'}**"
                 + (f" ({', '.join(s['passing'])})" if s["passing"] else "")
