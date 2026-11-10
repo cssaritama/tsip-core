@@ -37,6 +37,7 @@ All notable changes to this project are documented here. The format follows [Kee
 ## [Unreleased]
 
 ### Added
+- Repository rules checked by code (`tools/check_rules.py`, W-75): registered hypothesis IDs, unique and indexed specification numbers, no tool or assistant names, no unsupported claims in public text, no tracked data files, owner authorship and a changelog change for code changes. Runs in CI on every push and in the new **Daily review** workflow (every day at 07:43 UTC, also tests, lint and the freshness of the published report). Procedure in `CONTRIBUTING.md`, independent of any particular tool.
 - Course project data (specification 0028, R1 and R6; `tsip.capstone.data`): one daily frame for SPY, QQQ, GLD, Bitcoin and Ethereum with reference-market closes and FRED macro series, in two modes (`--mode download` stores yfinance and FRED data outside the repository with a fingerprinted manifest; `--mode file` repeats the run from the stored copy). Reference closes come only from earlier dates and macro values only after a conservative release lag; tests check both and that no row changes when later data are removed. Optional dependencies: `pip install -e ".[capstone]"`.
 - Specification 0028 (W-121): do time–space features improve the out-of-sample prediction of future returns, with ablation, random-walk and permuted-block controls, five strategies and the pullback-buying comparison with idle cash accounted for. Hypothesis H-2026-016 registered before any model is trained.
 

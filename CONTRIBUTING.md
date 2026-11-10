@@ -36,3 +36,15 @@ These apply to anyone, person or tool, changing this repository.
 6. **Checks before a change is done:** `pytest`, `ruff check src tests tools`, `ruff format --check src tests tools`, and a report built from a store with an OHLC and a close-only instrument that serialises without non-finite numbers. Website changes also pass `tools/render_check.py` (no console errors, no horizontal scroll, no overlapping chart text).
 7. **Document in the same change:** `CHANGELOG.md`, and the methodology, model, design or data policy when they change. New public claims are pre-registered in `registry/hypotheses.json` before results are seen.
 8. **Style:** English, conventional-commit messages, no references to the tools used to produce a change.
+
+## Rules and daily review
+
+The rules below hold for everyone who changes this repository, person or tool, and they are checked by code rather than by memory:
+
+```sh
+python tools/check_rules.py --since <date of your first commit in this session>
+```
+
+It fails when a hypothesis ID is cited that is not in `registry/hypotheses.json`, when two specifications share a number or one is missing from `specs/README.md`, when a tracked file names a tool or an assistant, when public text makes a claim no study can support, when a data file is tracked outside `examples/` and `tests/`, when a commit is not authored by the project owner, or when code under `src/` or `web/` changed without a `CHANGELOG.md` change. It runs in CI on every push, and every day in the **Daily review** workflow (`.github/workflows/daily-review.yml`), which also runs the tests and checks that the published report is fresh. Nothing in this procedure depends on a particular tool: anyone can run the same command, and anyone can read the result in the Actions tab.
+
+Before writing, start from the current `main` on GitHub and take new numbers (specifications, hypotheses) from it; publish each finished step at once, so that whoever works next sees it.

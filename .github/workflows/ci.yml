@@ -36,6 +36,8 @@ jobs:
           ruff format --check src tests tools
       - name: Test
         run: pytest
+      - name: Repository rules
+        run: python tools/check_rules.py --since 2026-11-10
       - name: Report smoke test
         run: |
           tsip report --data-dir .ci-empty --out site/data/report.json --reps 50
