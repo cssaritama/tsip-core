@@ -11,7 +11,7 @@ Specification 0029 compared each buy-timing rule with the month's average price.
 
 - R1. Same data, instruments, months, rules, frozen parameters (`registry/capstone_timing_choices.json`, commit `5b96f02`), one purchase per month and fallback as specification 0029. No new choice is made.
 - R2. **Matched-position control:** for a rule, let w(k) be the share of its confirmation-period purchases made on the k-th session of the month. In month m the control price is the w-weighted average of that month's adjusted closes at positions k (a position beyond the month's length takes the month's last session). The advantage of month m is (control price minus price paid) divided by the control price.
-- R3. A rule that always buys at the same position has an advantage of exactly zero; such rules (B6 and the references) are reported and counted, but cannot pass.
+- R3. A rule that always buys at the same session index has an advantage of exactly zero; such rules (B6 and the first-session reference) are reported and counted, but cannot pass. The last session of the month is not a fixed index (months have 19 to 23 sessions), so its advantage need not be zero. (Clarified on 2026-11-10 before any figure.)
 - R4. Statistic, intervals and correction as specification 0029: mean advantage, circular block bootstrap over months (6-month blocks, 2,000 resamples), Benjamini–Hochberg at q 0.05 across the same 59 confirmation tests.
 
 ## Study protocol
@@ -24,7 +24,7 @@ Specification 0029 compared each buy-timing rule with the month's average price.
 
 | ID | Criterion | Verified by |
 |---|---|---|
-| T1 | A rule that always buys at the same position has zero advantage | test |
+| T1 | A rule that always buys at the same session index has zero advantage | test |
 | T2 | On a random walk with a strong upward drift, early-buying rules have no significant advantage | test |
 | T3 | A planted dip on the first Monday of each month is still found by the Monday rule | test |
 | T4 | On random walks no test passes | random-walk run |
