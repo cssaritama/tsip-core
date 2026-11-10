@@ -546,16 +546,17 @@ Where each item of the course rubric is answered, and what is not claimed.
 | Data sources | yfinance (5 instruments, 8 reference markets) and FRED (4 series), two modes, fingerprinted store outside Git (step 1, `tsip.capstone.data`) | done |
 | Twenty or more features, documented | 122 columns in named sets with a dictionary (step 2) and a no-look-ahead test | done |
 | More than one million records | Not met: daily data give 26,759 rows | not claimed |
-| Transformations and exploratory analysis | Point-in-time joins with release lags (step 1); notebook section "Exploratory view" | done |
-| Models and tuning | Decision tree, random forest, logistic regression and XGBoost tuned on time-ordered folds; selection rule fixed before training (step 3) | done |
+| New data source (not yfinance or FRED) | The course models use yfinance and FRED only; the repository's live report uses Coinbase, the Binance archive and Alpaca, but not this project | not claimed |
+| Transformations and exploratory analysis | Point-in-time joins with release lags (step 1); notebook section "Exploratory view" (shares of positive periods by instrument, weekday and position in the prior week) | partial: no correlation analysis between features and the target yet |
+| Models and tuning | Decision tree, random forest, logistic regression and XGBoost tuned on time-ordered folds; selection rule fixed before training (step 3) | done; the notebook shows only the logistic model, the four families run with `run_all --all-families` |
 | Probability thresholds | Thresholds chosen on validation and frozen (`registry/capstone_choices_h5.json`, step 4) | done |
-| Two or more strategies, vector and exact simulation | sim1 to sim5, vector view and an exact account with costs, cash at the bill rate, one-session delay (steps 4 and 5) | done |
+| Two or more strategies, vector and exact simulation | sim1 to sim5, vector view and an exact account with costs, cash at the bill rate, one-session delay (steps 4 and 5) | done; the vector view's return on capital is computed but not yet shown in the tables |
 | Benchmark with dividends | Five-instrument buy and hold and SPY with dividends (adjusted close), with block-bootstrap intervals | done |
 | Stop loss and a new strategy | sim3 (2 ATR stop and a volatility filter); pullback buying with monthly deposits (sim5) | done |
-| Deep analysis | Rotation and random-walk controls, validation against test, walk-forward check (steps 4 and 5) | done |
+| Deep analysis | Rotation and random-walk controls, validation against test, walk-forward check, reproducibility across downloads | partial: precision by instrument and by month of the year not yet tabulated |
 | Exceptional returns | The registered strategy did not beat either benchmark on the test period (step 5) | not claimed |
 | Scripts and dependencies | `pyproject.toml` extra `capstone`; one command, `tsip.capstone.run_all`, in two modes, both run (file mode here, download mode on the founder's computer, compared above) | done |
-| Incremental data outside GitHub | Data store outside Git with a fingerprinted manifest; steps reuse saved results | done |
+| Incremental data outside GitHub | Data store outside Git with a fingerprinted manifest; steps reuse saved results | partial: a download fetches the full history, not only the new days |
 | Scheduled run | The public report runs every day in GitHub Actions; the course flow itself is not scheduled | partial |
 | Modular code | `src/tsip/capstone/` modules with their tests (`tests/test_capstone_*.py`); the notebook only calls them | done |
 | Broker API | `tsip.capstone.paper_order`: orders to Alpaca's paper endpoint only, with simulated money | done (dry run verified; sending needs the founder's paper keys) |
