@@ -71,6 +71,15 @@ Data files are never committed. Prices from yfinance are used for the course pro
 - **Strategy carried to the test period for the benchmark comparison:** among sim1 to sim3 on both feature sets, the one with the highest validation Sharpe ratio. Benchmarks: equal-weight buy and hold of the five instruments, and SPY with dividends (adjusted close). The rubric's "exceptional returns" point is claimed only if its test CAGR is above both benchmarks; the CAGR difference is reported with a circular block bootstrap interval (20-date blocks).
 - Every other strategy figure is exploratory.
 
+## Evaluation rule (fixed 2026-11-10, before the test period was read)
+
+- **Model (founder decision, 2026-11-10):** the logistic regression of step 3, tuned and fitted on the training period only, exactly as it was scored on validation, for the four feature sets. The thresholds frozen in `registry/capstone_choices_h5.json` are absolute probabilities of this model, so it is not refitted for the registered result.
+- **Registered statistic (H-2026-016):** pooled test AUC of `LECTURE+TIME+SPACE` minus `LECTURE` for the direction of the next 5 rows, with a circular block bootstrap over dates (20-date blocks, 2,000 resamples). Supported only if the lift is at least 0.02, its 95% interval excludes zero, and both controls show no lift.
+- **Controls on the test rows:** (1) permuted: the `TIME` and `SPACE` columns shuffled within each ticker and scored by the fitted `LECTURE+TIME+SPACE` model; its lift over `LECTURE` has the same bootstrap; (2) random walk: the whole pipeline (fit on training, score on test) on random-walk prices (`models.random_walk_frame`, seed 28). A control "shows no lift" when the lower end of its 95% interval is at or below zero.
+- **Strategies:** the parameters in `registry/capstone_choices_h5.json`, unchanged, on test prices from 2024-01-01 to the last complete session of the download of 2026-11-10; the strategy carried to the benchmark comparison is sim3 on `LECTURE+TIME+SPACE`; pullback buying with the trigger `prior_month_low` against monthly buying, a lump sum and cash.
+- **Exploratory, not registered:** the other feature sets and families' validation choices, the 20-row horizon, and a walk-forward check in which the model is refitted at the start of each test year on all earlier rows (purged at the boundary).
+- **Single read:** `python -m tsip.capstone.evaluate` refuses to run from a working tree with uncommitted changes, records its commit, the data fingerprint and the time in `registry/capstone_test_runs.json`, and refuses a second run unless `--rerun "<reason>"` is given; every run stays in the log.
+
 ## Data notes (step 1)
 
 - Reference markets: S&P 500, Nasdaq-100, DAX, gold, WTI and Brent oil, Bitcoin and VIX closes, joined from the previous calendar day or earlier, because their closes fall at different hours from the row's own close.
