@@ -202,5 +202,17 @@
     "evaluation_start": "2016-01-01",
     "evaluation_end": "2026-10-31",
     "status": "open"
+  },
+  {
+    "id": "H-2026-018",
+    "instrument": "SPY, QQQ, GLD, BTC-USD, ETH-USD (each on its own)",
+    "statement": "With the same amount invested every month, at least one of the buy-timing rules of specification 0029, with its frozen parameters, pays a lower price than random sessions taken at the same positions in the month as its own purchases (a drift-neutral control).",
+    "metric": "Mean price advantage over months against the matched-position control of specification 0030, in the confirmation months of specification 0029, with a circular block bootstrap over months (6-month blocks, 2,000 resamples).",
+    "criterion": "Supported for an instrument if at least one rule has a mean advantage of at least 0.20% with Benjamini-Hochberg q below 0.05 across the 59 tests, and no test passes on random walks. Rejected otherwise. Re-analysis of months already read with another control (specification 0029); the independent check is the forward record from 2026-11.",
+    "basis": "Repair of H-2026-017, whose month-average control favoured early purchases on rising prices (3 of 59 random-walk tests passed). Registered before any figure of specification 0030 was computed.",
+    "registered": "2026-11-10",
+    "evaluation_start": "2016-01-01",
+    "evaluation_end": "2026-10-31",
+    "status": "open"
   }
 ]
