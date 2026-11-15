@@ -98,6 +98,7 @@ def test_planted_space_effect_is_found():
     course features see part of it too, because a close below last week's low follows recent losses,
     so the required lift is positive rather than large.
     """
+    pytest.importorskip("xgboost")
     rng = np.random.default_rng(11)
     dates = pd.bdate_range("2016-01-04", periods=2400)
     close = np.empty(len(dates))

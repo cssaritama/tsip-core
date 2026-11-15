@@ -36,7 +36,9 @@ tsip = "tsip.cli:main"
 where = ["src"]
 
 [tool.pytest.ini_options]
+pythonpath = ["src"]
 testpaths = ["tests"]
+norecursedirs = ["archive", "past_version", ".*"]
 addopts = "-q"
 filterwarnings = ["ignore::FutureWarning", "ignore::DeprecationWarning"]
 
