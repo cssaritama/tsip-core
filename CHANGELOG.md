@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.2.0] – 2026-11-16
 
 ### Added
 - A second data source for the course project (`tsip.capstone.extra_sources`): Coinbase daily candles for Bitcoin and Ether in their own fingerprinted folder, a cross-check against the aggregate and three exchange-specific features (exploratory); fetched by `run_all` in download and update modes.
@@ -10,6 +10,10 @@ All notable changes to this project are documented here. The format follows [Kee
 - Incremental data loading (`--mode update` in `tsip.capstone.data` and `run_all`): only the days since shortly before the last stored date, spliced with the stored history rescaled to the latest provider adjustment; refused on a protected store; results of older data are set aside.
 - `tsip.capstone.analysis`: correlations of features with the target (training and validation rows only), the vector view's return on capital, test-period AUC, precision of the most confident decile and calibration by instrument and by month of the year, and the most confident wrong predictions; a section in `docs/CAPSTONE.md` with the reading and ideas for improvement.
 - The notebook shows all four model families of step 3 (regenerated; the published tables reproduce exactly), the correlation analysis and the diagnostics.
+- The rubric map in `docs/CAPSTONE.md` records the first scheduled run (2026-11-16, run 43794318433): the scheduled run, the container build and the Coinbase tables are verified.
+
+### Fixed
+- The Daily review workflow installs the `capstone` extra alongside `dev`, so the capstone tests no longer fail with `ModuleNotFoundError: No module named 'sklearn'`.
 
 ## [1.1.0] – 2026-11-10
 
