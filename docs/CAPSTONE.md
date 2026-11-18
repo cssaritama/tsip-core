@@ -4,7 +4,7 @@ Final project of the Stock Markets Analytics course: an end-to-end trading resea
 
 ## At a glance
 
-| | |
+| Item | Summary |
 |---|---|
 | **Question** | Do calendar position (*time*) and distance to prior highs and lows (*space*) improve the out-of-sample prediction of 5-session returns beyond the course's standard features? |
 | **Markets** | SPY, QQQ, GLD, Bitcoin and Ethereum, daily, 2000 to 2026 (26,759 rows) |
@@ -18,15 +18,23 @@ Final project of the Stock Markets Analytics course: an end-to-end trading resea
 ## The pipeline
 
 ```mermaid
-flowchart LR
-    A["Public sources<br/>yfinance · FRED · Coinbase"] --> B["Point-in-time store<br/>fingerprinted, outside Git"]
-    B --> C["Unified frame<br/>5 markets · 26,759 rows"]
-    C --> D["Features<br/>course · time · space"]
-    D --> E["Models<br/>tree · forest · logistic · XGBoost"]
-    E --> F["Thresholds and strategies<br/>chosen on validation, frozen"]
-    F --> G["Test period<br/>read once, logged"]
-    G --> H["Verdict and diagnostics"]
-    F --> I["Latest predictions<br/>paper-trading order"]
+flowchart TB
+    subgraph S1["1 · Data"]
+        direction LR
+        A["Public sources<br/>yfinance · FRED · Coinbase"] --> B["Point-in-time store<br/>fingerprinted, outside Git"] --> C["Unified frame<br/>5 markets · 26,759 rows"]
+    end
+    subgraph S2["2 · Learning"]
+        direction LR
+        D["Features<br/>course · time · space"] --> E["Models<br/>tree · forest · logistic · XGBoost"] --> F["Thresholds and strategies<br/>chosen on validation, frozen"]
+    end
+    subgraph S3["3 · Decision"]
+        direction LR
+        G["Test period<br/>read once, logged"] --> H["Verdict and diagnostics"]
+        I["Latest predictions<br/>paper-trading order"]
+    end
+    S1 --> S2
+    F --> G
+    F --> I
 ```
 
 The same flow runs in one command (`python -m tsip.capstone.run_all`), in the notebook (`notebooks/capstone.ipynb`, which only calls the modules in `src/tsip/capstone/`), every Sunday on GitHub Actions (`.github/workflows/capstone.yml`) and in a container.
