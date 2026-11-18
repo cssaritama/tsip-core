@@ -1,10 +1,49 @@
 # Course project: do time and space improve the prediction of future returns?
 
-Working document of the final project of the Stock Markets Analytics course (specification [0028](../specs/0028-time-space-features-for-return-prediction.md), hypothesis H-2026-016). It is completed step by step; sections not yet built say so. Every figure here names the command that produced it (ADR 0071 of the project's decision record).
+Final project of the Stock Markets Analytics course: an end-to-end trading research pipeline, from public data to a simulated strategy and a paper-trading order, built so that it cannot fool itself. Protocol: specification [0028](../specs/0028-time-space-features-for-return-prediction.md); hypothesis H-2026-016 in [`registry/hypotheses.json`](../registry/hypotheses.json). Every figure in this document names the command that produced it.
+
+## At a glance
+
+| Item | Summary |
+|---|---|
+| **Question** | Do calendar position (*time*) and distance to prior highs and lows (*space*) improve the out-of-sample prediction of 5-session returns beyond the course's standard features? |
+| **Markets** | SPY, QQQ, GLD, Bitcoin and Ethereum, daily, 2000 to 2026 (26,759 rows) |
+| **Data** | yfinance and FRED (course sources) plus Coinbase (exchange-level candles) |
+| **Features** | 122 columns in named sets: 60 course features, 11 time, 40 space, 5 ticker dummies, 4 targets |
+| **Models** | Decision tree, random forest, logistic regression and XGBoost, tuned on time-ordered folds |
+| **Strategies** | Five simulated strategies (vector and exact), with costs, stop loss, a volatility filter and monthly deposits |
+| **Protocol** | Train to 2021, validate 2022–2023, test from 2024 read once by a logged command; random-walk and shuffled-column controls |
+| **Answer** | **No.** Time and space features did not add predictive value (lift −0.012 AUC, 95% interval −0.039 to +0.016); the best strategy on validation did not beat SPY with dividends on the test period (+0.7% against +19.0% a year) |
+
+## The pipeline
+
+```mermaid
+flowchart TB
+    subgraph S1["1 · Data"]
+        direction LR
+        A["Public sources<br/>yfinance · FRED · Coinbase"] --> B["Point-in-time store<br/>fingerprinted, outside Git"] --> C["Unified frame<br/>5 markets · 26,759 rows"]
+    end
+    subgraph S2["2 · Learning"]
+        direction LR
+        D["Features<br/>course · time · space"] --> E["Models<br/>tree · forest · logistic · XGBoost"] --> F["Thresholds and strategies<br/>chosen on validation, frozen"]
+    end
+    subgraph S3["3 · Decision"]
+        direction LR
+        G["Test period<br/>read once, logged"] --> H["Verdict and diagnostics"]
+        I["Latest predictions<br/>paper-trading order"]
+    end
+    S1 --> S2
+    F --> G
+    F --> I
+```
+
+The same flow runs in one command (`python -m tsip.capstone.run_all`), in the notebook (`notebooks/capstone.ipynb`, which only calls the modules in `src/tsip/capstone/`), every Sunday on GitHub Actions (`.github/workflows/capstone.yml`) and in a container.
 
 ## Problem
 
-TSIP describes where price stands in time (calendar coordinates) and in space (against the highs and lows of prior days, weeks, months and quarters). The project tests whether that information improves the out-of-sample prediction of the direction of the next 5 and 20 sessions for SPY, QQQ, GLD, Bitcoin and Ethereum, beyond the course's standard features, and whether a strategy built on the predictions beats buy and hold after costs. The hypothesis and its pass criterion were registered before any model was trained.
+Trading folklore is full of calendar and price-level rules: buy at the turn of the month, fade the prior week's high, buy the dip at last month's low. TSIP, the research core in this repository, measures those effects one by one against controls. This project asks the next question a trader would ask: if each of these coordinates is turned into a feature, does a machine-learning model predict the next 5 and 20 sessions better than it does with the course's standard features alone, and does a strategy built on its predictions beat simply holding the market after costs?
+
+The answer decides how the rest of the system is built. A positive result would make time and space inputs to the predictive models; a negative one keeps them as descriptive context for a trader and sends the predictive effort elsewhere. To make either answer trustworthy, the hypothesis, its pass criterion and every modelling and trading choice were fixed before the test period was read, and the test period was read once.
 
 ## How to run
 
