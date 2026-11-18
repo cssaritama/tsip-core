@@ -29,7 +29,7 @@ Sources: yfinance daily prices for the five instruments and eight reference mark
 
 Rules that keep every row honest: reference closes come only from earlier dates (markets close at different hours); macro values are used only after a conservative release lag (daily rates from the next day, federal funds 3 days and CPI 20 days after the month ends); bars dated on or after the download's UTC date are dropped because they may still be open.
 
-First download, 2026-11-10 00:37 UTC (`python -m tsip.capstone.data --mode download` on the founder's computer; read back with `--mode file` using the code of commit `5343d97`, which added this document):
+First download, 2026-11-10 00:37 UTC (`python -m tsip.capstone.data --mode download` on the author's computer; read back with `--mode file` using the code of commit `5343d97`, which added this document):
 
 | Item | Value |
 |---|---|
@@ -213,7 +213,7 @@ Reading (exploratory; the registered results are those of the test period at ste
 
 ## Evaluation (step 5): the test period, read once
 
-The rule was committed before the first read (specification 0028, section "Evaluation rule", commit `cb5ff00`): the logistic model of step 3, fitted on the training period only (founder decision of 2026-11-10, so the frozen thresholds keep their meaning), the parameters of `registry/capstone_choices_h5.json`, and the H-2026-016 criterion. Commands:
+The rule was committed before the first read (specification 0028, section "Evaluation rule", commit `cb5ff00`): the logistic model of step 3, fitted on the training period only (decision of 2026-11-10, so the frozen thresholds keep their meaning), the parameters of `registry/capstone_choices_h5.json`, and the H-2026-016 criterion. Commands:
 
 ```sh
 python -m tsip.capstone.evaluate                 # phase 1: models, controls, verdict (refused if already run)
@@ -305,7 +305,7 @@ Reading:
 
 ## Reproducibility: a second, independent download
 
-The founder ran `python -m tsip.capstone.run_all --mode download --store <new folder>` on his computer on 2026-11-10 (steps 1 to 4 from scratch on fresh data). `python -m tsip.capstone.reproduce <first store> <second store> --markdown` compares the two:
+The author ran `python -m tsip.capstone.run_all --mode download --store <new folder>` on 2026-11-10 (steps 1 to 4 from scratch on fresh data). `python -m tsip.capstone.reproduce <first store> <second store> --markdown` compares the two:
 
 Downloads: 2026-11-10T00:37:33+00:00 (71,800 price rows) and 2026-11-10T13:21:20+00:00 (71,808 price rows). Largest validation AUC difference: 0.0007.
 
@@ -337,7 +337,7 @@ Reading: the models reproduce to the fourth decimal, and the strategy carried to
 
 ## A second study: when to buy with a fixed monthly budget
 
-Founder's question after step 5, fixed before any figure in specification 0029 with hypothesis H-2026-017 (commit `f874ded`); code and tests committed before the first real run; choices frozen on the development period (commit `5b96f02`); one logged confirmation (`registry/capstone_test_runs.json`, kind `timing_confirmation`). Every rule buys once a month, so all rules invest the same money; the statistic is the price paid against the month's average adjusted close, the expected price of a random session of the month.
+The author's question after step 5, fixed before any figure in specification 0029 with hypothesis H-2026-017 (commit `f874ded`); code and tests committed before the first real run; choices frozen on the development period (commit `5b96f02`); one logged confirmation (`registry/capstone_test_runs.json`, kind `timing_confirmation`). Every rule buys once a month, so all rules invest the same money; the statistic is the price paid against the month's average adjusted close, the expected price of a random session of the month.
 
 ```sh
 python -m tsip.capstone.timing develop      # development: all variants, choices frozen
@@ -676,10 +676,10 @@ Where each item of the course rubric is answered, and what is not claimed.
 | Stop loss and a new strategy | sim3 (2 ATR stop and a volatility filter); pullback buying with monthly deposits (sim5) | done |
 | Deep analysis | Rotation and random-walk controls, validation against test, walk-forward check, reproducibility across downloads | done: AUC, precision of the most confident decile, calibration and the most confident errors by instrument and month, with improvement ideas |
 | Exceptional returns | The registered strategy did not beat either benchmark on the test period (step 5) | not claimed |
-| Scripts and dependencies | `pyproject.toml` extra `capstone`; one command, `tsip.capstone.run_all`, in two modes, both run (file mode here, download mode on the founder's computer, compared above) | done |
+| Scripts and dependencies | `pyproject.toml` extra `capstone`; one command, `tsip.capstone.run_all`, in two modes, both run (file mode here, download mode on the author's computer, compared above) | done |
 | Incremental data outside GitHub | `--mode update` downloads only from ten days before the last stored date and splices the new rows in, rescaling the stored history to the provider's latest dividend and split adjustment; the store stays outside Git with a fingerprinted manifest; results computed on older data are set aside, never mixed | done |
 | Scheduled run | `.github/workflows/capstone.yml`: every Sunday and on demand, fresh download, the whole flow, the latest predictions and the paper-trading orders (dry run) in the run summary and an artifact | done: first scheduled run 2026-11-16 (run 43794318433), both jobs green |
 | Modular code | `src/tsip/capstone/` modules with their tests (`tests/test_capstone_*.py`); the notebook only calls them | done |
-| Broker API | `tsip.capstone.paper_order`: orders to Alpaca's paper endpoint only, with simulated money | done (dry run verified; sending needs the founder's paper keys) |
+| Broker API | `tsip.capstone.paper_order`: orders to Alpaca's paper endpoint only, with simulated money | done (dry run verified; sending needs Alpaca paper-trading keys) |
 | Container | `Dockerfile`, built and run by the `container` job of `.github/workflows/capstone.yml` | done: built and run in the scheduled run of 2026-11-16 (run 43794318433) |
 | Deployment | The project's public report on GitHub Pages | done |
