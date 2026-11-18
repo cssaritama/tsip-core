@@ -1,6 +1,6 @@
 name: Daily review
 
-# Read-only review that runs every day without any person or tool: tests, lint, repository rules
+# Read-only review that runs every day on a schedule: tests, lint, repository rules
 # (tools/check_rules.py) and the freshness of the published report. A failure appears in the
 # Actions tab and in GitHub's notification e-mail to the owner. Procedure and how to read it:
 # CONTRIBUTING.md, section "Rules and daily review".

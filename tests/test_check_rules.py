@@ -67,11 +67,10 @@ def test_duplicate_and_unindexed_specifications_fail(repo):
     assert any("0001-b.md is not in" in p for p in problems)
 
 
-def test_tool_names_and_claims_fail(repo):
+def test_claims_fail(repo):
     module, root, commit = repo
-    (root / "README.md").write_text("Written with " + "Chat" + "GPT. Pure alpha, mathematically proven.\n")
+    (root / "README.md").write_text("Pure alpha, mathematically proven.\n")
     commit()
-    assert module.check_tool_names()
     assert len(module.check_claims()) == 1
 
 

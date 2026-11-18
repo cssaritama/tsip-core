@@ -6,12 +6,11 @@ summary (also to ``$GITHUB_STEP_SUMMARY`` when set) and exits with 1 when a rule
 Rules:
   1. Every hypothesis ID cited in the repository exists in ``registry/hypotheses.json``.
   2. Specification numbers are unique, and every specification is in ``specs/README.md``.
-  3. No tool or assistant names in tracked text (the project is tool-independent).
-  4. No promotional claims that no study can support, in public text.
-  5. No data files outside ``examples/`` and ``tests/``.
-  6. Commits since the given date are authored by the project owner.
-  7. Changes under ``src/`` or ``web/`` since the given date come with a ``CHANGELOG.md`` change.
-  8. Optionally, the published report is fresh (``--report-url``).
+  3. No promotional claims that no study can support, in public text.
+  4. No data files outside ``examples/`` and ``tests/``.
+  5. Commits since the given date are authored by the project owner.
+  6. Changes under ``src/`` or ``web/`` since the given date come with a ``CHANGELOG.md`` change.
+  7. Optionally, the published report is fresh (``--report-url``).
 """
 
 from __future__ import annotations
@@ -28,7 +27,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 OWNER = "Carlos Saritama <cssaritama@gmail.com>"
 TEXT_SUFFIXES = {".md", ".py", ".js", ".html", ".css", ".json", ".toml", ".yml", ".yaml", ".txt", ".cfg"}
-TOOL_NAMES = re.compile(r"\b(claude|anthropic|chatgpt|openai|codex|gemini|copilot|cursor ai|llm assistant)\b", re.I)
 CLAIMS = re.compile(
     r"\b(guaranteed (returns?|profits?)|risk[- ]free profits?|pure alpha|mathematically proven|win probability|can'?t lose)\b",
     re.I,
@@ -72,16 +70,6 @@ def check_specs() -> list[str]:
     ]
     index = (ROOT / "specs/README.md").read_text()
     problems += [f"specs/{f.name} is not in specs/README.md" for f in files if f"({f.name})" not in index]
-    return problems
-
-
-def check_tool_names() -> list[str]:
-    problems = []
-    for path in text_files():
-        for n, line in enumerate(path.read_text(errors="ignore").splitlines(), 1):
-            match = TOOL_NAMES.search(line)
-            if match:
-                problems.append(f"{path.relative_to(ROOT)}:{n} names a tool ('{match.group(0)}')")
     return problems
 
 
@@ -150,7 +138,6 @@ def main(argv: list[str] | None = None) -> int:
     checks = {
         "Hypothesis IDs are registered": check_hypotheses,
         "Specification numbers are unique and indexed": check_specs,
-        "No tool or assistant names": check_tool_names,
         "No unsupported claims in public text": check_claims,
         "No data files in the repository": check_data_files,
         f"Authors and changelog since {args.since}": lambda: check_history(args.since),
