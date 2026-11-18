@@ -22,7 +22,7 @@ TSIP measures how the **S&P 500**, the **Nasdaq-100** and **Bitcoin** move throu
 | Multiple-testing control | Asking 100 questions produces 5 false "edges" at p < 0.05; q-values (Benjamini–Hochberg) correct for it. |
 | A grade | **A–F** for edges, **A–D** reliability for base rates, under [published rules](docs/METHODOLOGY.md). |
 
-## Release 1.0.0: do time and space improve return prediction?
+## Course project (releases 1.0.0 to 1.2.1): do time and space improve return prediction?
 
 The course project of the Stock Markets Analytics course, built as this release ([docs/CAPSTONE.md](docs/CAPSTONE.md)). It asks whether TSIP's time and space features improve the out-of-sample prediction of the direction of the next 5 sessions for SPY, QQQ, GLD, Bitcoin and Ethereum beyond the course's standard features, and whether a strategy built on the predictions beats buy and hold after costs. The hypothesis (H-2026-016) and every choice were fixed before the test period was read, once, by a logged command. **Result: not supported**, and the strategies that looked strong on validation did not beat buy and hold; the figures, controls and limits are in `docs/CAPSTONE.md`.
 

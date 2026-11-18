@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [1.2.1] – 2026-11-18
+
+### Changed
+- `docs/CAPSTONE.md` describes runs and decisions in the author's voice; the README section names the course-project releases.
+
 ## [1.2.0] – 2026-11-16
 
 ### Added
