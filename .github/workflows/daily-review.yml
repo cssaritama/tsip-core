@@ -13,6 +13,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: daily-review
+  cancel-in-progress: false
+
 jobs:
   review:
     runs-on: ubuntu-latest

@@ -5,6 +5,7 @@ name: Course project
 # paper-trading example would place (dry run). It also builds the container and checks that it runs.
 # Only statistics and orders are written to the summary and the artifact, never provider prices
 # (data policy). The test period is never re-read here: it is a single logged run.
+# Write-up, figures and rubric map: docs/CAPSTONE.md.
 
 on:
   schedule:
