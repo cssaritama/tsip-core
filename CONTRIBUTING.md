@@ -48,3 +48,25 @@ python tools/check_rules.py --since <date of your first commit>
 It fails when a hypothesis ID is cited that is not in `registry/hypotheses.json`, when two specifications share a number or one is missing from `specs/README.md`, when public text makes a claim no study can support, when a data file is tracked outside `examples/` and `tests/`, when a commit is not authored by the project owner, or when code under `src/` or `web/` changed without a `CHANGELOG.md` change. It runs in CI on every push, and every day in the **Daily review** workflow (`.github/workflows/daily-review.yml`), which also runs the tests and checks that the published report is fresh. Anyone can run the same command and read the result in the Actions tab.
 
 Before writing, start from the current `main` on GitHub and take new numbers (specifications, hypotheses) from it; publish each finished step at once, so that whoever works next sees it.
+
+## How this repository is run
+
+Profile `quant`. Data class Public. State Active. Owner Carlos Saritama.
+README.md states what is deployed and what is not.
+
+Before starting work, read:
+
+1. `README.md`
+2. `docs/TIME_SPACE_MODEL.md`
+3. `docs/METHODOLOGY.md`
+4. `docs/DATA_POLICY.md`
+5. `docs/standards/PROJECT_STANDARDS.md` and `docs/standards/PROFILE.md`
+
+Then follow links only as far as the change needs. Do not read `archive/`
+unless the change needs that evidence.
+
+Rules:
+
+- The ground rules and the rules for every change above apply in full.
+- `docs/standards/` is a verified copy of the Systems Studio Engineering Standard. Do not edit it; start specifications, decisions and verification records from `docs/standards/templates/`.
+- Work on a focused branch and open a pull request. Keep `main` working.

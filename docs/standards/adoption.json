@@ -1,0 +1,19 @@
+{
+  "schema": 2,
+  "standard": "Systems Studio Engineering Standard",
+  "version": "2.4.0",
+  "source_revision": "1865c93a36b482ab2f39c33924f7a60ad422bae3",
+  "source_state": "committed",
+  "profile": "quant",
+  "distribution": "public",
+  "files": {
+    "docs/standards/PROJECT_STANDARDS.md": "d0b4b07a907f2b1ab3f688665532fdf0f505548e25f127387d868e03d15eb267",
+    "docs/standards/DATA_CLASSIFICATION.md": "7943dee9da783430b3ddccdbb01ae0c18c570230e0d74e414d5ac5b4eb5f2029",
+    "docs/standards/templates/ADR_TEMPLATE.md": "62da7fad626fbe39925daff9a4a337a8d1ea89a4a1ed1878f06d4bb9ae75e790",
+    "docs/standards/templates/SPEC_TEMPLATE.md": "4addbf98ecdfb4e28e58b2231a1c4b0acf5cd63ba42f2673ad37b7e85024258f",
+    "docs/standards/templates/VERIFICATION_TEMPLATE.md": "2e0d62738a499b8160df2f8ae6635f8fdd3d2bc22eb4f7270f37a9a2b04b08a4",
+    "docs/standards/templates/CHECKPOINT_TEMPLATE.md": "82dd48d78f7621dd331aa361cb28cf9fd0602deba740cbcd9b54752777015c2e",
+    "docs/standards/PROFILE.md": "c686f88cbe1f9f4e939548289312d881c63b4a61e2c1fbfe31b31a14d2665324",
+    "docs/standards/.gitattributes": "a79691a93b46e49ce460c26ef22afcc03d6eca1e63bf2edbc20e96159510f6c9"
+  }
+}
