@@ -5,7 +5,7 @@
 
 ## Problem and decision supported
 
-Version 0.2.13 shows one horizon at a time behind a week, month and quarter switch, and grades "ended more than costs above the close" with one fixed cost per instrument kind (0.02% for ETFs, 0.20% for crypto). The founder could not tell which horizon to choose or what 0.20% meant, and the fee check of 2026-11-04 (`tsip-platform/docs/strategy/BENCHMARK_2026-11-04.md`) shows that one cost cannot be right for every reader: a round trip costs 0.20% on Binance but 1.20% on Coinbase Advanced and 1.60% on Kraken Pro at the lowest tier with market orders, and European ETF investors pay a fixed fee per order. Comparable products show forward horizons side by side and publish probabilities gross; trading tools let the user set costs.
+Version 0.2.13 shows one horizon at a time behind a week, month and quarter switch, and grades "ended more than costs above the close" with one fixed cost per instrument kind (0.02% for ETFs, 0.20% for crypto). The founder could not tell which horizon to choose or what 0.20% meant, and the fee check of 2026-11-04 shows that one cost cannot be right for every reader: a round trip costs 0.20% on Binance but 1.20% on Coinbase Advanced and 1.60% on Kraken Pro at the lowest tier with market orders, and European ETF investors pay a fixed fee per order. Comparable products show forward horizons side by side and publish probabilities gross; trading tools let the user set costs.
 
 ## Requirements
 

@@ -1,6 +1,6 @@
 # Specifications
 
-TSIP is built with **spec-anchored development with evidence gates**: every feature or study starts from a short specification that states what it is for and how it will be checked, and the specification stays in the repository and is kept current as the product changes. The full way of working is in the private repository (`tsip-platform/docs/operations/WAY_OF_WORKING.md`, ADR 0064); this folder holds the specifications of the public product.
+TSIP is built with **spec-anchored development with evidence gates**: every feature or study starts from a short specification that states what it is for and how it will be checked, and the specification stays in the repository and is kept current as the product changes. The full way of working is kept privately; this folder holds the specifications of the public product.
 
 ## When a specification is needed
 

@@ -5,7 +5,7 @@
 
 ## Problem and decision supported
 
-The first real trade-plan results (`tsip-platform/docs/research/RESULTS_2026-11-05_PLAN.md`) show no plan graded A or B when periods are grouped by the prior period's high and low. TSIP's strong evidence is about volatility (how much and when price moves), not about levels. The next question a trader asks is therefore whether the result of the same simple plans depends on the volatility regime the period starts in: calm, normal or volatile against the market's own history.
+The first real trade-plan results show no plan graded A or B when periods are grouped by the prior period's high and low. TSIP's strong evidence is about volatility (how much and when price moves), not about levels. The next question a trader asks is therefore whether the result of the same simple plans depends on the volatility regime the period starts in: calm, normal or volatile against the market's own history.
 
 ## Requirements
 

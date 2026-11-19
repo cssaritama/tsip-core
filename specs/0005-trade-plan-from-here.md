@@ -5,7 +5,7 @@
 
 ## Problem and decision supported
 
-The board describes how far and when price has moved from situations like today's, but not the result of a trade taken from here. A trader deciding whether to act needs, for a simple plan with a stop and a target, how often the target came first, how often the stop came first, and the average result, against what happens anyway, after his own costs. Costs decide small edges, which is why they belong here rather than on the money tile (`tsip-platform/docs/reviews/DECISION_READINESS_2026-11-05.md`).
+The board describes how far and when price has moved from situations like today's, but not the result of a trade taken from here. A trader deciding whether to act needs, for a simple plan with a stop and a target, how often the target came first, how often the stop came first, and the average result, against what happens anyway, after his own costs. Costs decide small edges, which is why they belong here rather than on the money tile.
 
 ## Requirements
 
