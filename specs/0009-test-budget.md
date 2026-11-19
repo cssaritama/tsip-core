@@ -40,4 +40,4 @@ The founder's list of advanced variables (sessions, momentum, regimes, revisits,
 | T1 | pass | `tests/test_test_budget.py::test_mde_matches_the_normal_approximation` |
 | T2 | pass | `tests/test_test_budget.py::test_grade_a_needs_200_units_in_the_condition` |
 | T3 | pass | `tests/test_test_budget.py::test_periods_and_ledger_from_a_report` |
-| T4 | pass | `tsip-platform/docs/research/VARIABLE_CATALOGUE.md`, run on `reports/2026/11/2026-11-05T2018Z.json.gz` |
+| T4 | pass | the private variable catalogue, run on `reports/2026/11/2026-11-05T2018Z.json.gz` |

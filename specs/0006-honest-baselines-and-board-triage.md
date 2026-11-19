@@ -5,7 +5,7 @@
 
 ## Problem and decision supported
 
-The review of 2026-11-05 (`tsip-platform/docs/reviews/DECISION_READINESS_2026-11-05.md`) found three things that weaken the board as a decision tool:
+The review of 2026-11-05 found three things that weaken the board as a decision tool:
 
 1. The money tile compares periods in today's state with the periods in the other states. A trader reads the comparison line as "what normally happens", but it is the opposite group: for SPY, where the two groups are about the same size, every difference looks about twice as large as against all periods at the same point (ended the week above the close: 63.8% against 52.4% for the other weeks, but 58.2% for all weeks).
 2. Every cell carries the same weight. The month and quarter columns are mostly "no reliable difference" or "too little history", and the board has no line that says what applies today.

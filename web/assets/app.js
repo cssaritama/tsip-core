@@ -996,7 +996,7 @@
   const MONEY_TITLES = Object.fromEntries(MONEY_ROWS);
 
   // Round-trip costs with market or limit orders at the lowest volume tier, each with its source and date
-  // (tsip-platform/docs/strategy/BENCHMARK_2026-11-04.md). Descriptive only: no grade uses a cost.
+  // (private benchmark note, 2026-11-04). Descriptive only: no grade uses a cost.
   const COST_PROFILES = {
     crypto: [
       { id: "gross", label: "No costs (gross)", pct: 0, source: "" },
