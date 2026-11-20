@@ -1,6 +1,6 @@
 # Systems Studio Engineering Standard
 
-Version 2.5.0, 20 November 2026. Read this file and [PROFILE.md](PROFILE.md) at
+Version 2.6.0, 20 November 2026. Read this file and [PROFILE.md](PROFILE.md) at
 the start of each piece of work. Open the other files only when the task needs them.
 
 ## What we build
