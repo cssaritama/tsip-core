@@ -1,6 +1,6 @@
 # Checkpoint — [YYYY-MM-DD] [Short Title]
 
-<!-- Checkpoint template, Systems Studio Engineering Standard 2.4.0.
+<!-- Checkpoint template, Systems Studio Engineering Standard 2.5.0.
      Use it for CURRENT_STATE.md, or append a dated entry to it, whenever work
      stops at a point someone else must be able to resume from. -->
 
