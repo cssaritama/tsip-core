@@ -1,19 +1,19 @@
 {
   "schema": 2,
   "standard": "Systems Studio Engineering Standard",
-  "version": "2.5.0",
-  "source_revision": "8cde96bc4ce8a469db9a9b267b0fc85f9ad040ba",
+  "version": "2.6.0",
+  "source_revision": "a5a20fd2ba4df7a9b9a91caabefe1eeb96998c73",
   "source_state": "committed",
   "profile": "quant",
   "distribution": "public",
   "files": {
-    "docs/standards/PROJECT_STANDARDS.md": "6aaf666e33a07f324daaa0ea504b4e031e47bf8db1971534d0b017b487f5bd37",
-    "docs/standards/DATA_CLASSIFICATION.md": "211881a0ec2897b967d629c32546a7d83a1c06a82d59f49c742f935de555eb4b",
+    "docs/standards/PROJECT_STANDARDS.md": "2e71d1e5595c246a6461dfd11cc33cf588434b508f775054de127801dc6626e7",
+    "docs/standards/DATA_CLASSIFICATION.md": "d3b0841f8dd9232546ccbf03ae1996715165c2368336175758516e1e39163ee0",
     "docs/standards/templates/ADR_TEMPLATE.md": "d6ad73a63e8a78d67f1dc2643ba1f3e693edb968009e798fa702de7610a46402",
-    "docs/standards/templates/SPEC_TEMPLATE.md": "a1499430a89a0e1095e0df43ef444ca5df8bd4506fb4a4de83b347cd6d404b69",
-    "docs/standards/templates/VERIFICATION_TEMPLATE.md": "c44b9f20a75d1f043edca9252961cba07129e0299907fd14055e584b0af5481a",
-    "docs/standards/templates/CHECKPOINT_TEMPLATE.md": "19cf50d81fcb7fed3d4094474b019dd1c01465c9d089036e5c95815284a91050",
-    "docs/standards/PROFILE.md": "bdbdcc1d5ca1b3edff8faa10a6c42b48d8e94bdbe8e9c3443104ba9fd7b475d4",
+    "docs/standards/templates/SPEC_TEMPLATE.md": "78a6cd5f77f3506730156dbe348c2889563e22c37cab68c6361117da1edb449e",
+    "docs/standards/templates/VERIFICATION_TEMPLATE.md": "f736d42b45a5681e221234918911d92efc6a7a1d0a0d094d7464a6fc0f3105fd",
+    "docs/standards/templates/CHECKPOINT_TEMPLATE.md": "8be1daa093e8a660b420647810491b53808fe23ce9a7659e02dd8121a82e6e58",
+    "docs/standards/PROFILE.md": "b9019f72c75e31132e5a79758ecad0e0cbadd6e72f98b9ed5d03d96ae5372136",
     "docs/standards/.gitattributes": "a79691a93b46e49ce460c26ef22afcc03d6eca1e63bf2edbc20e96159510f6c9"
   }
 }
