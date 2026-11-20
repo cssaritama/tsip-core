@@ -1,6 +1,6 @@
 # Data classification
 
-Version 2.4.0, 19 November 2026. Part of the
+Version 2.5.0, 20 November 2026. Part of the
 [Systems Studio Engineering Standard](PROJECT_STANDARDS.md).
 
 Every file a project creates, receives or publishes belongs to one of four

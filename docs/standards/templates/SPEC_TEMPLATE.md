@@ -1,6 +1,6 @@
 # Spec [Number] — [Short Title]
 
-<!-- Specification template, Systems Studio Engineering Standard 2.4.0.
+<!-- Specification template, Systems Studio Engineering Standard 2.5.0.
      Copy this file to specs/NNN-short-name/SPEC.md and replace each bracket.
      Delete a section only when it does not apply, and say why in one line. -->
 

@@ -4,7 +4,7 @@
 - **Date:** YYYY-MM-DD
 - **Author / Lead Architect:** Carlos Saritama
 - **Target Project:** [repository or component name]
-- **Specification / Task Link:** [e.g. Spec 009 / Task W-75]
+- **Specification / Task Link:** [link to the spec or the task]
 - **Additional Spending:** 0 EUR
 
 ## 1. Context and Problem Statement
