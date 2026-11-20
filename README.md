@@ -39,7 +39,7 @@ flowchart LR
 
 ```sh
 pip install -e ".[dev,calendar,capstone]"
-python -m tsip.capstone.run_all --mode download --store ~/tsip_capstone_data_new   # or --mode file
+python -m tsip.capstone.run_all --mode download --store ~/tsip_capstone_data   # or --mode file
 jupyter notebook notebooks/capstone.ipynb          # the same flow, step by step
 python -m tsip.capstone.paper_order               # educational paper-trading order (dry run)
 docker build -t tsip-capstone . && docker run --rm -v "$HOME/tsip_capstone_data:/data" tsip-capstone
