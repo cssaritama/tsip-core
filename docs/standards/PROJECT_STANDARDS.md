@@ -1,6 +1,6 @@
 # Systems Studio Engineering Standard
 
-Version 2.6.0, 20 November 2026. Read this file and [PROFILE.md](PROFILE.md) at
+Version 2.7.0, 23 November 2026. Read this file and [PROFILE.md](PROFILE.md) at
 the start of each piece of work. Open the other files only when the task needs them.
 
 ## What we build
@@ -25,7 +25,7 @@ point, with what it would need to reach production.
    evidence and one exact next action where the entry point says status lives.
 6. **Authority.** Reversible work in scope proceeds through verification.
    Spending, production changes, submissions and external commitments need the
-   owner's approval. Additional spending defaults to zero.
+   owner's approval. Spending defaults to zero and grows only with results.
 7. **Data stays in its class.** Secrets never enter Git. Follow
    [DATA_CLASSIFICATION.md](DATA_CLASSIFICATION.md) for everything else.
 8. **Pull requests and authorship.** Changes go through pull requests and leave
