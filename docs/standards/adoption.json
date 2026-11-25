@@ -1,19 +1,19 @@
 {
   "schema": 2,
   "standard": "Systems Studio Engineering Standard",
-  "version": "2.7.0",
-  "source_revision": "2c0e148c0a480491564535a35873c308a88b0f04",
+  "version": "2.8.0",
+  "source_revision": "5eebf01d70fe3bd24aca396402469831f5070a19",
   "source_state": "committed",
   "profile": "quant",
   "distribution": "public",
   "files": {
-    "docs/standards/PROJECT_STANDARDS.md": "191f2ad893a40280f3758479729aa6e56cd4ec4a49428ab355cec061ad8d4ff9",
-    "docs/standards/DATA_CLASSIFICATION.md": "59b9ab361b6f4f5b9a11acb4df255cc63ab9a53ab675f8ebc46a4dd9b90f9f2b",
+    "docs/standards/PROJECT_STANDARDS.md": "4f7e94aa87a1855b9efb94b4e7099e99f70f449eebf95c829f231463e10f54d8",
+    "docs/standards/DATA_CLASSIFICATION.md": "4d08384aabed205a5117aedb12566171a679b0f637e048869bcd9f5be7eae5cb",
     "docs/standards/templates/ADR_TEMPLATE.md": "d6ad73a63e8a78d67f1dc2643ba1f3e693edb968009e798fa702de7610a46402",
-    "docs/standards/templates/SPEC_TEMPLATE.md": "9236d586b6d5f7e9f42bd316ed076c7e759ee3fceec048b87b9af376d70762d4",
-    "docs/standards/templates/VERIFICATION_TEMPLATE.md": "1ebbf2a410d9f1fe494b0b212f6881b7e88b5af0bf06c5de27a7e18b3225f363",
-    "docs/standards/templates/CHECKPOINT_TEMPLATE.md": "931916f74d7e4725f89e024818683a50724709f74bc99b635df2704a14f8964f",
-    "docs/standards/PROFILE.md": "0648066bd3463380d4276bb8fa067568c7ad1b940c6caa92cb54b0b70294fb44",
+    "docs/standards/templates/SPEC_TEMPLATE.md": "558d305e815c2b42937b31f579e4a4821a714d614f9f05fe126941ab2027bbd9",
+    "docs/standards/templates/VERIFICATION_TEMPLATE.md": "0fb9a975d7de86d4ce80c812e4801eba4ead6b28837705576494fc6ef503cb99",
+    "docs/standards/templates/CHECKPOINT_TEMPLATE.md": "40dd991449425c21f9a1f3a2d10508881fb1fd851650bb90e659f79ac718743c",
+    "docs/standards/PROFILE.md": "0b10bfbd666a6b825c039213b264052ee169f6d5377e94bbcb18271239feb5e4",
     "docs/standards/.gitattributes": "a79691a93b46e49ce460c26ef22afcc03d6eca1e63bf2edbc20e96159510f6c9"
   }
 }
