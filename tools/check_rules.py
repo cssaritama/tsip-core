@@ -25,7 +25,8 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-OWNER = "Carlos Saritama <cssaritama@gmail.com>"
+# The author name every commit must carry; the e-mail is not checked, so it is never written here.
+OWNER = "Carlos Saritama"
 TEXT_SUFFIXES = {".md", ".py", ".js", ".html", ".css", ".json", ".toml", ".yml", ".yaml", ".txt", ".cfg"}
 CLAIMS = re.compile(
     r"\b(guaranteed (returns?|profits?)|risk[- ]free profits?|pure alpha|mathematically proven|win probability|can'?t lose)\b",
@@ -100,7 +101,7 @@ def check_data_files() -> list[str]:
 
 def check_history(since: str) -> list[str]:
     problems = []
-    log = git("log", f"--since={since}", "--no-merges", "--format=%H%x09%an <%ae>%x09%s", "HEAD")
+    log = git("log", f"--since={since}", "--no-merges", "--format=%H%x09%an%x09%s", "HEAD")
     commits = [line.split("\t") for line in log.splitlines() if line]
     for sha, author, subject in commits:
         if author != OWNER:

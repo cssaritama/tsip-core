@@ -23,7 +23,7 @@ def repo(tmp_path, monkeypatch):
     subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
     monkeypatch.setattr(module, "ROOT", tmp_path)
 
-    def commit(author="Carlos Saritama <cssaritama@gmail.com>"):
+    def commit(author="Carlos Saritama <owner@example.com>"):
         subprocess.run(["git", "-C", str(tmp_path), "add", "-A"], check=True)
         subprocess.run(
             [
