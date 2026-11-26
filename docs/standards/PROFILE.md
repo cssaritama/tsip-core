@@ -1,6 +1,6 @@
 # Project profile: `quant`
 
-Version 2.7.0. Adds to the [project standards](PROJECT_STANDARDS.md) and never relaxes them.
+Version 2.8.0. Adds to the [project standards](PROJECT_STANDARDS.md) and never relaxes them.
 Default data class: **Internal** ([Data classification](DATA_CLASSIFICATION.md)).
 
 ## Rules every profile shares

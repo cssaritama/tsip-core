@@ -1,6 +1,6 @@
 # Verification — [Spec Number] [Short Title]
 
-<!-- Verification record template, Systems Studio Engineering Standard 2.7.0.
+<!-- Verification record template, Systems Studio Engineering Standard 2.8.0.
      Copy this file next to the spec it verifies, for example
      specs/NNN-short-name/VERIFICATION.md. Record what actually happened. -->
 
